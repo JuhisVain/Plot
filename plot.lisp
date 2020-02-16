@@ -30,6 +30,18 @@ one of (1 2 NIL)"
 		    :surface surface
 		    :color color))
 
+(defun draw-horizontal (y color surface)
+  (sdl:draw-line-* 0 (- (sdl:height surface) y)
+		   (sdl:width surface) (- (sdl:height surface) y)
+		   :surface surface
+		   :color color))
+
+(defun draw-vertical (x color surface)
+  (sdl:draw-line-* x 0
+		   x (sdl:height surface)
+		   :surface surface
+		   :color color))
+
 (defun draw-function (func
 		      min-x max-x
 		      &optional
@@ -46,6 +58,7 @@ extreme values on X's range."
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
 	 (x-step (/ x-range win-width)) ; rational
+	 (screen-x0 (* min-x (/ win-width x-range)))
 	 )
     (multiple-value-bind
 	  (max-y min-y x-values y-values)
@@ -62,8 +75,26 @@ extreme values on X's range."
 
       (let* ((y-range (- max-y min-y))
 	     (y-scale (/ win-height y-range))
+	     ;; screen-y0 is the location of actual y=0 line in relation to low
+	     ;; border of window and inverted.
+	     ;; If func produces 0 ...-> negative numbers and window is 500
+	     ;; tall, screen-y0 will be -500 etc..
 	     (screen-y0 (* min-y
 			   y-scale)))
+
+	(format t "y-range ~a~%y-scale ~a~%screen-y0 ~a~%"
+		y-range
+		y-scale
+		screen-y0)
+
+	(draw-horizontal (round (- screen-y0))
+			 (sdl:color :r 150 :g 150 :b 150)
+			 surface)
+
+	(draw-vertical (round (- screen-x0))
+		       (sdl:color :r 150 :g 150 :b 150)
+		       surface)
+	
 	(loop for x from 0 below win-width
 	   for y in y-values
 	   do
