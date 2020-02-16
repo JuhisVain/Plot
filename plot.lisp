@@ -30,17 +30,26 @@ one of (1 2 NIL)"
 		    :surface surface
 		    :color color))
 
-(defun draw-horizontal (y color surface)
-  (sdl:draw-line-* 0 (- (sdl:height surface) y)
-		   (sdl:width surface) (- (sdl:height surface) y)
-		   :surface surface
-		   :color color))
+(defun draw-horizontal (y color surface &key (mark nil))
+  (let ((translated-y (- (sdl:height surface) y)))
+    (sdl:draw-line-* 0 translated-y
+		     (sdl:width surface) translated-y
+		     :surface surface
+		     :color color)
+    (typecase mark
+      (string (sdl:draw-string-solid-* mark 1 (+ translated-y 2)
+				       :surface surface
+				       :color color)))))
 
-(defun draw-vertical (x color surface)
+(defun draw-vertical (x color surface &key (mark nil))
   (sdl:draw-line-* x 0
 		   x (sdl:height surface)
 		   :surface surface
-		   :color color))
+		   :color color)
+  (typecase mark
+    (string (sdl:draw-string-solid-* mark (+ x 2) (- (sdl:height surface) 8)
+				     :surface surface
+				     :color color))))
 
 (defun draw-function (func
 		      min-x max-x
@@ -89,11 +98,13 @@ extreme values on X's range."
 
 	(draw-horizontal (round (- screen-y0))
 			 (sdl:color :r 150 :g 150 :b 150)
-			 surface)
+			 surface
+			 :mark "0")
 
 	(draw-vertical (round (- screen-x0))
 		       (sdl:color :r 150 :g 150 :b 150)
-		       surface)
+		       surface
+		       :mark "0")
 	
 	(loop for x from 0 below win-width
 	   for y in y-values
@@ -104,17 +115,15 @@ extreme values on X's range."
 				   screen-y0))
 			 surface color))))))
 
-    
-	 
 
-  
 (defun plot (func &key (from 0) (to 100) (window-width 500) (window-height 500))
   (declare ((function (number) number) func))
+  (sdl:initialise-default-font)
   (sdl:with-init()
     (defparameter *window* (sdl:window window-width window-height
 				       :title-caption "plot"
 				       :sw t))
-    (setf (sdl:frame-rate) 30)
+    ;;(setf (sdl:frame-rate) 30)
 
     (draw-function func from to sdl:*white* *window*)
 
