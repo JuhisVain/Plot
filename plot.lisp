@@ -100,4 +100,4 @@ extreme values on X's range."
 	 ;;(sdl:clear-display sdl:*black*)
 	 ;(draw-function func sdl:*white*)
 	 ;(sdl:update-display)
-	 )))))
+	 ))))
