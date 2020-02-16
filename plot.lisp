@@ -98,8 +98,8 @@ extreme values on X's range."
 	(loop for x from 0 below win-width
 	   for y in y-values
 	   do
-	     (draw-pixel (floor x)
-			 (floor (- (* y y-scale)
+	     (draw-pixel (round x)
+			 (round (- (* y y-scale)
 				   
 				   screen-y0))
 			 surface color))))))
