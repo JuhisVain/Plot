@@ -79,25 +79,25 @@ extreme values on X's range."
   
 (defun plot (func &key (from 0) (to 100) (window-width 500) (window-height 500))
   (declare ((function (number) number) func))
-    (sdl:with-init()
-      (defparameter *window* (sdl:window window-width window-height
-					 :title-caption "plot"
-					 :sw t))
-      (setf (sdl:frame-rate) 30)
+  (sdl:with-init()
+    (defparameter *window* (sdl:window window-width window-height
+				       :title-caption "plot"
+				       :sw t))
+    (setf (sdl:frame-rate) 30)
 
-      (draw-function func from to sdl:*white* *window*)
+    (draw-function func from to sdl:*white* *window*)
 
-      ;; hours of debugging fun because i forgot to update display
-      (sdl:update-display)
+    ;; hours of debugging fun because i forgot to update display
+    (sdl:update-display)
+    
+    (sdl:with-events (:poll)
       
-      (sdl:with-events (:poll)
-	
-	(:quit-event
-	 () t)
+      (:quit-event
+       () t)
 
-	(:idle
-	 ()
-	 ;;(sdl:clear-display sdl:*black*)
-	 ;(draw-function func sdl:*white*)
-	 ;(sdl:update-display)
-	 ))))
+      (:idle
+       ()
+       ;;(sdl:clear-display sdl:*black*)
+					;(draw-function func sdl:*white*)
+					;(sdl:update-display)
+       ))))
