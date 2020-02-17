@@ -32,6 +32,11 @@ one of (1 2 NIL)"
 
 (defun draw-horizontal (y color surface &key (mark nil))
   (let ((translated-y (- (sdl:height surface) y)))
+    
+    ;; If zero axis too for away sdl:draw-line might crap out:
+    (unless (< -1 translated-y (sdl:height surface))
+      (return-from draw-horizontal))
+    
     (sdl:draw-line-* 0 translated-y
 		     (sdl:width surface) translated-y
 		     :surface surface
@@ -42,6 +47,10 @@ one of (1 2 NIL)"
 				       :color color)))))
 
 (defun draw-vertical (x color surface &key (mark nil))
+  
+  (unless (< -1 x (sdl:width surface))
+    (return-from draw-vertical))
+  
   (sdl:draw-line-* x 0
 		   x (sdl:height surface)
 		   :surface surface
@@ -58,6 +67,9 @@ one of (1 2 NIL)"
 			(surface sdl:*default-display*))
   "Graphs (function (real) real) FUNC from MIN-X to MAX-X, y-scaling is dynamic based on
 extreme values on X's range."
+  (declare (function func)
+	   ((integer 0 *)))
+  
   (when (or (>= min-x max-x)
 	    (/= (get-arg-count func)
 		1))
@@ -120,24 +132,19 @@ extreme values on X's range."
   (declare ((function (number) number) func))
   (sdl:initialise-default-font)
   (sdl:with-init()
-    (defparameter *window* (sdl:window window-width window-height
-				       :title-caption "plot"
-				       :sw t))
+    (sdl:window window-width window-height
+		:title-caption "plot"
+		:sw t)
     ;;(setf (sdl:frame-rate) 30)
 
-    (draw-function func from to sdl:*white* *window*)
+    (draw-function func from to sdl:*white*)
 
-    ;; hours of debugging fun because i forgot to update display
     (sdl:update-display)
     
     (sdl:with-events (:poll)
-      
       (:quit-event
        () t)
 
       (:idle
        ()
-       ;;(sdl:clear-display sdl:*black*)
-					;(draw-function func sdl:*white*)
-					;(sdl:update-display)
        ))))
