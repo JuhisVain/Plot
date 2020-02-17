@@ -62,13 +62,13 @@ one of (1 2 NIL)"
 
 (defun draw-function (func
 		      min-x max-x
+		      slack
 		      &optional
 			(color sdl:*white*) 
 			(surface sdl:*default-display*))
   "Graphs (function (real) real) FUNC from MIN-X to MAX-X, y-scaling is dynamic based on
 extreme values on X's range."
-  (declare (function func)
-	   ((integer 0 *)))
+  (declare (function func))
   
   (when (or (>= min-x max-x)
 	    (/= (get-arg-count func)
@@ -94,21 +94,30 @@ extreme values on X's range."
 
       (format t "max ~a min ~a~%" max-y min-y)
 
-      (let* ((y-range (- max-y min-y))
+      (let* ((pre-y-range (- max-y min-y)) ; range in value
+	     (slack-mod (* pre-y-range slack)) ; total visible range in value
+	     (y-range (+ pre-y-range slack-mod))
 	     (y-scale (/ win-height y-range))
+	     (slack-pixels (* 1/2 slack-mod y-scale)) ; pixels to add at y-extremes
 	     ;; screen-y0 is the location of actual y=0 line in relation to low
 	     ;; border of window and inverted.
 	     ;; If func produces 0 ...-> negative numbers and window is 500
 	     ;; tall, screen-y0 will be -500 etc..
 	     (screen-y0 (* min-y
-			   y-scale)))
+			   y-scale)
+			   ))
 
-	(format t "y-range ~a~%y-scale ~a~%screen-y0 ~a~%"
+	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%screen-y0 ~a~%"
+		pre-y-range
 		y-range
+		slack-mod
+		(* slack-mod y-scale)
 		y-scale
 		screen-y0)
 
-	(draw-horizontal (round (- screen-y0))
+	(draw-horizontal (round (+ (- screen-y0)
+				   slack-pixels
+				   ))
 			 (sdl:color :r 150 :g 150 :b 150)
 			 surface
 			 :mark "0")
@@ -122,14 +131,15 @@ extreme values on X's range."
 	   for y in y-values
 	   do
 	     (draw-pixel (round x)
-			 (round (- (* y y-scale)
-				   
+			 (round (- (+ (* y y-scale)
+				      slack-pixels)
 				   screen-y0))
 			 surface color))))))
 
 
-(defun plot (func &key (from 0) (to 100) (window-width 500) (window-height 500))
-  (declare ((function (number) number) func))
+(defun plot (func &key (from 0) (to 100) (slack 1/20) (window-width 500) (window-height 500))
+  (declare ((function (number) number) func)
+	   ((rational 0 1) slack))
   (sdl:initialise-default-font)
   (sdl:with-init()
     (sdl:window window-width window-height
@@ -137,7 +147,7 @@ extreme values on X's range."
 		:sw t)
     ;;(setf (sdl:frame-rate) 30)
 
-    (draw-function func from to sdl:*white*)
+    (draw-function func from to slack sdl:*white*)
 
     (sdl:update-display)
     
