@@ -30,6 +30,11 @@ one of (1 2 NIL)"
 		    :surface surface
 		    :color color))
 
+(defun draw-circle (x y radius surface color)
+  (sdl:draw-circle-* x (- (sdl:height surface) y) radius
+		     :surface surface
+		     :color color))
+
 (defun draw-horizontal (y color surface &key (mark nil))
   (let ((translated-y (- (sdl:height surface) y)))
     
@@ -91,10 +96,14 @@ extreme values on X's range."
 	  (max-y min-y x-values y-values)
 	(loop
 	   for x from min-x upto max-x by x-step
-	   for y = (funcall func x)
+	   for y = (handler-case
+		       (funcall func x)
+		     (division-by-zero () 'ZERO-DIVISION))
     ;;; NOTE: these are extremes in drawable dataset, not actual values on range
+	   if (realp y)
 	   maximize y into max-y
-	   minimize y into min-y
+	   and minimize y into min-y
+	   
 	   collect x into x-values
 	   collect y into y-values
 	   finally (return (values max-y min-y x-values y-values)))
@@ -185,12 +194,26 @@ extreme values on X's range."
 	;; Draw the function:
 	(loop for x from 0 below win-width
 	   for y in y-values
-	   do
-	     (draw-pixel (round x)
-			 (round (- (+ (* y y-scale)
-				      slack-pixels)
-				   screen-y0))
-			 surface color))))))
+	   if (eq y 'ZERO-DIVISION)
+	   do (draw-circle (round x)
+			   ;; The following value is usually outside view:
+			   (round
+			    (- (+ (* y-scale
+				     (funcall
+				      func
+				      (+ x LEAST-POSITIVE-DOUBLE-FLOAT)))
+				  slack-pixels)
+			       screen-y0))
+			   2 ; circle radius
+			   surface color)
+	   
+	   else
+	   do (draw-pixel (round x)
+			  (round (- (+ (* y y-scale)
+				       slack-pixels)
+				    screen-y0))
+			  surface color)
+	   )))))
 
 
 (defun plot (func &key (from 0) (to 100) (slack 1/20) (window-width 500) (window-height 500))
