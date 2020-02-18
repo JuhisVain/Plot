@@ -60,6 +60,11 @@ one of (1 2 NIL)"
 				     :surface surface
 				     :color color))))
 
+(defun mark-lines (range)
+  "Returns something by gut feeling to be used a multiplier of grid lines."
+  ;; decrement rounded order of magnitude and get its value:
+  (expt 10 (1- (round (log range 10)))))
+
 (defun draw-function (func
 		      min-x max-x
 		      slack
@@ -78,6 +83,7 @@ extreme values on X's range."
   (let* ((win-width (sdl:width surface))
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
+	 (x-scale (/ win-width x-range))
 	 (x-step (/ x-range win-width)) ; rational
 	 (screen-x0 (* min-x (/ win-width x-range)))
 	 )
@@ -86,6 +92,7 @@ extreme values on X's range."
 	(loop
 	   for x from min-x upto max-x by x-step
 	   for y = (funcall func x)
+    ;;; NOTE: these are extremes in drawable dataset, not actual values on range
 	   maximize y into max-y
 	   minimize y into min-y
 	   collect x into x-values
@@ -107,14 +114,61 @@ extreme values on X's range."
 			   y-scale)
 			   ))
 
-	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%screen-y0 ~a~%"
+	;;debug:
+	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%screen-y0 ~a and x0 ~a~%"
 		pre-y-range
 		y-range
 		slack-mod
 		(* slack-mod y-scale)
 		y-scale
-		screen-y0)
+		screen-y0
+		screen-x0)
 
+	(format t "looping for y from 0 to ~a by ~a~%"
+		(+ max-y (mark-lines y-range))
+		(mark-lines y-range))
+
+	;; draw horizontal grid, first positives then negatives:
+	(loop for y from 0
+	   ;; range increased by one line so grid
+	   ;; extends to all values even with slack:
+	   to (+ max-y (mark-lines y-range)) by (mark-lines y-range)
+	   do (draw-horizontal (round (+ (* y y-scale)
+					 (- screen-y0)
+					 slack-pixels))
+			       (sdl:color :r 50 :g 50 :b 50)
+			       surface
+			       :mark (format nil "~a" (float y))
+			       ))
+
+	(loop for y from 0
+	   downto (- min-y (mark-lines y-range)) by (mark-lines y-range)
+	   do (draw-horizontal (round (+ (* y y-scale)
+					 (- screen-y0)
+					 slack-pixels))
+			       (sdl:color :r 50 :g 50 :b 50)
+			       surface
+			       :mark (format nil "~a" (float y))
+			       ))
+
+	;; draw vertical grid:
+	(loop for x from 0
+	   to max-x by (mark-lines x-range)
+	   do (draw-vertical (round (- (* x x-scale)
+				       screen-x0))
+			       (sdl:color :r 50 :g 50 :b 50)
+			       surface
+			       :mark (format nil "~a" (float x))))
+
+	(loop for x from 0
+	   downto min-x by (mark-lines x-range)
+	   do (draw-vertical (round (- (* x x-scale)
+				       screen-x0))
+			     (sdl:color :r 50 :g 50 :b 50)
+			     surface
+			     :mark (format nil "~a" (float x))))
+	
+	
 	(draw-horizontal (round (+ (- screen-y0)
 				   slack-pixels
 				   ))
@@ -126,7 +180,9 @@ extreme values on X's range."
 		       (sdl:color :r 150 :g 150 :b 150)
 		       surface
 		       :mark "0")
+
 	
+	;; Draw the function:
 	(loop for x from 0 below win-width
 	   for y in y-values
 	   do
