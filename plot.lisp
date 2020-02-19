@@ -110,7 +110,7 @@ extreme values on X's range."
 	   collect y into y-values
 	   finally (return (values max-y min-y x-values y-values)))
 
-      (format t "max ~a min ~a~%" max-y min-y)
+      (format t "max ~a min ~a, first: ~a~%" max-y min-y (car y-values))
 
       (let* ((pre-y-range (- max-y min-y)) ; range in value
 	     (slack-mod (* pre-y-range slack)) ; total visible range in value
@@ -216,21 +216,14 @@ extreme values on X's range."
 				       slack-pixels)
 				    screen-y0))
 			  surface sdl:*red*)
-	   else
-	   if (eq y 'ZERO-DIVISION)
-	   do (draw-circle (round x)
-			   ;; The following value is usually outside view:
-			   (round
-			    (- (+ (* y-scale
-				     (funcall
-				      func
-				      (+ x LEAST-POSITIVE-DOUBLE-FLOAT)))
-				  slack-pixels)
-			       screen-y0))
-			   2 ; circle radius
-			   surface color)
-	     
-	   )))))
+	   else ; note that weird values might not be caught into dataset
+	   if (or (eq y 'ZERO-DIVISION)
+		  (null y))
+	   do
+	     (draw-vertical x
+			    (sdl:color :r 100 :g 0 :b 0)
+			    surface)
+	     )))))
 
 
 (defun plot (func &key (from 0) (to 100) (slack 1/20) (window-width 500) (window-height 500))
