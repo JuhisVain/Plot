@@ -103,7 +103,9 @@ extreme values on X's range."
 	   if (realp y)
 	   maximize y into max-y
 	   and minimize y into min-y
-	   
+	   else if (complexp y)
+	   maximize (max (realpart y) (imagpart y)) into max-y
+	   and minimize (min (realpart y) (imagpart y)) into min-y
 	   collect x into x-values
 	   collect y into y-values
 	   finally (return (values max-y min-y x-values y-values)))
@@ -194,6 +196,27 @@ extreme values on X's range."
 	;; Draw the function:
 	(loop for x from 0 below win-width
 	   for y in y-values
+	   
+	   
+	   if (realp y)
+	   do (draw-pixel (round x)
+			  (round (- (+ (* y y-scale)
+				       slack-pixels)
+				    screen-y0))
+			  surface color)
+	   else
+	   if (complexp y)
+	   do (draw-pixel (round x)
+			  (round (- (+ (* (realpart y) y-scale)
+				       slack-pixels)
+				    screen-y0))
+			  surface sdl:*blue*)
+	     (draw-pixel (round x)
+			 (round (- (+ (* (imagpart y) y-scale)
+				       slack-pixels)
+				    screen-y0))
+			  surface sdl:*red*)
+	   else
 	   if (eq y 'ZERO-DIVISION)
 	   do (draw-circle (round x)
 			   ;; The following value is usually outside view:
@@ -206,13 +229,7 @@ extreme values on X's range."
 			       screen-y0))
 			   2 ; circle radius
 			   surface color)
-	   
-	   else
-	   do (draw-pixel (round x)
-			  (round (- (+ (* y y-scale)
-				       slack-pixels)
-				    screen-y0))
-			  surface color)
+	     
 	   )))))
 
 
