@@ -89,8 +89,9 @@ extreme values on X's range."
   (let* ((win-width (sdl:width surface))
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
+	 (x-grid-step (mark-lines x-range)) ; Used for grid lines
 	 (x-scale (/ win-width x-range))
-	 (x-step (/ x-range win-width)) ; rational
+	 (x-step (/ x-range win-width)) ; rational, used to iterate arguments
 	 (screen-x0 (* min-x (/ win-width x-range)))
 	 )
     (multiple-value-bind
@@ -116,6 +117,7 @@ extreme values on X's range."
       (let* ((pre-y-range (- max-y min-y)) ; range in value
 	     (slack-mod (* pre-y-range slack)) ; total visible range in value
 	     (y-range (+ pre-y-range slack-mod))
+	     (y-grid-step (mark-lines y-range))
 	     (y-scale (/ win-height y-range))
 	     (slack-pixels (* 1/2 slack-mod y-scale)) ; pixels to add at y-extremes
 	     ;; screen-y0 is the location of actual y=0 line in relation to low
@@ -123,8 +125,7 @@ extreme values on X's range."
 	     ;; If func produces 0 ...-> negative numbers and window is 500
 	     ;; tall, screen-y0 will be -500 etc..
 	     (screen-y0 (* min-y
-			   y-scale)
-			   ))
+			   y-scale)))
 
 	;;debug:
 	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%screen-y0 ~a and x0 ~a~%"
@@ -136,50 +137,36 @@ extreme values on X's range."
 		screen-y0
 		screen-x0)
 
-	(format t "looping for y from 0 to ~a by ~a~%"
-		(+ max-y (mark-lines y-range))
-		(mark-lines y-range))
+;;; Draw horizontal grid:
+	(multiple-value-bind
+	      (quo remainder)
+	    (floor min-y y-grid-step)
+	  (declare (ignore quo))
+	  
+	  (loop for y from (- min-y remainder)
+	     ;; range increased by one line so grid
+	     ;; extends to all values even with slack:
+	     to (+ max-y y-grid-step) by y-grid-step
+	     do (draw-horizontal (round (+ (* y y-scale)
+					   (- screen-y0)
+					   slack-pixels))
+				 (sdl:color :r 50 :g 50 :b 50)
+				 surface
+				 :mark (format nil "~a" (float y)))))
 
-	;; draw horizontal grid, first positives then negatives:
-	(loop for y from 0
-	   ;; range increased by one line so grid
-	   ;; extends to all values even with slack:
-	   to (+ max-y (mark-lines y-range)) by (mark-lines y-range)
-	   do (draw-horizontal (round (+ (* y y-scale)
-					 (- screen-y0)
-					 slack-pixels))
+;;; Draw vertical grid:
+	(multiple-value-bind
+	      (quo remainder)
+	    (floor min-x x-grid-step)
+	  (declare (ignore quo))
+
+	  (loop for x from (- min-x remainder)
+	     to max-x by x-grid-step
+	     do (draw-vertical (round (- (* x x-scale)
+					 screen-x0))
 			       (sdl:color :r 50 :g 50 :b 50)
 			       surface
-			       :mark (format nil "~a" (float y))
-			       ))
-
-	(loop for y from 0
-	   downto (- min-y (mark-lines y-range)) by (mark-lines y-range)
-	   do (draw-horizontal (round (+ (* y y-scale)
-					 (- screen-y0)
-					 slack-pixels))
-			       (sdl:color :r 50 :g 50 :b 50)
-			       surface
-			       :mark (format nil "~a" (float y))
-			       ))
-
-	;; draw vertical grid:
-	(loop for x from 0
-	   to max-x by (mark-lines x-range)
-	   do (draw-vertical (round (- (* x x-scale)
-				       screen-x0))
-			       (sdl:color :r 50 :g 50 :b 50)
-			       surface
-			       :mark (format nil "~a" (float x))))
-
-	(loop for x from 0
-	   downto min-x by (mark-lines x-range)
-	   do (draw-vertical (round (- (* x x-scale)
-				       screen-x0))
-			     (sdl:color :r 50 :g 50 :b 50)
-			     surface
-			     :mark (format nil "~a" (float x))))
-	
+			       :mark (format nil "~a" (float x)))))
 	
 	(draw-horizontal (round (+ (- screen-y0)
 				   slack-pixels
@@ -197,8 +184,8 @@ extreme values on X's range."
 	;; Draw the function:
 	(loop for x from 0 below win-width
 	   for y in y-values
-	   
-	   
+	     
+	     
 	   if (realp y)
 	   do (draw-pixel (round x)
 			  (round (- (+ (* y y-scale)
@@ -214,9 +201,9 @@ extreme values on X's range."
 			  surface sdl:*blue*)
 	     (draw-pixel (round x)
 			 (round (- (+ (* (imagpart y) y-scale)
-				       slack-pixels)
-				    screen-y0))
-			  surface sdl:*red*)
+				      slack-pixels)
+				   screen-y0))
+			 surface sdl:*red*)
 	   else ; note that weird values might not be caught into dataset
 	   if (or (eq y 'ZERO-DIVISION)
 		  (null y))
