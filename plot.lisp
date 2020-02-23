@@ -10,6 +10,11 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
+(defun testfun (x)
+  (if (<= x 400)
+      (+ 0.5 (/ (cos (/ x 127.324)) 2))
+      0))
+
 ;; It would be cool if methods could specialize on ftypes
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
@@ -69,7 +74,9 @@ one of (1 2 NIL)"
 (defun mark-lines (range)
   "Returns something by gut feeling to be used a multiplier of grid lines."
   ;; decrement rounded order of magnitude and get its value:
-  (expt 10 (1- (round (log range 10)))))
+  (if (zerop range)
+      1
+      (expt 10 (1- (round (log range 10))))))
 
 (defun draw-function (func
 		      min-x max-x
@@ -118,7 +125,9 @@ extreme values on X's range."
 	     (slack-mod (* pre-y-range slack)) ; total visible range in value
 	     (y-range (+ pre-y-range slack-mod))
 	     (y-grid-step (mark-lines y-range))
-	     (y-scale (/ win-height y-range))
+	     (y-scale (if (zerop y-range)
+			  100
+			  (/ win-height y-range)))
 	     (slack-pixels (* 1/2 slack-mod y-scale)) ; pixels to add at y-extremes
 	     ;; screen-y0 is the location of actual y=0 line in relation to low
 	     ;; border of window and inverted.
@@ -126,6 +135,9 @@ extreme values on X's range."
 	     ;; tall, screen-y0 will be -500 etc..
 	     (screen-y0 (* min-y
 			   y-scale)))
+
+	(when (zerop y-range)
+	  (setf screen-y0 (/ win-height -2)))
 
 	;;debug:
 	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%screen-y0 ~a and x0 ~a~%"
