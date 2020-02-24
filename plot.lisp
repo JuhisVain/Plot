@@ -73,9 +73,9 @@ one of (1 2 NIL)"
 
 (defun mark-lines (range)
   "Returns something by gut feeling to be used a multiplier of grid lines."
-  ;; decrement rounded order of magnitude and get its value:
   (if (zerop range)
       1
+      ;; decrement rounded order of magnitude and get its value:
       (expt 10 (1- (round (log range 10))))))
 
 (defun draw-function (func
@@ -84,7 +84,7 @@ one of (1 2 NIL)"
 		      &optional
 			(color sdl:*white*) 
 			(surface sdl:*default-display*))
-  "Graphs (function (real) real) FUNC from MIN-X to MAX-X, y-scaling is dynamic based on
+  "Graphs (function (real) number) FUNC from MIN-X to MAX-X, y-scaling is dynamic based on
 extreme values on X's range."
   (declare (function func))
   
@@ -125,6 +125,7 @@ extreme values on X's range."
 	     (slack-mod (* pre-y-range slack)) ; total visible range in value
 	     (y-range (+ pre-y-range slack-mod))
 	     (y-grid-step (mark-lines y-range))
+	     ;;handle funcs which always return the same value within range:
 	     (y-scale (if (zerop y-range)
 			  100
 			  (/ win-height y-range)))
