@@ -78,17 +78,17 @@ one of (1 2 NIL)"
       ;; decrement rounded order of magnitude and get its value:
       (expt 10 (1- (round (log range 10))))))
 
-(defun draw-function (func
+(defun draw-function (func-list
 		      min-x max-x
 		      slack
 		      &optional
 			(color sdl:*white*) 
 			(surface sdl:*default-display*))
-  "Graphs (function (real) number) FUNC from MIN-X to MAX-X, y-scaling is dynamic based on
-extreme values on X's range."
-  (declare (function func))
+  "Graphs (function (real) number) FUNC from MIN-X to MAX-X, y-scaling is
+dynamic based on extreme values on X's range."
+  ;(declare (function func))
   
-  (when (or (>= min-x max-x)
+  '(when (or (>= min-x max-x)
 	    (/= (get-arg-count func)
 		1))
     (error "Invalid args"))
@@ -101,23 +101,40 @@ extreme values on X's range."
 	 (x-step (/ x-range win-width)) ; rational, used to iterate arguments
 	 (screen-x0 (* min-x (/ win-width x-range)))
 	 )
-    (multiple-value-bind
-	  (max-y min-y x-values y-values)
-	(loop
-	   for x from min-x upto max-x by x-step
-	   for y = (handler-case
-		       (funcall func x)
-		     (division-by-zero () 'ZERO-DIVISION))
-    ;;; NOTE: these are extremes in drawable dataset, not actual values on range
-	   if (realp y)
-	   maximize y into max-y
-	   and minimize y into min-y
-	   else if (complexp y)
-	   maximize (max (realpart y) (imagpart y)) into max-y
-	   and minimize (min (realpart y) (imagpart y)) into min-y
-	   collect x into x-values
-	   collect y into y-values
-	   finally (return (values max-y min-y x-values y-values)))
+
+    (multiple-value-bind (max-y
+			  min-y
+			  y-values)
+      
+      (loop
+	 for x from min-x upto max-x by x-step
+	 with max-y = most-negative-fixnum
+	 and min-y = most-positive-fixnum
+	 collect
+	   (loop for y in (mapcar #'(lambda (func)
+				      (handler-case 
+					  (funcall func x)
+					(division-by-zero () 'ZERO-DIVISION)))
+				  func-list)
+	      if (realp y)
+	      do
+		(setf max-y (max max-y y)
+		      min-y (min min-y y))
+	      else if (complexp y)
+	      do
+		(setf max-y (max max-y
+				 (max (realpart y)
+				      (imagpart y)))
+		      min-y (min min-y
+				 (min (realpart y)
+				      (imagpart y))))
+	      collect y into step-y-values
+		
+	      finally (return step-y-values))
+	 into y-values
+	 finally (return (values max-y min-y y-values)))
+
+      (defparameter *xxx* (list max-y min-y y-values))
 
       (format t "max ~a min ~a, first: ~a~%" max-y min-y (car y-values))
 
@@ -196,39 +213,39 @@ extreme values on X's range."
 	
 	;; Draw the function:
 	(loop for x from 0 below win-width
-	   for y in y-values
+	   for y-list in y-values
 	     
-	     
-	   if (realp y)
-	   do (draw-pixel (round x)
-			  (round (- (+ (* y y-scale)
-				       slack-pixels)
-				    screen-y0))
-			  surface color)
-	   else
-	   if (complexp y)
-	   do (draw-pixel (round x)
-			  (round (- (+ (* (realpart y) y-scale)
-				       slack-pixels)
-				    screen-y0))
-			  surface sdl:*blue*)
-	     (draw-pixel (round x)
-			 (round (- (+ (* (imagpart y) y-scale)
-				      slack-pixels)
-				   screen-y0))
-			 surface sdl:*red*)
-	   else ; note that weird values might not be caught into dataset
-	   if (or (eq y 'ZERO-DIVISION)
-		  (null y))
-	   do
-	     (draw-vertical x
-			    (sdl:color :r 100 :g 0 :b 0)
-			    surface)
-	     )))))
+	   do (loop for y in y-list
+		 if (realp y)
+		 do (draw-pixel (round x)
+				(round (- (+ (* y y-scale)
+					     slack-pixels)
+					  screen-y0))
+				surface color)
+		 else
+		 if (complexp y)
+		 do (draw-pixel (round x)
+				(round (- (+ (* (realpart y) y-scale)
+					     slack-pixels)
+					  screen-y0))
+				surface sdl:*blue*)
+		   (draw-pixel (round x)
+			       (round (- (+ (* (imagpart y) y-scale)
+					    slack-pixels)
+					 screen-y0))
+			       surface sdl:*red*)
+		 else ; note that weird values might not be caught into dataset
+		 if (or (eq y 'ZERO-DIVISION)
+			(null y))
+		 do
+		   (draw-vertical x
+				  (sdl:color :r 100 :g 0 :b 0)
+				  surface)
+		   ))))))
 
 
-(defun plot (func &key (from 0) (to 100) (slack 1/20) (window-width 500) (window-height 500))
-  (declare ((function (number) number) func)
+(defun plot (func-list &key (from 0) (to 100) (slack 1/20) (window-width 500) (window-height 500))
+  (declare ;((function (number) number) func)
 	   ((rational 0 1) slack))
   (sdl:initialise-default-font)
   (sdl:with-init()
@@ -237,7 +254,7 @@ extreme values on X's range."
 		:sw t)
     ;;(setf (sdl:frame-rate) 30)
 
-    (draw-function func from to slack sdl:*white*)
+    (draw-function func-list from to slack sdl:*white*)
 
     (sdl:update-display)
     
