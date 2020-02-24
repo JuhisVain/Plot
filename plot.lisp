@@ -82,17 +82,23 @@ one of (1 2 NIL)"
 		      min-x max-x
 		      slack
 		      &optional
-			(color sdl:*white*) 
+			(color-list)
 			(surface sdl:*default-display*))
   "Graphs (function (real) number) FUNC from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
-  ;(declare (function func))
+  (let ((func-list-length (length func-list))
+	(color-list-length (length color-list)))
+    (when (< color-list-length func-list-length)
+      (setf color-list
+	    (nconc color-list
+		   (mapcar #'(lambda (x)
+			       (declare (ignore x))
+			       (sdl:color :r (+ 155 (random 100))
+					  :g (+ 155 (random 100))
+					  :b (+ 155 (random 100))))
+			   (make-list (- func-list-length
+					 color-list-length)))))))
   
-  '(when (or (>= min-x max-x)
-	    (/= (get-arg-count func)
-		1))
-    (error "Invalid args"))
-
   (let* ((win-width (sdl:width surface))
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
@@ -133,8 +139,6 @@ dynamic based on extreme values on X's range."
 	      finally (return step-y-values))
 	 into y-values
 	 finally (return (values max-y min-y y-values)))
-
-      (defparameter *xxx* (list max-y min-y y-values))
 
       (format t "max ~a min ~a, first: ~a~%" max-y min-y (car y-values))
 
@@ -216,6 +220,7 @@ dynamic based on extreme values on X's range."
 	   for y-list in y-values
 	     
 	   do (loop for y in y-list
+		 for color in color-list
 		 if (realp y)
 		 do (draw-pixel (round x)
 				(round (- (+ (* y y-scale)
@@ -254,7 +259,7 @@ dynamic based on extreme values on X's range."
 		:sw t)
     ;;(setf (sdl:frame-rate) 30)
 
-    (draw-function func-list from to slack sdl:*white*)
+    (draw-function func-list from to slack)
 
     (sdl:update-display)
     
