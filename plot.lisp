@@ -117,7 +117,7 @@ and value are both at max."
       (push (hue-to-rgb
 	     (+ start-hue (* iter hue-step)))
 	    colors))
-    colors))
+    (reverse colors)))
 
 (defun draw-function (func-list
 		      min-x max-x
