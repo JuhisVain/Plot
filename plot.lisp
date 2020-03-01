@@ -119,6 +119,41 @@ and value are both at max."
 	    colors))
     (reverse colors)))
 
+(defun abs-max (number)
+  "Get greatest value component of NUMBER."
+  (declare (number number))
+  (if (complexp number)
+      (max (imagpart number)
+	   (realpart number))
+      number))
+
+(defun abs-min (number)
+  "Get least value component of NUMBER."
+  (declare (number number))
+  (if (complexp number)
+      (min (imagpart number)
+	   (realpart number))
+      number))
+
+(defun draw-value (x-coord value y-scale slack screen-y0 surface color-set)
+  (typecase value
+    (real (draw-pixel (round x-coord)
+		      (round (- (+ (* value y-scale)
+				   slack)
+				screen-y0))
+		      surface (car color-set)))
+    ;;the components of a complex must be real:
+    (complex (draw-value (round x-coord)
+			 (realpart value)
+			 y-scale slack screen-y0 surface (cdr color-set))
+	     (draw-value (round x-coord)
+			 (imagpart value)
+			 y-scale slack screen-y0 surface (cddr color-set)))
+    (t (draw-vertical x-coord ; bad value, most likely zero div
+		      (sdl:color :r 100 :g 0 :b 0)
+		      surface)))
+  NIL)
+
 (defun draw-function (func-list
 		      min-x max-x
 		      slack
@@ -126,177 +161,172 @@ and value are both at max."
 			(surface sdl:*default-display*))
   "Graphs (function (real) number) FUNC from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
+  
+  (let* ((color-list
+	  (mapcar #'(lambda (rgb)
+		      (list
+		       ;; default color for normie numbers:
+		       (apply #'sdl:color rgb)
+		       ;; complex realpart color:
+		       (apply #'sdl:color
+			      (mapcar #'(lambda (x);lighten
+					  (if (numberp x)
+					      (round (+ x 255) 2)
+					      x))
+				      rgb))
+		       ;; complex imagpart color:
+		       (apply #'sdl:color
+			      (mapcar #'(lambda (x);darken
+					  (if (numberp x)
+					      (round x 2)
+					      x))
+				      rgb))
+		       ))
+		  (generate-colors 0 0 0 (length func-list))))
+	 (win-width (sdl:width surface))
+	 (win-height (sdl:height surface))
+	 (x-range (- max-x min-x))
+	 (x-grid-step (mark-lines x-range)) ; Used for grid lines
+	 (x-scale (/ win-width x-range))
+	 (x-step (/ x-range win-width)) ; rational, used to iterate arguments
+	 (screen-x0 (* min-x (/ win-width x-range)))
+	 )
 
-    (let* ((color-list
-	    (mapcar #'(lambda (rgb)
-			(list 
-			 (apply #'sdl:color rgb)
-			 (apply #'sdl:color
-				(mapcar #'(lambda (x);lighten
-					    (if (numberp x)
-						(round (+ x 255) 2)
-						x))
-					rgb))
-			 (apply #'sdl:color
-				(mapcar #'(lambda (x);darken
-					    (if (numberp x)
-						(round (+ x 0) 2)
-						x))
-					rgb))
-			 ))
-		    (generate-colors 0 0 0 (length func-list))))
-	   (win-width (sdl:width surface))
-	   (win-height (sdl:height surface))
-	   (x-range (- max-x min-x))
-	   (x-grid-step (mark-lines x-range)) ; Used for grid lines
-	   (x-scale (/ win-width x-range))
-	   (x-step (/ x-range win-width)) ; rational, used to iterate arguments
-	   (screen-x0 (* min-x (/ win-width x-range)))
-	   )
+    (multiple-value-bind (max-y
+			  min-y
+			  y-values)
+	(loop
+	   for x from min-x upto max-x by x-step
+	   with max-y = most-negative-fixnum
+	   and min-y = most-positive-fixnum
+	   collect
 
-      (multiple-value-bind (max-y
-			    min-y
-			    y-values)
-	  
-	  (loop
-	     for x from min-x upto max-x by x-step
-	     with max-y = most-negative-fixnum
-	     and min-y = most-positive-fixnum
-	     collect
-	       (loop for y in (mapcar #'(lambda (func)
-					  (handler-case 
-					      (funcall func x)
-					    (division-by-zero () 'ZERO-DIVISION)))
-				      func-list)
-		  if (realp y)
-		  do
-		    (setf max-y (max max-y y)
-			  min-y (min min-y y))
-		  else if (complexp y)
-		  do
-		    (setf max-y (max max-y
-				     (max (realpart y)
-					  (imagpart y)))
-			  min-y (min min-y
-				     (min (realpart y)
-					  (imagpart y))))
-		  collect y into step-y-values
-		    
-		  finally (return step-y-values))
-	     into y-values
-	     finally (return (values max-y min-y y-values)))
+	     (loop for y in
+		  (mapcar #'(lambda (func)
+			      (if (listp func) ; func comes with accessors?
+				  (let ((func-result (funcall (car func) x)))
+				    (mapcar #'(lambda (key)
+						(handler-case 
+						    (funcall key func-result)
+						  (division-by-zero ()
+						    'ZERO-DIVISION)))
+					    (cdr func)))
+				  (handler-case
+				      (funcall func x)
+				    (division-by-zero () 'ZERO-DIVISION))))
+			  func-list)
+		if (listp y)
+		do (setf max-y (apply #'max (cons max-y (mapcar #'abs-max y)))
+			 min-y (apply #'min (cons min-y (mapcar #'abs-min y))))
+		else if (numberp y)
+		do (setf max-y (max max-y (abs-max y))
+			 min-y (min min-y (abs-min y)))
+		collect y into step-y-values
+		  
+		finally (return step-y-values))
+	   into y-values
+	   finally (return (values max-y min-y y-values)))
 
-	(format t "max ~a min ~a, first: ~a~%" max-y min-y (car y-values))
+      (format t "max ~a min ~a, first: ~a~%" max-y min-y (car y-values))
 
-	(let* ((pre-y-range (- max-y min-y)) ; range in value
-	       (slack-mod (* pre-y-range slack)) ; total visible range in value
-	       (y-range (+ pre-y-range slack-mod))
-	       (y-grid-step (mark-lines y-range))
-	       ;;handle funcs which always return the same value within range:
-	       (y-scale (if (zerop y-range)
-			    100
-			    (/ win-height y-range)))
-	       (slack-pixels (* 1/2 slack-mod y-scale)) ; pixels to add at y-extremes
-	       ;; screen-y0 is the location of actual y=0 line in relation to low
-	       ;; border of window and inverted.
-	       ;; If func produces 0 ...-> negative numbers and window is 500
-	       ;; tall, screen-y0 will be -500 etc..
-	       (screen-y0 (* min-y
-			     y-scale)))
+      (let* ((pre-y-range (- max-y min-y)) ; range in value
+	     (slack-mod (* pre-y-range slack)) ; total visible range in value
+	     (y-range (+ pre-y-range slack-mod))
+	     (y-grid-step (mark-lines y-range))
+	     ;;handle funcs which always return the same value within range:
+	     (y-scale (if (zerop y-range)
+			  100
+			  (/ win-height y-range)))
+	     (slack-pixels (* 1/2 slack-mod y-scale)) ; pixels to add at y-extremes
+	     ;; screen-y0 is the location of actual y=0 line in relation to low
+	     ;; border of window and inverted.
+	     ;; If func produces 0 ...-> negative numbers and window is 500
+	     ;; tall, screen-y0 will be -500 etc..
+	     (screen-y0 (* min-y
+			   y-scale)))
 
-	  (when (zerop y-range)
-	    (setf screen-y0 (/ win-height -2)))
+	(when (zerop y-range)
+	  (setf screen-y0 (/ win-height -2)))
 
-	  ;;debug:
-	  (format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%screen-y0 ~a and x0 ~a~%"
-		  pre-y-range
-		  y-range
-		  slack-mod
-		  (* slack-mod y-scale)
-		  y-scale
-		  screen-y0
-		  screen-x0)
+	;;debug:
+	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%screen-y0 ~a and x0 ~a~%"
+		pre-y-range
+		y-range
+		slack-mod
+		(* slack-mod y-scale)
+		y-scale
+		screen-y0
+		screen-x0)
 
 ;;; Draw horizontal grid:
-	  (multiple-value-bind
-		(quo remainder)
-	      (floor min-y y-grid-step)
-	    (declare (ignore quo))
-	    
-	    (loop for y from (- min-y remainder)
-	       ;; range increased by one line so grid
-	       ;; extends to all values even with slack:
-	       to (+ max-y y-grid-step) by y-grid-step
-	       do (draw-horizontal (round (+ (* y y-scale)
-					     (- screen-y0)
-					     slack-pixels))
-				   (sdl:color :r 50 :g 50 :b 50)
-				   surface
-				   :mark (format nil "~a" (float y)))))
-
-;;; Draw vertical grid:
-	  (multiple-value-bind
-		(quo remainder)
-	      (floor min-x x-grid-step)
-	    (declare (ignore quo))
-
-	    (loop for x from (- min-x remainder)
-	       to max-x by x-grid-step
-	       do (draw-vertical (round (- (* x x-scale)
-					   screen-x0))
+	(multiple-value-bind
+	      (quo remainder)
+	    (floor min-y y-grid-step)
+	  (declare (ignore quo))
+	  
+	  (loop for y from (- min-y remainder)
+	     ;; range increased by one line so grid
+	     ;; extends to all values even with slack:
+	     to (+ max-y y-grid-step) by y-grid-step
+	     do (draw-horizontal (round (+ (* y y-scale)
+					   (- screen-y0)
+					   slack-pixels))
 				 (sdl:color :r 50 :g 50 :b 50)
 				 surface
-				 :mark (format nil "~a" (float x)))))
-	  
-	  (draw-horizontal (round (+ (- screen-y0)
-				     slack-pixels
-				     ))
-			   (sdl:color :r 150 :g 150 :b 150)
-			   surface
-			   :mark "0")
+				 :mark (format nil "~a" (float y)))))
 
-	  (draw-vertical (round (- screen-x0))
+;;; Draw vertical grid:
+	(multiple-value-bind
+	      (quo remainder)
+	    (floor min-x x-grid-step)
+	  (declare (ignore quo))
+
+	  (loop for x from (- min-x remainder)
+	     to max-x by x-grid-step
+	     do (draw-vertical (round (- (* x x-scale)
+					 screen-x0))
+			       (sdl:color :r 50 :g 50 :b 50)
+			       surface
+			       :mark (format nil "~a" (float x)))))
+	
+	(draw-horizontal (round (+ (- screen-y0)
+				   slack-pixels
+				   ))
 			 (sdl:color :r 150 :g 150 :b 150)
 			 surface
 			 :mark "0")
 
-	  
-	  ;; Draw the function:
-	  (loop for x from 0 below win-width
-	     for y-list in y-values
-	       
-	     do (loop for y in y-list
-		   for color-set in color-list
-		   if (realp y)
-		   do (draw-pixel (round x)
-				  (round (- (+ (* y y-scale)
-					       slack-pixels)
-					    screen-y0))
-				  surface (car color-set))
-		   else
-		   if (complexp y)
-		   do (draw-pixel (round x)
-				  (round (- (+ (* (realpart y) y-scale)
-					       slack-pixels)
-					    screen-y0))
-				  surface
-				  (cadr color-set))
-		     (draw-pixel (round x)
-				 (round (- (+ (* (imagpart y) y-scale)
-					      slack-pixels)
-					   screen-y0))
-				 surface
-				 (caddr color-set))
-		   else ; note that weird values might not be caught into dataset
-		   if (or (eq y 'ZERO-DIVISION)
-			  (null y))
-		   do
-		     (draw-vertical x
-				    (sdl:color :r 100 :g 0 :b 0)
-				    surface)
-		     ))))))
+	(draw-vertical (round (- screen-x0))
+		       (sdl:color :r 150 :g 150 :b 150)
+		       surface
+		       :mark "0")
+
+	
+	;; Draw the function:
+	(loop for x from 0 below win-width
+	   for y-list in y-values
+	     
+	   do (loop for y in y-list
+		 for color-set in color-list
+		   
+		 if (numberp y)
+		 do (draw-value x y y-scale slack-pixels screen-y0
+				surface color-set)
+		 else if (listp y)
+		 do (dolist (key-y y)
+		      (draw-value x key-y y-scale slack-pixels screen-y0
+				  surface color-set))
+		   
+		   ))))))
 
 
+;; Let's go with elements in func-list as (func key-list) or just func
+;; key-list is list of functions to be applied to func's result
+;;for example:
+;; (plot (list
+;;         (list #'sqrt #'imagpart #'realpart)
+;;         (list #'log #'imagpart #'realpart))
+;;       :from -11 :to -1)
 (defun plot (func-list &key (from 0) (to 100) (slack 1/20) (window-width 500) (window-height 500))
   (declare ((rational 0 1) slack))
   (sdl:initialise-default-font)
