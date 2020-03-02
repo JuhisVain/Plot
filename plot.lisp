@@ -119,6 +119,16 @@ and value are both at max."
 	    colors))
     (reverse colors)))
 
+(defstruct plotfunc
+  (function) ; master function
+  (subs)) ; keys, accessors or whatever to be called with master's value
+
+(defun plotfunc-evaluate (plotfunc x)
+  (let ((fvalue (funcall (plotfunc-function plotfunc) x)))
+    (mapcar #'(lambda (sub)
+		(funcall sub fvalue))
+	    (plotfunc-subs plotfunc))))
+
 (defun abs-max (number)
   "Get greatest value component of NUMBER."
   (declare (number number))
@@ -318,14 +328,6 @@ dynamic based on extreme values on X's range."
 
 		 do (draw-value x y y-scale slack-pixels screen-y0
 				surface color-set)
-;		 if (numberp y)
-;		 do (draw-value x y y-scale slack-pixels screen-y0
-;				surface color-set)
-;		 else if (listp y)
-;		 do (dolist (key-y y)
-;		      (draw-value x key-y y-scale slack-pixels screen-y0
-;				  surface color-set))
-		   
 		   ))))))
 
 
