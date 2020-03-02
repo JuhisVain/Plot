@@ -143,16 +143,26 @@ and value are both at max."
 				screen-y0))
 		      surface (car color-set)))
     ;;the components of a complex must be real:
-    (complex (draw-value (round x-coord)
+    (complex (draw-value x-coord
 			 (realpart value)
 			 y-scale slack screen-y0 surface (cdr color-set))
-	     (draw-value (round x-coord)
+	     (draw-value x-coord
 			 (imagpart value)
 			 y-scale slack screen-y0 surface (cddr color-set)))
+    (list (dolist (sub value)
+	    (draw-value x-coord
+			sub
+			y-scale slack screen-y0 surface color-set)))
     (t (draw-vertical x-coord ; bad value, most likely zero div
 		      (sdl:color :r 100 :g 0 :b 0)
 		      surface)))
   NIL)
+
+(defun plotcall (function &rest arguments)
+  "Funcall with handlers etc. for plottable data."
+  (handler-case
+      (apply function arguments)
+    (division-by-zero () 'ZERO-DIVISION)))
 
 (defun draw-function (func-list
 		      min-x max-x
@@ -204,20 +214,23 @@ dynamic based on extreme values on X's range."
 	     (loop for y in
 		  (mapcar #'(lambda (func)
 			      (if (listp func) ; func comes with accessors?
-				  (let ((func-result (funcall (car func) x)))
-				    (mapcar #'(lambda (key)
-						(handler-case 
-						    (funcall key func-result)
-						  (division-by-zero ()
-						    'ZERO-DIVISION)))
-					    (cdr func)))
-				  (handler-case
-				      (funcall func x)
-				    (division-by-zero () 'ZERO-DIVISION))))
+				  (let ((func-result (plotcall (car func) x)))
+				    (if (eq func-result 'ZERO-DIVISION)
+					func-result
+					(mapcar #'(lambda (key)
+						    (plotcall key func-result))
+						(cdr func))))
+				  (plotcall func x)))
 			  func-list)
-		if (listp y)
-		do (setf max-y (apply #'max (cons max-y (mapcar #'abs-max y)))
-			 min-y (apply #'min (cons min-y (mapcar #'abs-min y))))
+		if (listp y) ; now this is functional programming!
+		do (setf max-y (apply #'max
+				      (cons max-y
+					    (mapcar #'abs-max
+						    (remove-if #'symbolp y))))
+			 min-y (apply #'min
+				      (cons min-y
+					    (mapcar #'abs-min
+						    (remove-if #'symbolp y)))))
 		else if (numberp y)
 		do (setf max-y (max max-y (abs-max y))
 			 min-y (min min-y (abs-min y)))
@@ -228,6 +241,7 @@ dynamic based on extreme values on X's range."
 	   finally (return (values max-y min-y y-values)))
 
       (format t "max ~a min ~a, first: ~a~%" max-y min-y (car y-values))
+      (defparameter *yv* y-values)
 
       (let* ((pre-y-range (- max-y min-y)) ; range in value
 	     (slack-mod (* pre-y-range slack)) ; total visible range in value
@@ -249,14 +263,15 @@ dynamic based on extreme values on X's range."
 	  (setf screen-y0 (/ win-height -2)))
 
 	;;debug:
-	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%screen-y0 ~a and x0 ~a~%"
+	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		pre-y-range
 		y-range
 		slack-mod
 		(* slack-mod y-scale)
 		y-scale
 		screen-y0
-		screen-x0)
+		screen-x0
+		x-scale)
 
 ;;; Draw horizontal grid:
 	(multiple-value-bind
@@ -308,14 +323,16 @@ dynamic based on extreme values on X's range."
 	     
 	   do (loop for y in y-list
 		 for color-set in color-list
-		   
-		 if (numberp y)
+
 		 do (draw-value x y y-scale slack-pixels screen-y0
 				surface color-set)
-		 else if (listp y)
-		 do (dolist (key-y y)
-		      (draw-value x key-y y-scale slack-pixels screen-y0
-				  surface color-set))
+;		 if (numberp y)
+;		 do (draw-value x y y-scale slack-pixels screen-y0
+;				surface color-set)
+;		 else if (listp y)
+;		 do (dolist (key-y y)
+;		      (draw-value x key-y y-scale slack-pixels screen-y0
+;				  surface color-set))
 		   
 		   ))))))
 
