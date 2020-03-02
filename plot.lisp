@@ -274,35 +274,27 @@ dynamic based on extreme values on X's range."
 		x-scale)
 
 ;;; Draw horizontal grid:
-	(multiple-value-bind
-	      (quo remainder)
-	    (floor min-y y-grid-step)
-	  (declare (ignore quo))
-	  
-	  (loop for y from (- min-y remainder)
-	     ;; range increased by one line so grid
-	     ;; extends to all values even with slack:
-	     to (+ max-y y-grid-step) by y-grid-step
-	     do (draw-horizontal (round (+ (* y y-scale)
-					   (- screen-y0)
-					   slack-pixels))
-				 (sdl:color :r 50 :g 50 :b 50)
-				 surface
-				 :mark (format nil "~a" (float y)))))
-
-;;; Draw vertical grid:
-	(multiple-value-bind
-	      (quo remainder)
-	    (floor min-x x-grid-step)
-	  (declare (ignore quo))
-
-	  (loop for x from (- min-x remainder)
-	     to max-x by x-grid-step
-	     do (draw-vertical (round (- (* x x-scale)
-					 screen-x0))
+	
+	(loop for y from (- min-y (rem min-y y-grid-step))
+	   ;; range increased by one line so grid
+	   ;; extends to all values even with slack:
+	   to (+ max-y y-grid-step) by y-grid-step
+	   do (draw-horizontal (round (+ (* y y-scale)
+					 (- screen-y0)
+					 slack-pixels))
 			       (sdl:color :r 50 :g 50 :b 50)
 			       surface
-			       :mark (format nil "~a" (float x)))))
+			       :mark (format nil "~a" (float y))))
+
+;;; Draw vertical grid:
+
+	(loop for x from (- min-x (rem min-x x-grid-step))
+	   to max-x by x-grid-step
+	   do (draw-vertical (round (- (* x x-scale)
+				       screen-x0))
+			     (sdl:color :r 50 :g 50 :b 50)
+			     surface
+			     :mark (format nil "~a" (float x))))
 	
 	(draw-horizontal (round (+ (- screen-y0)
 				   slack-pixels
