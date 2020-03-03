@@ -119,6 +119,20 @@ and value are both at max."
 	    colors))
     (reverse colors)))
 
+(defun bind-colors (func-list color-list)
+  "Uses colors in COLOR-LIST to build a structural copy of FUNC-LIST,
+translating functions to colors and plotfuncs to lists."
+  (let ((color-stack color-list))
+    (labels ((reconstruct-in-colors (list)
+	       (mapcar #'(lambda (func)
+			   (typecase func
+			     (function
+			      (pop color-stack))
+			     (plotfunc
+			      (reconstruct-in-colors (plotfunc-subs func)))))
+		       list)))
+      (reconstruct-in-colors func-list))))
+
 (defstruct plotfunc
   (function) ; master function
   (subs)) ; keys, accessors or whatever to be called with master's value
