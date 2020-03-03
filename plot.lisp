@@ -126,7 +126,7 @@ and value are both at max."
 (defun plotfunc-evaluate (plotfunc x)
   (let ((fvalue (funcall (plotfunc-function plotfunc) x)))
     (mapcar #'(lambda (sub)
-		(funcall sub fvalue))
+		(plotcall sub fvalue))
 	    (plotfunc-subs plotfunc))))
 
 (defun abs-max (number)
@@ -179,7 +179,7 @@ and value are both at max."
 		      slack
 		      &optional
 			(surface sdl:*default-display*))
-  "Graphs (function (real) number) FUNC from MIN-X to MAX-X, y-scaling is
+  "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
   
   (let* ((color-list
@@ -223,13 +223,8 @@ dynamic based on extreme values on X's range."
 
 	     (loop for y in
 		  (mapcar #'(lambda (func)
-			      (if (listp func) ; func comes with accessors?
-				  (let ((func-result (plotcall (car func) x)))
-				    (if (eq func-result 'ZERO-DIVISION)
-					func-result
-					(mapcar #'(lambda (key)
-						    (plotcall key func-result))
-						(cdr func))))
+			      (if (plotfunc-p func)
+				  (plotfunc-evaluate func x)
 				  (plotcall func x)))
 			  func-list)
 		if (listp y) ; now this is functional programming!
@@ -251,7 +246,6 @@ dynamic based on extreme values on X's range."
 	   finally (return (values max-y min-y y-values)))
 
       (format t "max ~a min ~a, first: ~a~%" max-y min-y (car y-values))
-      (defparameter *yv* y-values)
 
       (let* ((pre-y-range (- max-y min-y)) ; range in value
 	     (slack-mod (* pre-y-range slack)) ; total visible range in value
@@ -273,7 +267,8 @@ dynamic based on extreme values on X's range."
 	  (setf screen-y0 (/ win-height -2)))
 
 	;;debug:
-	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%screen-y0 ~a and x0 ~a, x-scale: ~a~%"
+	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%
+screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		pre-y-range
 		y-range
 		slack-mod
@@ -347,7 +342,14 @@ dynamic based on extreme values on X's range."
 		:sw t)
     ;;(setf (sdl:frame-rate) 30)
 
-    (draw-function func-list from to slack)
+    (draw-function
+     (mapcar #'(lambda (func)
+		 (if (listp func)
+		     (make-plotfunc :function (car func)
+				    :subs (cdr func))
+		     func))
+	     func-list)
+     from to slack)
 
     (sdl:update-display)
     
