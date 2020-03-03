@@ -150,7 +150,11 @@ translating functions to colors and plotfuncs to lists."
   (labels ((rec-plot-len (flist sum)
 	     (etypecase (car flist)
 	       (null sum)
-	       (plotfunc (rec-plot-len (plotfunc-subs (car flist)) sum))
+	       (plotfunc
+		(rec-plot-len
+		 (cdr flist)
+		 (+ sum
+		    (rec-plot-len (plotfunc-subs (car flist)) sum))))
 	       (function (rec-plot-len (cdr flist) (1+ sum))))))
     (rec-plot-len func-list 0)))
 
@@ -176,18 +180,35 @@ translating functions to colors and plotfuncs to lists."
 		      (round (- (+ (* value y-scale)
 				   slack)
 				screen-y0))
-		      surface (car color-set)))
+		      surface
+		      (apply #'sdl:color color-set)
+		      ))
     ;;the components of a complex must be real:
     (complex (draw-value x-coord
 			 (realpart value)
-			 y-scale slack screen-y0 surface (cdr color-set))
+			 y-scale slack screen-y0 surface
+			 (apply #'sdl:color
+				(mapcar #'(lambda (x);lighten
+					    (if (numberp x)
+						(round (+ x 255) 2)
+						x))
+					color-set)))
 	     (draw-value x-coord
 			 (imagpart value)
-			 y-scale slack screen-y0 surface (cddr color-set)))
-    (list (dolist (sub value)
-	    (draw-value x-coord
-			sub
-			y-scale slack screen-y0 surface color-set)))
+			 y-scale slack screen-y0 surface
+			 (apply #'sdl:color
+				(mapcar #'(lambda (x);darken
+					    (if (numberp x)
+						(round x 2)
+						x))
+					color-set))))
+    (list
+     (do ((value-head value (cdr value-head))
+	  (color-set-head color-set (cdr color-set-head)))
+	 ((null value-head))
+       (draw-value x-coord
+		   (car value-head)
+		   y-scale slack screen-y0 surface (car color-set-head))))
     (t (draw-vertical x-coord ; bad value, most likely zero div
 		      (sdl:color :r 100 :g 0 :b 0)
 		      surface)))
@@ -208,26 +229,9 @@ translating functions to colors and plotfuncs to lists."
 dynamic based on extreme values on X's range."
   
   (let* ((color-list
-	  (mapcar #'(lambda (rgb)
-		      (list
-		       ;; default color for normie numbers:
-		       (apply #'sdl:color rgb)
-		       ;; complex realpart color:
-		       (apply #'sdl:color
-			      (mapcar #'(lambda (x);lighten
-					  (if (numberp x)
-					      (round (+ x 255) 2)
-					      x))
-				      rgb))
-		       ;; complex imagpart color:
-		       (apply #'sdl:color
-			      (mapcar #'(lambda (x);darken
-					  (if (numberp x)
-					      (round x 2)
-					      x))
-				      rgb))
-		       ))
-		  (generate-colors 0 0 0 (length func-list))))
+	  (bind-colors func-list
+		       (generate-colors 0 0 0
+					(plottable-length func-list))))
 	 (win-width (sdl:width surface))
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
@@ -338,14 +342,11 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		       surface
 		       :mark "0")
 
-	
 	;; Draw the function:
 	(loop for x from 0 below win-width
 	   for y-list in y-values
-	     
 	   do (loop for y in y-list
 		 for color-set in color-list
-
 		 do (draw-value x y y-scale slack-pixels screen-y0
 				surface color-set)
 		   ))))))
