@@ -138,7 +138,9 @@ translating functions to colors and plotfuncs to lists."
       (reconstruct-in-colors func-list))))
 
 (defun plotfunc-evaluate (plotfunc x)
-  (let ((fvalue (funcall (plotfunc-function plotfunc) x)))
+  (let ((fvalue (plotcall (plotfunc-function plotfunc) x)))
+    ;; plotcall might produce a symbol to represent an error
+    ;; which the user might want to handle himself...
     (mapcar #'(lambda (sub)
 		(plotcall sub fvalue))
 	    (plotfunc-subs plotfunc))))
