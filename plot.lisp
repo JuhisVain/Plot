@@ -10,10 +10,25 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
-(defun testfun (x) ; breaks from 0 to 0.1
+(defun testfun (x)
   (if (<= x 400)
       (+ 0.5 (/ (cos (/ x 127.324)) 2))
       0))
+
+(defun testdoublefun (x)
+  (if (<= x 400)
+      (+ 0.5 (/ (cos (/ x 127.324d0)) 2))
+      0))
+
+(defun test-testfuns ()
+  (plot (list (list #'testfun
+		    #'(lambda (y) ;red
+			(+ y 0.00000001d0))) ;shift up
+	      (list #'testdoublefun
+		    #'identity ;green
+		    #'(lambda (x) ;blue
+			(coerce x 'single-float))))
+	:from 0 :to 0.3))
 
 ;; It would be cool if methods could specialize on ftypes
 (defun get-arg-count (func)
@@ -272,8 +287,16 @@ dynamic based on extreme values on X's range."
 		  
 		finally (return step-y-values))
 	   into y-values
-	   finally (return (values max-y min-y y-values)))
-
+	   finally (return (values
+			    (cond ((or (floatp max-y)
+				       (floatp min-y))
+				   (return
+				     (values (coerce max-y 'double-float)
+					     (coerce min-y 'double-float)
+					     y-values)))
+				  (t (return
+				       (values max-y min-y y-values)))))))
+      
       (format t "max ~a min ~a, first: ~a~%" max-y min-y (car y-values))
 
       (let* ((pre-y-range (- max-y min-y)) ; range in value
@@ -318,7 +341,7 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 					 slack-pixels))
 			       (sdl:color :r 50 :g 50 :b 50)
 			       surface
-			       :mark (format nil "~a" (float y))))
+			       :mark (format nil "~a" y)))
 
 ;;; Draw vertical grid:
 
@@ -328,7 +351,7 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 				       screen-x0))
 			     (sdl:color :r 50 :g 50 :b 50)
 			     surface
-			     :mark (format nil "~a" (float x))))
+			     :mark (format nil "~a" x)))
 	
 	(draw-horizontal (round (+ (- screen-y0)
 				   slack-pixels
