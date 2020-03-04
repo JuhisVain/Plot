@@ -137,6 +137,12 @@ translating functions to colors and plotfuncs to lists."
 		       list)))
       (reconstruct-in-colors func-list))))
 
+(defun plotcall (function &rest arguments)
+  "Funcall with handlers etc. for plottable data."
+  (handler-case
+      (apply function arguments)
+    (division-by-zero () 'ZERO-DIVISION)))
+
 (defun plotfunc-evaluate (plotfunc x)
   (let ((fvalue (plotcall (plotfunc-function plotfunc) x)))
     ;; plotcall might produce a symbol to represent an error
@@ -213,12 +219,6 @@ translating functions to colors and plotfuncs to lists."
 		      (sdl:color :r 100 :g 0 :b 0)
 		      surface)))
   NIL)
-
-(defun plotcall (function &rest arguments)
-  "Funcall with handlers etc. for plottable data."
-  (handler-case
-      (apply function arguments)
-    (division-by-zero () 'ZERO-DIVISION)))
 
 (defun draw-function (func-list
 		      min-x max-x
