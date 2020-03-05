@@ -113,12 +113,9 @@ and value are both at max."
 			 6)))
 	     (round
 	      (* 255
-		 (- 1 (max
-		       0
-		       (min
-			k
-			(- 4 k)
-			1))))))))
+		 (- 1 (max 0 (min k
+				  (- 4 k)
+				  1))))))))
     (list :r (voodoo 5)
 	  :g (voodoo 3)
 	  :b (voodoo 1))))
@@ -138,6 +135,13 @@ and value are both at max."
   (function) ; master function
   (subs)) ; keys, accessors or whatever to be called with master's value
 
+(defstruct funcdata
+  (function nil :type function)
+  (color-real)
+  (color-realpart)
+  (color-imagpart)
+  (label nil :type string))
+
 (defun bind-colors (func-list color-list)
   "Uses colors in COLOR-LIST to build a structural copy of FUNC-LIST,
 translating functions to colors and plotfuncs to lists."
@@ -151,6 +155,30 @@ translating functions to colors and plotfuncs to lists."
 			      (reconstruct-in-colors (plotfunc-subs func)))))
 		       list)))
       (reconstruct-in-colors func-list))))
+
+(defun bind-labels (func-list)
+  (labels ((reconstruct-in-strings (master list id)
+	     (mapcar #'(lambda (func)
+			 (typecase func
+			   (function (incf id)
+				     (concatenate 'string
+						  master
+						  (when master "-")
+						  (format nil "~a" id)))
+			   (symbol (incf id)
+				   (concatenate 'string
+						master
+						(when master "-")
+						(symbol-name func)))
+			   (plotfunc
+			    (reconstruct-in-strings
+			     (prog1
+				 (car (reconstruct-in-strings
+				       master (list (plotfunc-function func)) id))
+			       (incf id))
+			     (plotfunc-subs func) -1))))
+		     list)))
+    (reconstruct-in-strings nil func-list -1)))
 
 (defun plotcall (function &rest arguments)
   "Funcall with handlers etc. for plottable data."
