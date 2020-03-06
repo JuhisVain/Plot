@@ -180,6 +180,15 @@ translating functions to colors and plotfuncs to lists."
 		     list)))
     (reconstruct-in-strings nil func-list -1)))
 
+(defun to-plotfunc (func-list)
+  "Convert tree of functions to 'tree' of plotfuncs."
+  (mapcar #'(lambda (func)
+	      (if (listp func)
+		  (make-plotfunc :function (car func)
+				 :subs (convert-to-plotfuncs (cdr func)))
+		  func))
+	  func-list))
+
 (defun plotcall (function &rest arguments)
   "Funcall with handlers etc. for plottable data."
   (handler-case
