@@ -197,13 +197,12 @@ translating functions to colors and plotfuncs to lists."
 (defun plottable-length (func-list)
   "Counts the amount of functions to be plotted in FUNC-LIST."
   (labels ((rec-plot-len (flist sum)
-	     (etypecase (car flist)
+	     (typecase (car flist)
 	       (null sum)
 	       (plotfunc
 		(rec-plot-len
 		 (cdr flist)
-		 (+ sum
-		    (rec-plot-len (plotfunc-subs (car flist)) sum))))
+		 (rec-plot-len (plotfunc-subs (car flist)) sum)))
 	       (function (rec-plot-len (cdr flist) (1+ sum))))))
     (rec-plot-len func-list 0)))
 
