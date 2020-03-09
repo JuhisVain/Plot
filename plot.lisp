@@ -206,14 +206,17 @@ where the Xs are (integer 0 255)."
 							 (when master "-")
 							 (symbol-name func)))))
 				 (list
-				  (funcdata-gen
-				   (cdr func) 0
-				   (concatenate 'string ; master's name
-						master
-						(when master "-")
-						(if (functionp (car func))
-						    (format nil "~a" id)
-						    (symbol-name (car func)))))))
+				  (cons
+				   (funcdata-gen (list (car func))
+						 id master)
+				   (funcdata-gen
+				    (cdr func) 0
+				    (concatenate 'string ; master's name
+						 master
+						 (when master "-")
+						 (if (functionp (car func))
+						     (format nil "~a" id)
+						     (symbol-name (car func))))))))
 			     (incf id)))
 		       list)))
       (funcdata-gen input-func-list 0))))
