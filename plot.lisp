@@ -142,6 +142,82 @@ and value are both at max."
   (color-imagpart)
   (label nil :type string))
 
+(defun aux-colors (rgb-plist)
+  "Returns sdl:colors to be used to draw reals, realparts and imagparts.
+RGB-PLIST shoould be a property list like (:r x :g x :b x),
+where the Xs are (integer 0 255)."
+  (values (apply #'sdl:color rgb-plist)
+	  (apply #'sdl:color
+		 (mapcar #'(lambda (x) (typecase x
+					 (number (round (+ x 255) 2))
+					 (t x)))
+			 rgb-plist))
+	  (apply #'sdl:color
+		 (mapcar #'(lambda (x) (typecase x
+					 (number (round x 2))
+					 (t x)))
+			 rgb-plist))))
+
+(defun to-plotfunc (funcdata-list)
+  "Stores multipart functions' parts into plotfunc structures."
+  (mapcar #'(lambda (fdata)
+	      (typecase fdata
+		(funcdata fdata)
+		(list
+		 (make-plotfunc
+		  :function (car fdata)
+		  :subs (to-plotfunc (cdr fdata))))))
+	  funcdata-list))
+
+;;feed to above
+(defun to-funcdata (input-func-list)
+  (let ((color-stack
+	 (generate-colors
+	  0 0 0
+	  (plottable-count input-func-list))))
+    (labels ((funcdata-gen (list id &optional (master nil))
+	       (mapcar #'(lambda (func)
+			   (prog1 ; don't return incremented id
+			       (typecase func
+				 (function
+				  (multiple-value-bind
+					(real realpart imagpart)
+				      (aux-colors (pop color-stack))
+				    (make-funcdata
+				     :function func
+				     :color-real real
+				     :color-realpart realpart
+				     :color-imagpart imagpart
+				     :label (concatenate 'string
+							 master
+							 (when master "-")
+							 (format nil "~a" id)))))
+				 (symbol
+				  (multiple-value-bind
+					(real realpart imagpart)
+				      (aux-colors (pop color-stack))
+				    (make-funcdata
+				     :function (symbol-function func)
+				     :color-real real
+				     :color-realpart realpart
+				     :color-imagpart imagpart
+				     :label (concatenate 'string
+							 master
+							 (when master "-")
+							 (symbol-name func)))))
+				 (list
+				  (funcdata-gen
+				   (cdr func) 0
+				   (concatenate 'string ; master's name
+						master
+						(when master "-")
+						(if (functionp (car func))
+						    (format nil "~a" id)
+						    (symbol-name (car func)))))))
+			     (incf id)))
+		       list)))
+      (funcdata-gen input-func-list 0))))
+
 (defun bind-colors (func-list color-list)
   "Uses colors in COLOR-LIST to build a structural copy of FUNC-LIST,
 translating functions to colors and plotfuncs to lists."
@@ -170,6 +246,13 @@ translating functions to colors and plotfuncs to lists."
 						master
 						(when master "-")
 						(symbol-name func)))
+			   (list
+			    (reconstruct-in-strings
+			     (prog1
+				 (car (reconstruct-in-strings
+				       master (list (car func)) id))
+			       (incf id))
+			     (cdr func) -1))
 			   (plotfunc
 			    (reconstruct-in-strings
 			     (prog1
@@ -179,15 +262,6 @@ translating functions to colors and plotfuncs to lists."
 			     (plotfunc-subs func) -1))))
 		     list)))
     (reconstruct-in-strings nil func-list -1)))
-
-(defun to-plotfunc (func-list)
-  "Convert tree of functions to 'tree' of plotfuncs."
-  (mapcar #'(lambda (func)
-	      (if (listp func)
-		  (make-plotfunc :function (car func)
-				 :subs (convert-to-plotfuncs (cdr func)))
-		  func))
-	  func-list))
 
 (defun plotcall (function &rest arguments)
   "Funcall with handlers etc. for plottable data."
@@ -202,6 +276,24 @@ translating functions to colors and plotfuncs to lists."
     (mapcar #'(lambda (sub)
 		(plotcall sub fvalue))
 	    (plotfunc-subs plotfunc))))
+
+(defun plottable-count (func-list)
+  (labels ((rec-plot-len (flist sum)
+	     (typecase (car flist)
+	       (null sum)
+	       (list 
+		(rec-plot-len
+		 (cdr flist)
+		 (rec-plot-len (cdar flist) sum)))
+	       (symbol
+		(if (fboundp (car flist))
+		    (rec-plot-len (cdr flist) (1+ sum))
+		    (rec-plot-len (cdr flist)
+				  (rec-plot-len
+				   (list (symbol-value (car flist)))
+				   sum))))
+	       (function (rec-plot-len (cdr flist) (1+ sum))))))
+    (rec-plot-len func-list 0)))
 
 (defun plottable-length (func-list)
   "Counts the amount of functions to be plotted in FUNC-LIST."
