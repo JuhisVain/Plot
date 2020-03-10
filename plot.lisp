@@ -173,47 +173,54 @@ where the Xs are (integer 0 255)."
 (defun to-funcdata (input-func-list)
   (let ((color-stack
 	 (generate-colors
-	  0 0 0
+	  255 0 0
 	  (plottable-count input-func-list))))
-    (labels ((funcdata-gen (list id &optional (master nil))
+    (labels ((funcdata-gen (list id &key (sub-of nil) (is-master nil))
 	       (mapcar #'(lambda (func)
 			   (prog1 ; don't return incremented id
 			       (typecase func
 				 (function
 				  (multiple-value-bind
 					(real realpart imagpart)
-				      (aux-colors (pop color-stack))
+				      (if is-master
+					  (values nil nil nil)
+					  (aux-colors (pop color-stack)))
 				    (make-funcdata
 				     :function func
 				     :color-real real
 				     :color-realpart realpart
 				     :color-imagpart imagpart
 				     :label (concatenate 'string
-							 master
-							 (when master "-")
+							 sub-of
+							 (when sub-of "-")
 							 (format nil "~a" id)))))
 				 (symbol
 				  (multiple-value-bind
 					(real realpart imagpart)
-				      (aux-colors (pop color-stack))
+				      (if is-master
+					  (values nil nil nil)
+					  (aux-colors (pop color-stack)))
 				    (make-funcdata
 				     :function (symbol-function func)
 				     :color-real real
 				     :color-realpart realpart
 				     :color-imagpart imagpart
 				     :label (concatenate 'string
-							 master
-							 (when master "-")
+							 sub-of
+							 (when sub-of "-")
 							 (symbol-name func)))))
 				 (list
-				  (cons
+				  (append
 				   (funcdata-gen (list (car func))
-						 id master)
+						 id
+						 :sub-of sub-of
+						 :is-master t)
 				   (funcdata-gen
 				    (cdr func) 0
+				    :sub-of
 				    (concatenate 'string ; master's name
-						 master
-						 (when master "-")
+						 sub-of
+						 (when sub-of "-")
 						 (if (functionp (car func))
 						     (format nil "~a" id)
 						     (symbol-name (car func))))))))
@@ -269,7 +276,7 @@ translating functions to colors and plotfuncs to lists."
 (defun plotcall (function &rest arguments)
   "Funcall with handlers etc. for plottable data."
   (handler-case
-      (apply function arguments)
+      (apply (funcdata-function function) arguments)
     (division-by-zero () 'ZERO-DIVISION)))
 
 (defun plotfunc-evaluate (plotfunc x)
@@ -277,7 +284,10 @@ translating functions to colors and plotfuncs to lists."
     ;; plotcall might produce a symbol to represent an error
     ;; which the user might want to handle himself...
     (mapcar #'(lambda (sub)
-		(plotcall sub fvalue))
+		(etypecase sub
+		  (funcdata
+		   (plotcall sub fvalue))
+		  (plotfunc (plotfunc-evaluate sub x))))
 	    (plotfunc-subs plotfunc))))
 
 (defun plottable-count (func-list)
@@ -310,6 +320,14 @@ translating functions to colors and plotfuncs to lists."
 	       (function (rec-plot-len (cdr flist) (1+ sum))))))
     (rec-plot-len func-list 0)))
 
+(defun extract-numbers (tree)
+  "Get flat list of numbers in TREE."
+  (loop for element in tree
+     append (cond ((listp element)
+		   (extract-numbers element))
+		  ((numberp element)
+		   (list element)))))
+
 (defun abs-max (number)
   "Get greatest value component of NUMBER."
   (declare (number number))
@@ -326,47 +344,42 @@ translating functions to colors and plotfuncs to lists."
 	   (realpart number))
       number))
 
-(defun draw-value (x-coord value y-scale slack screen-y0 surface color-set)
+(defun draw-value (x-coord value y-scale slack screen-y0 surface pfunc)
   (typecase value
     (real (draw-pixel (round x-coord)
 		      (round (- (+ (* value y-scale)
 				   slack)
 				screen-y0))
 		      surface
-		      (apply #'sdl:color color-set)
-		      ))
+		      (typecase pfunc
+			(funcdata
+			 (funcdata-color-real pfunc))
+			(sdl:color
+			 pfunc))))
     ;;the components of a complex must be real:
     (complex (draw-value x-coord
 			 (realpart value)
 			 y-scale slack screen-y0 surface
-			 (apply #'sdl:color
-				(mapcar #'(lambda (x);lighten
-					    (if (numberp x)
-						(round (+ x 255) 2)
-						x))
-					color-set)))
+			 (funcdata-color-realpart pfunc))
 	     (draw-value x-coord
 			 (imagpart value)
 			 y-scale slack screen-y0 surface
-			 (apply #'sdl:color
-				(mapcar #'(lambda (x);darken
-					    (if (numberp x)
-						(round x 2)
-						x))
-					color-set))))
+			 (funcdata-color-imagpart pfunc)))
     (list
      (do ((value-head value (cdr value-head))
-	  (color-set-head color-set (cdr color-set-head)))
+	  (sub-pfunc-head (plotfunc-subs pfunc) (cdr sub-pfunc-head))
+	  ;;(color-set-head color-set (cdr color-set-head))
+	  )
 	 ((null value-head))
        (draw-value x-coord
 		   (car value-head)
-		   y-scale slack screen-y0 surface (car color-set-head))))
+		   y-scale slack screen-y0 surface (car sub-pfunc-head))))
     (t (draw-vertical x-coord ; bad value, most likely zero div
 		      (sdl:color :r 100 :g 0 :b 0)
 		      surface)))
   NIL)
 
-(defun draw-function (func-list
+(defun draw-function (input-func-list
 		      min-x max-x
 		      slack
 		      &optional
@@ -374,10 +387,11 @@ translating functions to colors and plotfuncs to lists."
   "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
   
-  (let* ((color-list
-	  (bind-colors func-list
-		       (generate-colors 0 0 0
-					(plottable-length func-list))))
+  (let* (;;(color-list
+	 ;;(bind-colors func-list
+	 ;;	       (generate-colors 0 0 0
+	 ;;				(plottable-length func-list))))
+	 (pfunc-list (to-plotfunc (to-funcdata input-func-list)))
 	 (win-width (sdl:width surface))
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
@@ -401,16 +415,12 @@ dynamic based on extreme values on X's range."
 			      (if (plotfunc-p func)
 				  (plotfunc-evaluate func x)
 				  (plotcall func x)))
-			  func-list)
+			  pfunc-list)
 		if (listp y) ; now this is functional programming!
-		do (setf max-y (apply #'max
-				      (cons max-y
-					    (mapcar #'abs-max
-						    (remove-if #'symbolp y))))
-			 min-y (apply #'min
-				      (cons min-y
-					    (mapcar #'abs-min
-						    (remove-if #'symbolp y)))))
+		do (setf max-y (apply #'abs-max
+				      (cons max-y (extract-numbers y)))
+			 min-y (apply #'abs-min
+				      (cons min-y (extract-numbers y))))
 		else if (numberp y)
 		do (setf max-y (max max-y (abs-max y))
 			 min-y (min min-y (abs-min y)))
@@ -500,9 +510,9 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	(loop for x from 0 below win-width
 	   for y-list in y-values
 	   do (loop for y in y-list
-		 for color-set in color-list
+		 for pfunc in pfunc-list
 		 do (draw-value x y y-scale slack-pixels screen-y0
-				surface color-set)
+				surface pfunc)
 		   ))))))
 
 
@@ -523,12 +533,13 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
     ;;(setf (sdl:frame-rate) 30)
 
     (draw-function
-     (mapcar #'(lambda (func)
-		 (if (listp func)
-		     (make-plotfunc :function (car func)
-				    :subs (cdr func))
-		     func))
-	     func-list)
+     ;;     (mapcar #'(lambda (func)
+     ;;		 (if (listp func)
+     ;;		     (make-plotfunc :function (car func)
+     ;;				    :subs (cdr func))
+     ;;		     func))
+     ;;	     func-list)
+     func-list
      from to slack)
 
     (sdl:update-display)
