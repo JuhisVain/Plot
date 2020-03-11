@@ -328,21 +328,27 @@ translating functions to colors and plotfuncs to lists."
 		  ((numberp element)
 		   (list element)))))
 
-(defun abs-max (number)
-  "Get greatest value component of NUMBER."
-  (declare (number number))
-  (if (complexp number)
-      (max (imagpart number)
-	   (realpart number))
-      number))
+(defun complex-max (&rest numbers)
+  "Like max, but works on complex numbers returning greatest component."
+  (declare (ftype (function (&rest number) real)))
+  (apply #'max
+	 (mapcar #'(lambda (num)
+		     (if (complexp num)
+			 (max (imagpart num)
+			      (realpart num))
+			 num))
+		 numbers)))
 
-(defun abs-min (number)
-  "Get least value component of NUMBER."
-  (declare (number number))
-  (if (complexp number)
-      (min (imagpart number)
-	   (realpart number))
-      number))
+(defun complex-min (&rest numbers)
+  "Like min, but works on complex numbers returning least component."
+  (declare (ftype (function (&rest number) real)))
+  (apply #'min
+	 (mapcar #'(lambda (num)
+		     (if (complexp num)
+			 (min (imagpart num)
+			      (realpart num))
+			 num))
+		 numbers)))
 
 (defun draw-value (x-coord value y-scale slack screen-y0 surface pfunc)
   (typecase value
@@ -417,13 +423,13 @@ dynamic based on extreme values on X's range."
 				  (plotcall func x)))
 			  pfunc-list)
 		if (listp y) ; now this is functional programming!
-		do (setf max-y (apply #'abs-max
+		do (setf max-y (apply #'complex-max
 				      (cons max-y (extract-numbers y)))
-			 min-y (apply #'abs-min
+			 min-y (apply #'complex-min
 				      (cons min-y (extract-numbers y))))
 		else if (numberp y)
-		do (setf max-y (max max-y (abs-max y))
-			 min-y (min min-y (abs-min y)))
+		do (setf max-y (complex-max max-y y)
+			 min-y (complex-min min-y y))
 		collect y into step-y-values
 		  
 		finally (return step-y-values))
