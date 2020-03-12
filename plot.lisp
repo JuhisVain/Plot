@@ -11,9 +11,10 @@
   (gaussian x 1 0 150))
 
 (defun testbunch ()
-;;Strange behaviour on sbcl when trying to collect lambdas directly:
-;;(loop for i from 50 to 500 by 50
-;;	collect #'(lambda (x) (gaussian x 1 0 i)))
+  ;;Strange behaviour on sbcl when trying to collect lambdas directly
+  ;;; UPDATE: The closure is on i, which is set to be 550 CASE CLOSED
+  ;;(loop for i from 50 to 500 by 50
+  ;;	collect #'(lambda (x) (gaussian x 1 0 i)))
   (plot (mapcar #'(lambda (ele)
 		    #'(lambda (x) (gaussian x 1 0 ele)))
 		(loop for i from 50 to 500 by 50
