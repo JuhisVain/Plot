@@ -10,6 +10,15 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
+(defun testbunch ()
+;;Strange behaviour on sbcl when trying to collect lambdas directly:
+;;(loop for i from 50 to 500 by 50
+;;	collect #'(lambda (x) (gaussian x 1 0 i)))
+  (plot (mapcar #'(lambda (ele)
+		    #'(lambda (x) (gaussian x 1 0 ele)))
+		(loop for i from 50 to 500 by 50
+		   collect i)) :from 0 :to 1000))
+
 (defun testfun (x)
   (if (<= x 400)
       (+ 0.5 (/ (cos (/ x 127.324)) 2))
@@ -30,7 +39,6 @@
 			(coerce x 'single-float))))
 	:from 0 :to 0.3))
 
-;; It would be cool if methods could specialize on ftypes
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
 one of (1 2 NIL)"
