@@ -20,6 +20,13 @@
 		(loop for i from 50 to 500 by 50
 		   collect i)) :from 0 :to 1000))
 
+;; Previous is closures, this one is functions
+(defun testbunch2 ()
+  (plot #.`(list
+	    ,@(loop for i from 50 to 500 by 50
+		 collect `#'(lambda (x) (gaussian x 1 0 ,i))))
+	:from 0 :to 1000))
+
 (defun testfun (x)
   (if (<= x 400)
       (+ 0.5 (/ (cos (/ x 127.324)) 2))
