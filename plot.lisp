@@ -232,18 +232,6 @@ where the Xs are (integer 0 255)."
 	       (function (rec-plot-len (cdr flist) (1+ sum))))))
     (rec-plot-len func-list 0)))
 
-(defun plottable-length (func-list)
-  "Counts the amount of functions to be plotted in FUNC-LIST."
-  (labels ((rec-plot-len (flist sum)
-	     (typecase (car flist)
-	       (null sum)
-	       (plotfunc
-		(rec-plot-len
-		 (cdr flist)
-		 (rec-plot-len (plotfunc-subs (car flist)) sum)))
-	       (function (rec-plot-len (cdr flist) (1+ sum))))))
-    (rec-plot-len func-list 0)))
-
 (defun extract-numbers (tree)
   "Get flat list of numbers in TREE."
   (loop for element in tree
