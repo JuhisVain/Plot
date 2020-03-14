@@ -197,51 +197,6 @@ where the Xs are (integer 0 255)."
 		       list)))
       (funcdata-gen input-func-list 0))))
 
-(defun bind-colors (func-list color-list)
-  "Uses colors in COLOR-LIST to build a structural copy of FUNC-LIST,
-translating functions to colors and plotfuncs to lists."
-  (let ((color-stack color-list))
-    (labels ((reconstruct-in-colors (list)
-	       (mapcar #'(lambda (func)
-			   (typecase func
-			     (function
-			      (pop color-stack))
-			     (plotfunc
-			      (reconstruct-in-colors (plotfunc-subs func)))))
-		       list)))
-      (reconstruct-in-colors func-list))))
-
-(defun bind-labels (func-list)
-  (labels ((reconstruct-in-strings (master list id)
-	     (mapcar #'(lambda (func)
-			 (typecase func
-			   (function (incf id)
-				     (concatenate 'string
-						  master
-						  (when master "-")
-						  (format nil "~a" id)))
-			   (symbol (incf id)
-				   (concatenate 'string
-						master
-						(when master "-")
-						(symbol-name func)))
-			   (list
-			    (reconstruct-in-strings
-			     (prog1
-				 (car (reconstruct-in-strings
-				       master (list (car func)) id))
-			       (incf id))
-			     (cdr func) -1))
-			   (plotfunc
-			    (reconstruct-in-strings
-			     (prog1
-				 (car (reconstruct-in-strings
-				       master (list (plotfunc-function func)) id))
-			       (incf id))
-			     (plotfunc-subs func) -1))))
-		     list)))
-    (reconstruct-in-strings nil func-list -1)))
-
 (defun plotcall (function &rest arguments)
   "Funcall with handlers etc. for plottable data."
   (handler-case
@@ -362,11 +317,7 @@ translating functions to colors and plotfuncs to lists."
   "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
   
-  (let* (;;(color-list
-	 ;;(bind-colors func-list
-	 ;;	       (generate-colors 0 0 0
-	 ;;				(plottable-length func-list))))
-	 (pfunc-list (to-plotfunc (to-funcdata input-func-list)))
+  (let* ((pfunc-list (to-plotfunc (to-funcdata input-func-list)))
 	 (win-width (sdl:width surface))
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
