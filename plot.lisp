@@ -349,7 +349,6 @@ dynamic based on extreme values on X's range."
 	 (win-width (sdl:width surface))
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
-	 (x-grid-step (mark-lines x-range)) ; Used for grid lines
 	 (x-scale (/ win-width x-range))
 	 (x-step (/ x-range win-width)) ; rational, used to iterate arguments
 	 (screen-x0 (* min-x (/ win-width x-range)))
@@ -397,7 +396,6 @@ dynamic based on extreme values on X's range."
       (let* ((pre-y-range (- max-y min-y)) ; range in value
 	     (slack-mod (* pre-y-range slack)) ; total visible range in value
 	     (y-range (+ pre-y-range slack-mod))
-	     (y-grid-step (mark-lines y-range))
 	     ;;handle funcs which always return the same value within range:
 	     (y-scale (if (zerop y-range)
 			  100
