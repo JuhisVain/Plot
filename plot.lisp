@@ -297,6 +297,46 @@ where the Xs are (integer 0 255)."
 		      surface)))
   NIL)
 
+(defun draw-grid (min-y max-y y-range y-scale screen-y0
+		  min-x max-x x-range x-scale screen-x0
+		  slack-pixels surface)
+  (let ((y-grid-step (mark-lines y-range))
+	(x-grid-step (mark-lines x-range)))
+    
+;;; Draw horizontal grid:
+    (loop for y from (- min-y (rem min-y y-grid-step))
+       ;; range increased by one line so grid
+       ;; extends to all values even with slack:
+       to (+ max-y y-grid-step) by y-grid-step
+       do (draw-horizontal (round (+ (* y y-scale)
+				     (- screen-y0)
+				     slack-pixels))
+			   (sdl:color :r 50 :g 50 :b 50)
+			   surface
+			   :mark (format nil "~a" y)))
+
+;;; Draw vertical grid:
+    (loop for x from (- min-x (rem min-x x-grid-step))
+       to max-x by x-grid-step
+       do (draw-vertical (round (- (* x x-scale)
+				   screen-x0))
+			 (sdl:color :r 50 :g 50 :b 50)
+			 surface
+			 :mark (format nil "~a" x)))
+
+;;; Draw zeroes
+    (draw-horizontal (round (+ (- screen-y0)
+			       slack-pixels
+			       ))
+		     (sdl:color :r 150 :g 150 :b 150)
+		     surface
+		     :mark "0")
+
+    (draw-vertical (round (- screen-x0))
+		   (sdl:color :r 150 :g 150 :b 150)
+		   surface
+		   :mark "0")))
+
 (defun draw-function (input-func-list
 		      min-x max-x
 		      slack
@@ -385,40 +425,10 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		screen-x0
 		x-scale)
 
-;;; Draw horizontal grid:
-	
-	(loop for y from (- min-y (rem min-y y-grid-step))
-	   ;; range increased by one line so grid
-	   ;; extends to all values even with slack:
-	   to (+ max-y y-grid-step) by y-grid-step
-	   do (draw-horizontal (round (+ (* y y-scale)
-					 (- screen-y0)
-					 slack-pixels))
-			       (sdl:color :r 50 :g 50 :b 50)
-			       surface
-			       :mark (format nil "~a" y)))
-
-;;; Draw vertical grid:
-
-	(loop for x from (- min-x (rem min-x x-grid-step))
-	   to max-x by x-grid-step
-	   do (draw-vertical (round (- (* x x-scale)
-				       screen-x0))
-			     (sdl:color :r 50 :g 50 :b 50)
-			     surface
-			     :mark (format nil "~a" x)))
-	
-	(draw-horizontal (round (+ (- screen-y0)
-				   slack-pixels
-				   ))
-			 (sdl:color :r 150 :g 150 :b 150)
-			 surface
-			 :mark "0")
-
-	(draw-vertical (round (- screen-x0))
-		       (sdl:color :r 150 :g 150 :b 150)
-		       surface
-		       :mark "0")
+	;;draw grid
+	(draw-grid min-y max-y y-range y-scale screen-y0
+		   min-x max-x x-range x-scale screen-x0
+		   slack-pixels surface)
 
 	;; Draw the function:
 	(loop for x from 0 below win-width
@@ -447,12 +457,6 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
     ;;(setf (sdl:frame-rate) 30)
 
     (draw-function
-     ;;     (mapcar #'(lambda (func)
-     ;;		 (if (listp func)
-     ;;		     (make-plotfunc :function (car func)
-     ;;				    :subs (cdr func))
-     ;;		     func))
-     ;;	     func-list)
      func-list
      from to slack)
 
