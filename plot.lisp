@@ -87,7 +87,8 @@ and value are both at max."
 				  1))))))))
     (list :r (voodoo 5)
 	  :g (voodoo 3)
-	  :b (voodoo 1))))
+	  :b (voodoo 1)
+	  :a 255)))
 
 (defun generate-colors (red green blue count)
   (let ((start-hue (rgb-to-hue red green blue))
@@ -109,7 +110,9 @@ and value are both at max."
   (color-real)
   (color-realpart)
   (color-imagpart)
-  (label nil :type string))
+  (label nil :type string)
+  (data nil :type (or array null))
+  (render))
 
 (defun aux-colors (rgb-plist)
   "Returns sdl:colors to be used to draw reals, realparts and imagparts.
@@ -139,7 +142,7 @@ where the Xs are (integer 0 255)."
 	  funcdata-list))
 
 ;;feed to above
-(defun to-funcdata (input-func-list)
+(defun to-funcdata (input-func-list resolution-width)
   (let ((color-stack
 	 (generate-colors
 	  255 0 0
@@ -162,7 +165,8 @@ where the Xs are (integer 0 255)."
 				     :label (concatenate 'string
 							 sub-of
 							 (when sub-of "-")
-							 (format nil "~a" id)))))
+							 (format nil "~a" id))
+				     :data (make-array resolution-width))))
 				 (symbol
 				  (multiple-value-bind
 					(real realpart imagpart)
@@ -177,7 +181,8 @@ where the Xs are (integer 0 255)."
 				     :label (concatenate 'string
 							 sub-of
 							 (when sub-of "-")
-							 (symbol-name func)))))
+							 (symbol-name func))
+				     :data (make-array resolution-width))))
 				 (list
 				  (append
 				   (funcdata-gen (list (car func))
@@ -197,21 +202,29 @@ where the Xs are (integer 0 255)."
 		       list)))
       (funcdata-gen input-func-list 0))))
 
-(defun plotcall (function &rest arguments)
-  "Funcall with handlers etc. for plottable data."
-  (handler-case
-      (apply (funcdata-function function) arguments)
-    (division-by-zero () 'ZERO-DIVISION)))
-
-(defun plotfunc-evaluate (plotfunc x)
-  (let ((fvalue (plotcall (plotfunc-function plotfunc) x)))
+(defun plotcall (function index &rest arguments
+		 &aux (lindex (if (listp index)
+				  index
+				  (list index))))
+  "Funcall with handlers etc. for plottable data,
+stored into array in funcdata FUNCTION's data slot at aref INDEX."
+  (setf ;;;setfing an applied aref is used as example in the hyperspec!
+   (apply #'aref (funcdata-data function) lindex)
+   (handler-case
+       (apply (funcdata-function function) arguments)
+     (division-by-zero () 'ZERO-DIVISION)
+     (type-error () nil))))
+  
+(defun plotfunc-evaluate (plotfunc index &rest arguments)
+  (let ((fvalue (apply #'plotcall (plotfunc-function plotfunc) index arguments)))
     ;; plotcall might produce a symbol to represent an error
     ;; which the user might want to handle himself...
     (mapcar #'(lambda (sub)
 		(etypecase sub
 		  (funcdata
-		   (plotcall sub fvalue))
-		  (plotfunc (plotfunc-evaluate sub x))))
+		   (plotcall sub index fvalue))
+		  (plotfunc
+		   (apply #'plotfunc-evaluate sub index arguments))))
 	    (plotfunc-subs plotfunc))))
 
 (defun plottable-count (func-list)
@@ -239,6 +252,11 @@ where the Xs are (integer 0 255)."
 		   (extract-numbers element))
 		  ((numberp element)
 		   (list element)))))
+
+(defun get-numbers (arg)
+  (etypecase arg
+    (number (list arg))
+    (list (extract-numbers arg))))
 
 (defun complex-max (&rest numbers)
   "Like max, but works on complex numbers returning greatest component."
@@ -297,6 +315,14 @@ where the Xs are (integer 0 255)."
 		      surface)))
   NIL)
 
+(defun render-func-list (func-list surface)
+  (dolist (func func-list)
+    (typecase func
+      (plotfunc
+       (render-func-list (plotfunc-subs func) surface))
+      (funcdata
+       (sdl:blit-surface (funcdata-render func) surface)))))
+
 (defun draw-grid (min-y max-y y-range y-scale screen-y0
 		  min-x max-x x-range x-scale screen-x0
 		  slack-pixels surface)
@@ -337,6 +363,63 @@ where the Xs are (integer 0 255)."
 		   surface
 		   :mark "0")))
 
+(defun compute-2d-data (function min-x max-x x-step)
+  "Populates funcdata FUNCTION's (and FUNCTION's subs) data slot's array with
+results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP.
+Returns cons of maximum and minimum results on range."
+  (let ((max-y)
+	(min-y))
+    (loop
+       for x from min-x below max-x by x-step ;; TODO: check below or to
+       for i from 0
+       do (loop for value in (get-numbers
+			      (if (plotfunc-p function)
+				  (plotfunc-evaluate function i x)
+				  (plotcall function i x)))
+	     do (cond ((null max-y)
+		       (setf max-y value
+			     min-y value))
+		      (t
+		       (setf max-y (complex-max max-y value)
+			     min-y (complex-min min-y value)))))
+       finally (return (cons max-y min-y)))))
+
+(defun compute-2d-tree (func-list min-x max-x x-step)
+  "Computes data for all funcdatas in FUNC-LIST."
+  (let* ((max-min (mapcar #'(lambda (func)
+			      (compute-2d-data func min-x max-x x-step))
+			  func-list))
+	 (max (caar max-min))
+	 (min (cdar max-min)))
+    (dolist (mm max-min)
+      (setf max (max max (car mm))
+	    min (min min (cdr mm))))
+    (values max min)))
+
+(defparameter *transparency* (sdl:color :r 0 :g 0 :b 0 :a 0))
+
+(defun render-2d-data (function y-scale slack-pixels screen-y0 surface)
+  (declare (funcdata function)
+	   (sdl:surface surface))
+
+  (setf (funcdata-render function) surface)
+  (sdl:fill-surface *transparency* :surface surface :update t)
+  
+  (loop for x from 0 below (sdl:width surface)
+     for y across (funcdata-data function)
+     do (draw-value x y y-scale slack-pixels screen-y0
+		    surface function)))
+
+(defun render-2d-tree (func-list y-scale slack-pixels screen-y0 width height)
+  (dolist (func func-list)
+    (etypecase func
+      (plotfunc (render-2d-tree
+		 (plotfunc-subs func)
+		 y-scale slack-pixels screen-y0 width height))
+      (funcdata (render-2d-data
+		 func y-scale slack-pixels screen-y0
+		 (sdl:create-surface width height :pixel-alpha 255))))))
+
 (defun draw-function (input-func-list
 		      min-x max-x
 		      slack
@@ -345,7 +428,7 @@ where the Xs are (integer 0 255)."
   "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
   
-  (let* ((pfunc-list (to-plotfunc (to-funcdata input-func-list)))
+  (let* ((pfunc-list (to-plotfunc (to-funcdata input-func-list (sdl:width surface))))
 	 (win-width (sdl:width surface))
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
@@ -354,44 +437,10 @@ dynamic based on extreme values on X's range."
 	 (screen-x0 (* min-x (/ win-width x-range)))
 	 )
 
-    (multiple-value-bind (max-y
-			  min-y
-			  y-values)
-	(loop
-	   for x from min-x upto max-x by x-step
-	   with max-y = most-negative-fixnum
-	   and min-y = most-positive-fixnum
-	   collect
-
-	     (loop for y in
-		  (mapcar #'(lambda (func)
-			      (if (plotfunc-p func)
-				  (plotfunc-evaluate func x)
-				  (plotcall func x)))
-			  pfunc-list)
-		if (listp y) ; now this is functional programming!
-		do (setf max-y (apply #'complex-max
-				      (cons max-y (extract-numbers y)))
-			 min-y (apply #'complex-min
-				      (cons min-y (extract-numbers y))))
-		else if (numberp y)
-		do (setf max-y (complex-max max-y y)
-			 min-y (complex-min min-y y))
-		collect y into step-y-values
-		  
-		finally (return step-y-values))
-	   into y-values
-	   finally (return (values
-			    (cond ((or (floatp max-y)
-				       (floatp min-y))
-				   (return
-				     (values (coerce max-y 'double-float)
-					     (coerce min-y 'double-float)
-					     y-values)))
-				  (t (return
-				       (values max-y min-y y-values)))))))
+    (multiple-value-bind (max-y min-y)
+	(compute-2d-tree pfunc-list min-x max-x x-step)
       
-      (format t "max ~a min ~a, first: ~a~%" max-y min-y (car y-values))
+      (format t "max ~a min ~a~%" max-y min-y)
 
       (let* ((pre-y-range (- max-y min-y)) ; range in value
 	     (slack-mod (* pre-y-range slack)) ; total visible range in value
@@ -428,14 +477,11 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		   min-x max-x x-range x-scale screen-x0
 		   slack-pixels surface)
 
-	;; Draw the function:
-	(loop for x from 0 below win-width
-	   for y-list in y-values
-	   do (loop for y in y-list
-		 for pfunc in pfunc-list
-		 do (draw-value x y y-scale slack-pixels screen-y0
-				surface pfunc)
-		   ))))))
+	(render-2d-tree pfunc-list y-scale slack-pixels screen-y0
+			win-width win-height)
+
+	(render-func-list pfunc-list surface)
+	))))
 
 
 ;; Let's go with elements in func-list as (func key-list) or just func
@@ -451,7 +497,8 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
   (sdl:with-init()
     (sdl:window window-width window-height
 		:title-caption "plot"
-		:sw t)
+		:hw t
+		:bpp 32)
     ;;(setf (sdl:frame-rate) 30)
 
     (draw-function
