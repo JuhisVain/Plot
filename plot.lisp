@@ -130,6 +130,24 @@ where the Xs are (integer 0 255)."
 					 (t x)))
 			 rgb-plist))))
 
+(defun plottable-count (func-list)
+  (labels ((rec-plot-len (flist sum)
+	     (typecase (car flist)
+	       (null sum)
+	       (list 
+		(rec-plot-len
+		 (cdr flist)
+		 (rec-plot-len (cdar flist) sum)))
+	       (symbol
+		(if (fboundp (car flist))
+		    (rec-plot-len (cdr flist) (1+ sum))
+		    (rec-plot-len (cdr flist)
+				  (rec-plot-len
+				   (list (symbol-value (car flist)))
+				   sum))))
+	       (function (rec-plot-len (cdr flist) (1+ sum))))))
+    (rec-plot-len func-list 0)))
+
 (defun to-plotfunc (funcdata-list)
   "Stores multipart functions' parts into plotfunc structures."
   (mapcar #'(lambda (fdata)
@@ -226,24 +244,6 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 		  (plotfunc
 		   (apply #'plotfunc-evaluate sub index arguments))))
 	    (plotfunc-subs plotfunc))))
-
-(defun plottable-count (func-list)
-  (labels ((rec-plot-len (flist sum)
-	     (typecase (car flist)
-	       (null sum)
-	       (list 
-		(rec-plot-len
-		 (cdr flist)
-		 (rec-plot-len (cdar flist) sum)))
-	       (symbol
-		(if (fboundp (car flist))
-		    (rec-plot-len (cdr flist) (1+ sum))
-		    (rec-plot-len (cdr flist)
-				  (rec-plot-len
-				   (list (symbol-value (car flist)))
-				   sum))))
-	       (function (rec-plot-len (cdr flist) (1+ sum))))))
-    (rec-plot-len func-list 0)))
 
 (defun extract-numbers (tree)
   "Get flat list of numbers in TREE."
