@@ -370,7 +370,7 @@ Returns cons of maximum and minimum results on range."
   (let ((max-y)
 	(min-y))
     (loop
-       for x from min-x below max-x by x-step ;; TODO: check below or to
+       for x from min-x below max-x by x-step
        for i from 0
        do (loop for value in (get-numbers
 			      (if (plotfunc-p function)
@@ -396,29 +396,55 @@ Returns cons of maximum and minimum results on range."
 	    min (min min (cdr mm))))
     (values max min)))
 
-(defparameter *transparency* (sdl:color :r 0 :g 0 :b 0 :a 0))
+(defvar *transparency* (sdl:color :r 0 :g 0 :b 0 :a 0))
+(defparameter *label-position* 0)
 
-(defun render-2d-data (function y-scale slack-pixels screen-y0 surface)
+(defun render-2d-data (function y-scale slack-pixels screen-y0 surface
+		       &key draw-label)
   (declare (funcdata function)
 	   (sdl:surface surface))
 
   (setf (funcdata-render function) surface)
-  (sdl:fill-surface *transparency* :surface surface :update t)
+
+  (when draw-label
+    (let ((string-render
+	   (sdl:render-string-solid (funcdata-label function)
+				    :color (funcdata-color-real function))))
+      (sdl:draw-surface-at-* string-render
+			     *label-position*
+			     (+
+			      ;; move label downwards:
+			      (sdl:char-height sdl:*default-font*)
+			      (- (sdl:height surface)
+				 (round
+				  (- (+ slack-pixels
+					(* y-scale
+					   (aref (funcdata-data function)
+						 *label-position*)))
+				     screen-y0))))
+			     :surface surface)
+      (sdl:free string-render))
+    
+    (incf *label-position* (* (sdl:char-width sdl:*default-font*)
+			      (length (funcdata-label function)))))
   
   (loop for x from 0 below (sdl:width surface)
      for y across (funcdata-data function)
      do (draw-value x y y-scale slack-pixels screen-y0
 		    surface function)))
 
-(defun render-2d-tree (func-list y-scale slack-pixels screen-y0 width height)
+(defun render-2d-tree (func-list y-scale slack-pixels screen-y0 width height
+		       &key draw-labels)
   (dolist (func func-list)
     (etypecase func
       (plotfunc (render-2d-tree
 		 (plotfunc-subs func)
-		 y-scale slack-pixels screen-y0 width height))
+		 y-scale slack-pixels screen-y0 width height
+		 :draw-labels draw-labels))
       (funcdata (render-2d-data
 		 func y-scale slack-pixels screen-y0
-		 (sdl:create-surface width height :pixel-alpha 255))))))
+		 (sdl:create-surface width height :pixel-alpha 255)
+		 :draw-label draw-labels)))))
 
 (defun draw-function (input-func-list
 		      min-x max-x
@@ -478,7 +504,7 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		   slack-pixels surface)
 
 	(render-2d-tree pfunc-list y-scale slack-pixels screen-y0
-			win-width win-height)
+			win-width win-height :draw-labels t)
 
 	(render-func-list pfunc-list surface)
 	))))
