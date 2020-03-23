@@ -301,15 +301,6 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 			 (imagpart value)
 			 y-scale slack screen-y0 surface
 			 (funcdata-color-imagpart pfunc)))
-    (list
-     (do ((value-head value (cdr value-head))
-	  (sub-pfunc-head (plotfunc-subs pfunc) (cdr sub-pfunc-head))
-	  ;;(color-set-head color-set (cdr color-set-head))
-	  )
-	 ((null value-head))
-       (draw-value x-coord
-		   (car value-head)
-		   y-scale slack screen-y0 surface (car sub-pfunc-head))))
     (t (draw-vertical x-coord ; bad value, most likely zero div
 		      (sdl:color :r 100 :g 0 :b 0)
 		      surface)))
@@ -363,15 +354,15 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 		   surface
 		   :mark "0")))
 
-(defun compute-2d-data (function min-x max-x x-step)
+(defun compute-2d-data (function min-x x-step width)
   "Populates funcdata FUNCTION's (and FUNCTION's subs) data slot's array with
 results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP.
 Returns cons of maximum and minimum results on range."
   (let ((max-y)
 	(min-y))
     (loop
-       for x from min-x below max-x by x-step
-       for i from 0
+       for x from min-x by x-step
+       for i from 0 below width
        do (loop for value in (get-numbers
 			      (if (plotfunc-p function)
 				  (plotfunc-evaluate function i x)
@@ -384,10 +375,10 @@ Returns cons of maximum and minimum results on range."
 			     min-y (complex-min min-y value)))))
        finally (return (cons max-y min-y)))))
 
-(defun compute-2d-tree (func-list min-x max-x x-step)
+(defun compute-2d-tree (func-list min-x x-step width)
   "Computes data for all funcdatas in FUNC-LIST."
   (let* ((max-min (mapcar #'(lambda (func)
-			      (compute-2d-data func min-x max-x x-step))
+			      (compute-2d-data func min-x x-step width))
 			  func-list))
 	 (max (caar max-min))
 	 (min (cdar max-min)))
@@ -465,7 +456,7 @@ dynamic based on extreme values on X's range."
 	 )
 
     (multiple-value-bind (max-y min-y)
-	(compute-2d-tree pfunc-list min-x max-x x-step)
+	(compute-2d-tree pfunc-list min-x x-step (sdl:width surface))
       
       (format t "max ~a min ~a~%" max-y min-y)
 
@@ -520,15 +511,6 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 ;;         (list #'sqrt #'imagpart #'realpart)
 ;;         (list #'log #'imagpart #'realpart))
 ;;       :from -11 :to -1)
-
-
-;;TODO:
-;; (plot '((sqrt identity -) (log identity -)) :from -10 :to 20 :window-width 1500)
-;; breaks,
-;; (plot '((sqrt identity -) (log identity -)) :from -10 :to 20 :window-width 1000)
-;; does not.
-
-
 (defun plot (func-list &key (from 0) (to 100) (slack 1/20) (window-width 500) (window-height 500))
   (declare ((rational 0 1) slack))
   (sdl:initialise-default-font)
