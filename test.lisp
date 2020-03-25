@@ -8,6 +8,14 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
+(defun testlabel ()
+  "Label background should be transparent"
+  (plot (list (lambda (x) (+ x 0.01))
+	      (lambda (x) (+ (- x) 0.011))
+	      (lambda (x) (+ (- x) 0.0095))
+	      (lambda (x) (+ x 0.0105)))
+	:from 0 :to 0.01))
+
 (defun testbunch ()
   ;;Strange behaviour on sbcl when trying to collect lambdas directly
   ;;; UPDATE: The closure is on i, which is set to be 550 CASE CLOSED

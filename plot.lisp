@@ -312,7 +312,8 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
       (plotfunc
        (render-func-list (plotfunc-subs func) surface))
       (funcdata
-       (sdl:blit-surface (funcdata-render func) surface)))))
+       (sdl:blit-surface (funcdata-render func) surface))))
+  surface)
 
 (defun draw-grid (min-y max-y y-range y-scale screen-y0
 		  min-x max-x x-range x-scale screen-x0
@@ -387,6 +388,20 @@ Returns cons of maximum and minimum results on range."
 	    min (min min (cdr mm))))
     (values max min)))
 
+(defun render-string (string color &key (color-key sdl:*black*))
+  "SDL:RENDER-STRING-SOLID picks it's color key in an unpredictable way.
+Renders STRING onto a new surface with color key enabled and set to COLOR-KEY
+using COLOR for text."
+  (sdl:draw-string-solid-*
+   string 0 0
+   :surface
+   (sdl:create-surface (* (length string)
+			  (sdl:char-width sdl:*default-font*))
+		       (sdl:char-height sdl:*default-font*)
+		       :color-key color-key
+		       :type :hw)
+   :color color))
+  
 (defun render-2d-data (function y-scale slack-pixels screen-y0 surface
 		       &key draw-label)
   (declare (funcdata function)
@@ -397,8 +412,9 @@ Returns cons of maximum and minimum results on range."
 
   (when draw-label
     (let ((string-render
-	   (sdl:render-string-solid (funcdata-label function)
-				    :color (funcdata-color-real function))))
+	   (render-string
+	    (funcdata-label function)
+	    (funcdata-color-real function))))
       ;; Should probably write some smarter position determination...
       (sdl:draw-surface-at-* string-render
 			     *label-position*
