@@ -254,7 +254,7 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 		   (list element)))))
 
 (defun get-numbers (arg)
-  (etypecase arg
+  (typecase arg
     (number (list arg))
     (list (extract-numbers arg))))
 
