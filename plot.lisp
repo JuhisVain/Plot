@@ -322,7 +322,8 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 	(x-grid-step (mark-lines x-range)))
     
 ;;; Draw horizontal grid:
-    (loop for y from (- min-y (rem min-y y-grid-step))
+    (loop for y from (- min-y (rem min-y y-grid-step)
+			y-grid-step) ; add one line to bottom
        ;; range increased by one line so grid
        ;; extends to all values even with slack:
        to (+ max-y y-grid-step) by y-grid-step
