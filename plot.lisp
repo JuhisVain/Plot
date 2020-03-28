@@ -20,6 +20,19 @@ one of (1 2 NIL)"
 		    :surface surface
 		    :color color))
 
+(defmethod draw-line (x0 (y0 (eql 'zero-division)) x1 y1 function
+		      &optional (surface (funcdata-render function)))
+  (draw-vertical x0
+		 (sdl:color :r 100 :g 0 :b 0)
+		 surface))
+
+(defmethod draw-line (x0 y0 x1 (y1 (eql 'zero-division)) function
+		     &optional (surface (funcdata-render function)))
+  ;; This situation is already handled by previous for all other coords but last
+  (draw-vertical x1
+		 (sdl:color :r 100 :g 0 :b 0)
+		 surface))
+
 (defmethod draw-line (x0 (y0 real) x1 (y1 real) function
 		     &optional (surface (funcdata-render function)))
   (sdl:draw-line-* x0 (- (sdl:height surface) y0)
@@ -463,7 +476,8 @@ Result will still need to be inverted before drawing."
 			screen-y0))
 	      (round (- (+ (* (imagpart y) y-scale)
 			   slack)
-			screen-y0))))))
+			screen-y0))))
+    (t y))); come again! Pass through for non number values
 
 (defun render-2d-lineplot (y-scale slack-pixels screen-y0 surface function)
   (let ((x-pixel 0))
