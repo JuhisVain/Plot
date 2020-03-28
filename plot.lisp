@@ -402,6 +402,12 @@ using COLOR for text."
 		       :color-key color-key
 		       :type :hw)
    :color color))
+
+(defun render-2d-dots (y-scale slack-pixels screen-y0 surface function)
+  (loop for x from 0 below (sdl:width surface)
+     for y across (funcdata-data function)
+     do (draw-value x y y-scale slack-pixels screen-y0
+		    surface function)))
   
 (defun render-2d-data (function y-scale slack-pixels screen-y0 surface
 		       &key draw-label)
@@ -436,10 +442,7 @@ using COLOR for text."
     (incf *label-position* (* (sdl:char-width sdl:*default-font*)
 			      (length (funcdata-label function)))))
   
-  (loop for x from 0 below (sdl:width surface)
-     for y across (funcdata-data function)
-     do (draw-value x y y-scale slack-pixels screen-y0
-		    surface function)))
+  (render-2d-dots y-scale slack-pixels screen-y0 surface function))
 
 (defun render-2d-tree (func-list y-scale slack-pixels screen-y0 width height
 		       &key draw-labels)
