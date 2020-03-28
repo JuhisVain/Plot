@@ -20,6 +20,46 @@ one of (1 2 NIL)"
 		    :surface surface
 		    :color color))
 
+(defmethod draw-line (x0 (y0 real) x1 (y1 real) function
+		     &optional (surface (funcdata-render function)))
+  (sdl:draw-line-* x0 (- (sdl:height surface) y0)
+		   x1 (- (sdl:height surface) y1)
+		   :surface surface
+		   :color (funcdata-color-real function)))
+
+(defmethod draw-line (x0 (y0 complex) x1 (y1 complex) function
+		     &optional (surface (funcdata-render function)))
+  (sdl:draw-line-* x0 (- (sdl:height surface) (realpart y0))
+		   x1 (- (sdl:height surface) (realpart y1))
+		   :surface surface
+		   :color (funcdata-color-realpart function))
+  (sdl:draw-line-* x0 (- (sdl:height surface) (imagpart y0))
+		   x1 (- (sdl:height surface) (imagpart y1))
+		   :surface surface
+		   :color (funcdata-color-imagpart function)))
+
+(defmethod draw-line (x0 (y0 complex) x1 (y1 real) function
+		     &optional (surface (funcdata-render function)))
+  (sdl:draw-line-* x0 (- (sdl:height surface) (realpart y0))
+		   x1 (- (sdl:height surface) y1)
+		   :surface surface
+		   :color (funcdata-color-realpart function))
+  (sdl:draw-line-* x0 (- (sdl:height surface) (imagpart y0))
+		   x1 (- (sdl:height surface) y1)
+		   :surface surface
+		   :color (funcdata-color-imagpart function)))
+
+(defmethod draw-line (x0 (y0 real) x1 (y1 complex) function
+		     &optional (surface (funcdata-render function)))
+  (sdl:draw-line-* x0 (- (sdl:height surface) y0)
+		   x1 (- (sdl:height surface) (realpart y1))
+		   :surface surface
+		   :color (funcdata-color-realpart function))
+  (sdl:draw-line-* x0 (- (sdl:height surface) y0)
+		   x1 (- (sdl:height surface) (imagpart y1))
+		   :surface surface
+		   :color (funcdata-color-imagpart function)))
+
 (defun draw-circle (x y radius surface color)
   (sdl:draw-circle-* x (- (sdl:height surface) y) radius
 		     :surface surface
@@ -408,6 +448,36 @@ using COLOR for text."
      for y across (funcdata-data function)
      do (draw-value x y y-scale slack-pixels screen-y0
 		    surface function)))
+
+(defun scale-y (y y-scale slack screen-y0)
+  "Transforms value Y into plot's scale.
+Result will still need to be inverted before drawing."
+  (typecase y
+    (real
+     (round (- (+ (* y y-scale)
+		  slack)
+	       screen-y0)))
+    (complex
+     (complex (round (- (+ (* (realpart y) y-scale)
+			   slack)
+			screen-y0))
+	      (round (- (+ (* (imagpart y) y-scale)
+			   slack)
+			screen-y0))))))
+
+(defun render-2d-lineplot (y-scale slack-pixels screen-y0 surface function)
+  (let ((x-pixel 0))
+    (map
+     NIL
+     #'(lambda (from to)
+	 (draw-line x-pixel
+		   (scale-y from y-scale slack-pixels screen-y0)
+		   (incf x-pixel)
+		   (scale-y to y-scale slack-pixels screen-y0)
+		   function
+		   ))
+     (funcdata-data function)
+     (subseq (funcdata-data function) 1))))
   
 (defun render-2d-data (function y-scale slack-pixels screen-y0 surface
 		       &key draw-label)
@@ -442,7 +512,7 @@ using COLOR for text."
     (incf *label-position* (* (sdl:char-width sdl:*default-font*)
 			      (length (funcdata-label function)))))
   
-  (render-2d-dots y-scale slack-pixels screen-y0 surface function))
+  (render-2d-lineplot y-scale slack-pixels screen-y0 surface function))
 
 (defun render-2d-tree (func-list y-scale slack-pixels screen-y0 width height
 		       &key draw-labels)
