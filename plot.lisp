@@ -1,5 +1,8 @@
 (ql:quickload :lispbuilder-sdl)
 
+(defvar *draw-labels* t "The default state of whether or not to write
+names for plotted data.")
+
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
 one of (1 2 NIL)"
@@ -501,7 +504,8 @@ Result will still need to be inverted before drawing."
 
   (setf (funcdata-render function) surface)
 
-  (when draw-label
+  (when (and draw-label
+	     (< *label-position* (length (funcdata-data function))))
     (let ((string-render
 	   (render-string
 	    (funcdata-label function)
@@ -599,10 +603,8 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		   min-x max-x x-range x-scale screen-x0
 		   slack-pixels surface)
 
-	(let ((*label-position* 0))
-	  (declare (special *label-position*))
-	  (render-2d-tree pfunc-list y-scale slack-pixels screen-y0
-			  win-width win-height :draw-labels t))
+	(render-2d-tree pfunc-list y-scale slack-pixels screen-y0
+			win-width win-height :draw-labels *draw-labels*)
 
 	(render-func-list pfunc-list surface)
 	))))
@@ -615,7 +617,10 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 ;;         (list #'sqrt #'imagpart #'realpart)
 ;;         (list #'log #'imagpart #'realpart))
 ;;       :from -11 :to -1)
-(defun plot (func-list &key (from 0) (to 100) (slack 1/20) (window-width 500) (window-height 500))
+(defun plot (func-list
+	     &key (from 0) (to 100) (slack 1/20)
+	       (window-width 500) (window-height 500)
+	       (draw-labels *draw-labels*))
   (declare ((rational 0 1) slack))
   (sdl:initialise-default-font)
   (sdl:with-init()
@@ -625,9 +630,13 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		:bpp 32)
     ;;(setf (sdl:frame-rate) 30)
 
-    (draw-function
-     func-list
-     from to slack)
+    (let ((*draw-labels* draw-labels)
+	  (*label-position* 0))
+      (declare (special *label-position* *draw-labels*))
+      
+      (draw-function
+       func-list
+       from to slack))
 
     (sdl:update-display)
     
