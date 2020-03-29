@@ -633,10 +633,11 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
     (let ((*draw-labels* draw-labels)
 	  (*label-position* 0))
       (declare (special *label-position* *draw-labels*))
-      
-      (draw-function
-       func-list
-       from to slack))
+
+      (time ; might want to do some custom logging also/instead
+       (draw-function
+	func-list
+	from to slack)))
 
     (sdl:update-display)
     
