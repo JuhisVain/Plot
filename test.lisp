@@ -33,12 +33,12 @@
 		 collect `#'(lambda (x) (gaussian x 1 0 ,i))))
 	:from 0 :to 1000))
 
-(defun test-bigbunch ()
+;; Uses a lot of memory:
+(defun test-memory ()
   (plot (mapcar #'(lambda (ele)
 		    #'(lambda (x) (gaussian x 1 0 ele)))
 		(loop for i from 50 to 500 by 1
 		   collect i)) :from 0 :to 1000
-		   :window-width 1500
 		   :draw-labels t))
 
 (defun testfun (x)

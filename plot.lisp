@@ -7,6 +7,10 @@
 (defparameter *render-function* 'render-2d-lineplot
   "Funcallable symbol or function, used to generate funcdata-renders.")
 
+(defvar *bad-color* (sdl:color :r 100 :g 0 :b 0))
+(defvar *grid-color* (sdl:color :r 50 :g 50 :b 50))
+(defvar *grid-origin-color* (sdl:color :r 150 :g 150 :b 150))
+
 (defstruct plotfunc
   (function) ; master function
   (subs)) ; keys, accessors or whatever to be called with master's value
@@ -56,16 +60,12 @@ one of (1 2 NIL)"
 
 (defmethod draw-line (x0 (y0 (eql 'zero-division)) x1 y1 function
 		      &optional (surface (funcdata-render function)))
-  (draw-vertical x0
-		 (sdl:color :r 100 :g 0 :b 0)
-		 surface))
+  (draw-vertical x0 *bad-color* surface))
 
 (defmethod draw-line (x0 y0 x1 (y1 (eql 'zero-division)) function
 		     &optional (surface (funcdata-render function)))
   ;; This situation is already handled by previous for all other coords but last
-  (draw-vertical x1
-		 (sdl:color :r 100 :g 0 :b 0)
-		 surface))
+  (draw-vertical x1 *bad-color* surface))
 
 (defmethod draw-line (x0 (y0 real) x1 (y1 real) function
 		     &optional (surface (funcdata-render function)))
@@ -362,7 +362,7 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 			 y-scale slack screen-y0 surface
 			 (funcdata-color-imagpart pfunc)))
     (t (draw-vertical x-coord ; bad value, most likely zero div
-		      (sdl:color :r 100 :g 0 :b 0)
+		      *bad-color*
 		      surface)))
   NIL)
 
@@ -390,7 +390,7 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
        do (draw-horizontal (round (+ (* y y-scale)
 				     (- screen-y0)
 				     slack-pixels))
-			   (sdl:color :r 50 :g 50 :b 50)
+			   *grid-color*
 			   surface
 			   :mark (format nil "~a" y)))
 
@@ -399,7 +399,7 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
        to max-x by x-grid-step
        do (draw-vertical (round (- (* x x-scale)
 				   screen-x0))
-			 (sdl:color :r 50 :g 50 :b 50)
+			 *grid-color*
 			 surface
 			 :mark (format nil "~a" x)))
 
@@ -407,12 +407,12 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
     (draw-horizontal (round (+ (- screen-y0)
 			       slack-pixels
 			       ))
-		     (sdl:color :r 150 :g 150 :b 150)
+		     *grid-origin-color*
 		     surface
 		     :mark "0")
 
     (draw-vertical (round (- screen-x0))
-		   (sdl:color :r 150 :g 150 :b 150)
+		   *grid-origin-color*
 		   surface
 		   :mark "0")))
 
@@ -614,7 +614,21 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 			win-width win-height :draw-labels *draw-labels*)
 
 	(render-func-list pfunc-list surface)
+	(free-assets pfunc-list)
 	))))
+
+
+(defun free-assets (pfunc-list)
+  (let ((func (car pfunc-list)))
+    (typecase func
+      (null (return-from free-assets))
+      (plotfunc (free-assets (plotfunc-subs func)))
+      (funcdata
+       (sdl:free (funcdata-color-real func))
+       (sdl:free (funcdata-color-realpart func))
+       (sdl:free (funcdata-color-imagpart func))
+       (sdl:free (funcdata-render func))))
+    (free-assets (cdr pfunc-list))))
 
 
 ;; Let's go with elements in func-list as (func key-list) or just func
