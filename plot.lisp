@@ -3,6 +3,19 @@
 (defvar *draw-labels* t "The default state of whether or not to write
 names for plotted data.")
 
+(defstruct plotfunc
+  (function) ; master function
+  (subs)) ; keys, accessors or whatever to be called with master's value
+
+(defstruct funcdata
+  (function nil :type function)
+  (color-real)
+  (color-realpart)
+  (color-imagpart)
+  (label nil :type string)
+  (data nil :type (or array null))
+  (render))
+
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
 one of (1 2 NIL)"
@@ -22,6 +35,20 @@ one of (1 2 NIL)"
   (sdl:draw-pixel-* x (- (sdl:height surface) y)
 		    :surface surface
 		    :color color))
+
+(defun draw-vertical (x color surface &key (mark nil))
+  
+  (unless (< -1 x (sdl:width surface))
+    (return-from draw-vertical))
+  
+  (sdl:draw-line-* x 0
+		   x (sdl:height surface)
+		   :surface surface
+		   :color color)
+  (typecase mark
+    (string (sdl:draw-string-solid-* mark (+ x 2) (- (sdl:height surface) 8)
+				     :surface surface
+				     :color color))))
 
 (defmethod draw-line (x0 (y0 (eql 'zero-division)) x1 y1 function
 		      &optional (surface (funcdata-render function)))
@@ -97,20 +124,6 @@ one of (1 2 NIL)"
 				       :surface surface
 				       :color color)))))
 
-(defun draw-vertical (x color surface &key (mark nil))
-  
-  (unless (< -1 x (sdl:width surface))
-    (return-from draw-vertical))
-  
-  (sdl:draw-line-* x 0
-		   x (sdl:height surface)
-		   :surface surface
-		   :color color)
-  (typecase mark
-    (string (sdl:draw-string-solid-* mark (+ x 2) (- (sdl:height surface) 8)
-				     :surface surface
-				     :color color))))
-
 (defun mark-lines (range)
   "Returns something by gut feeling to be used as multiplier of grid lines."
   (if (zerop range)
@@ -156,19 +169,6 @@ and value are both at max."
 	     (+ start-hue (* iter hue-step)))
 	    colors))
     (reverse colors)))
-
-(defstruct plotfunc
-  (function) ; master function
-  (subs)) ; keys, accessors or whatever to be called with master's value
-
-(defstruct funcdata
-  (function nil :type function)
-  (color-real)
-  (color-realpart)
-  (color-imagpart)
-  (label nil :type string)
-  (data nil :type (or array null))
-  (render))
 
 (defun aux-colors (rgb-plist)
   "Returns sdl:colors to be used to draw reals, realparts and imagparts.
@@ -482,7 +482,8 @@ Result will still need to be inverted before drawing."
 			screen-y0))))
     (t y))); come again! Pass through for non number values
 
-(defun render-2d-lineplot (y-scale slack-pixels screen-y0 surface function)
+(defun render-2d-lineplot (y-scale slack-pixels screen-y0 function
+			   &optional (surface (funcdata-render function)))
   (let ((x-pixel 0))
     (map
      NIL
@@ -492,6 +493,7 @@ Result will still need to be inverted before drawing."
 		   (incf x-pixel)
 		   (scale-y to y-scale slack-pixels screen-y0)
 		   function
+		   surface
 		   ))
      (funcdata-data function)
      (subseq (funcdata-data function) 1))))
@@ -530,7 +532,7 @@ Result will still need to be inverted before drawing."
     (incf *label-position* (* (sdl:char-width sdl:*default-font*)
 			      (length (funcdata-label function)))))
   
-  (render-2d-lineplot y-scale slack-pixels screen-y0 surface function))
+  (render-2d-lineplot y-scale slack-pixels screen-y0 function surface))
 
 (defun render-2d-tree (func-list y-scale slack-pixels screen-y0 width height
 		       &key draw-labels)
