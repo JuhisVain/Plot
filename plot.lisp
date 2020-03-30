@@ -553,6 +553,19 @@ Result will still need to be inverted before drawing."
 		   (sdl:create-surface width height :pixel-alpha 255)
 		   :draw-label draw-labels)))))
 
+;; Placeholder memory manager
+(defun free-assets (pfunc-list)
+  (let ((func (car pfunc-list)))
+    (typecase func
+      (null (return-from free-assets))
+      (plotfunc (free-assets (plotfunc-subs func)))
+      (funcdata
+       (sdl:free (funcdata-color-real func))
+       (sdl:free (funcdata-color-realpart func))
+       (sdl:free (funcdata-color-imagpart func))
+       (sdl:free (funcdata-render func))))
+    (free-assets (cdr pfunc-list))))
+
 (defun draw-function (input-func-list
 		      min-x max-x
 		      slack
@@ -614,22 +627,12 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 			win-width win-height :draw-labels *draw-labels*)
 
 	(render-func-list pfunc-list surface)
+	
+	;; TODO: memory should be freed only at exit from sdl loop
+	;; Might want to bind function's internal variables to some buttons
+	;; and then render changes dynamically etc..
 	(free-assets pfunc-list)
 	))))
-
-
-(defun free-assets (pfunc-list)
-  (let ((func (car pfunc-list)))
-    (typecase func
-      (null (return-from free-assets))
-      (plotfunc (free-assets (plotfunc-subs func)))
-      (funcdata
-       (sdl:free (funcdata-color-real func))
-       (sdl:free (funcdata-color-realpart func))
-       (sdl:free (funcdata-color-imagpart func))
-       (sdl:free (funcdata-render func))))
-    (free-assets (cdr pfunc-list))))
-
 
 ;; Let's go with elements in func-list as (func key-list) or just func
 ;; key-list is list of functions to be applied to func's result
