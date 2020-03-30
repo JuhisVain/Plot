@@ -1,7 +1,11 @@
 (ql:quickload :lispbuilder-sdl)
 
-(defvar *draw-labels* t "The default state of whether or not to write
-names for plotted data.")
+(defvar *draw-labels* t
+  "The default state of whether or not to write names for plotted data.")
+
+;; There's also 'render-2d-dots:
+(defparameter *render-function* 'render-2d-lineplot
+  "Funcallable symbol or function, used to generate funcdata-renders.")
 
 (defstruct plotfunc
   (function) ; master function
@@ -459,7 +463,8 @@ using COLOR for text."
 		       :type :hw)
    :color color))
 
-(defun render-2d-dots (y-scale slack-pixels screen-y0 surface function)
+(defun render-2d-dots (y-scale slack-pixels screen-y0 function
+		       &optional (surface (funcdata-render function)))
   (loop for x from 0 below (sdl:width surface)
      for y across (funcdata-data function)
      do (draw-value x y y-scale slack-pixels screen-y0
@@ -531,8 +536,8 @@ Result will still need to be inverted before drawing."
     
     (incf *label-position* (* (sdl:char-width sdl:*default-font*)
 			      (length (funcdata-label function)))))
-  
-  (render-2d-lineplot y-scale slack-pixels screen-y0 function surface))
+
+  (funcall *render-function* y-scale slack-pixels screen-y0 function surface))
 
 (defun render-2d-tree (func-list y-scale slack-pixels screen-y0 width height
 		       &key draw-labels)
