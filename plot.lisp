@@ -32,6 +32,7 @@
   (push funcdata *draw-functions*)
   funcdata)
 
+;;TODO: test that store works
 (defun remove-funcdata (funcdata &optional (store *draw-functions*))
   "Destroys FUNCDATA from STORE and frees SDL assets."
   (sdl:free (funcdata-color-real funcdata))
@@ -312,7 +313,9 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
      (type-error () nil))))
   
 (defun plotfunc-evaluate (plotfunc index &rest arguments)
-  (let ((fvalue (apply #'plotcall (plotfunc-function plotfunc) index arguments)))
+  (let ((fvalue
+	 (apply #'plotcall (plotfunc-function plotfunc) index arguments)))
+    ;;; above: PLOTCALL is APPLIED because ARGUMENTS is -of course- a list
     ;; plotcall might produce a symbol to represent an error
     ;; which the user might want to handle himself...
     (mapcar #'(lambda (sub)
