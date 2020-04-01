@@ -11,6 +11,9 @@
 (defvar *grid-color* (sdl:color :r 50 :g 50 :b 50))
 (defvar *grid-origin-color* (sdl:color :r 150 :g 150 :b 150))
 
+(defparameter *draw-functions* nil
+  "Storage for funcdatas currently being drawn.")
+
 (defstruct plotfunc
   (function) ; master function
   (subs)) ; keys, accessors or whatever to be called with master's value
@@ -23,6 +26,19 @@
   (label nil :type string)
   (data nil :type (or array null))
   (render))
+
+(defun store-funcdata (funcdata)
+  "Stores FUNCDATA into *draw-functions*."
+  (push funcdata *draw-functions*)
+  funcdata)
+
+(defun remove-funcdata (funcdata &optional (store *draw-functions*))
+  "Destroys FUNCDATA from STORE and frees SDL assets."
+  (sdl:free (funcdata-color-real funcdata))
+  (sdl:free (funcdata-color-realpart funcdata))
+  (sdl:free (funcdata-color-imagpart funcdata))
+  (sdl:free (funcdata-render funcdata))
+  (setf store (delete funcdata store)))
 
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
@@ -235,32 +251,34 @@ where the Xs are (integer 0 255)."
 				      (if is-master
 					  (values nil nil nil)
 					  (aux-colors (pop color-stack)))
-				    (make-funcdata
-				     :function func
-				     :color-real real
-				     :color-realpart realpart
-				     :color-imagpart imagpart
-				     :label (concatenate 'string
-							 sub-of
-							 (when sub-of "-")
-							 (format nil "~a" id))
-				     :data (make-array resolution-width))))
+				    (store-funcdata
+				     (make-funcdata
+				      :function func
+				      :color-real real
+				      :color-realpart realpart
+				      :color-imagpart imagpart
+				      :label (concatenate 'string
+							  sub-of
+							  (when sub-of "-")
+							  (format nil "~a" id))
+				      :data (make-array resolution-width)))))
 				 (symbol
 				  (multiple-value-bind
 					(real realpart imagpart)
 				      (if is-master
 					  (values nil nil nil)
 					  (aux-colors (pop color-stack)))
-				    (make-funcdata
-				     :function (symbol-function func)
-				     :color-real real
-				     :color-realpart realpart
-				     :color-imagpart imagpart
-				     :label (concatenate 'string
-							 sub-of
-							 (when sub-of "-")
-							 (symbol-name func))
-				     :data (make-array resolution-width))))
+				    (store-funcdata
+				     (make-funcdata
+				      :function (symbol-function func)
+				      :color-real real
+				      :color-realpart realpart
+				      :color-imagpart imagpart
+				      :label (concatenate 'string
+							  sub-of
+							  (when sub-of "-")
+							  (symbol-name func))
+				      :data (make-array resolution-width)))))
 				 (list
 				  (append
 				   (funcdata-gen (list (car func))
