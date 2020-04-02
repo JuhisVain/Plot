@@ -8,6 +8,15 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
+(defun testbind ()
+  (defparameter *wave-length* 1)
+  (flet ((modsin (x)
+	   (sin (/ x *wave-length*))))
+    (plot (list #'modsin)
+	  :from 0 :to 50
+	  :window-width 1500
+	  :bindings '(((q a) *wave-length* 0.1 (modsin))))))
+
 (defun testlabel ()
   "Label background should be transparent"
   (plot (list (lambda (x) (+ x 0.01))

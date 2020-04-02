@@ -655,10 +655,24 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 ;;         (list #'sqrt #'imagpart #'realpart)
 ;;         (list #'log #'imagpart #'realpart))
 ;;       :from -11 :to -1)
+
+;;; Bindings key args should be in list of form
+;;  '((increase-button [decrease-button])
+;;    dynamic-variable
+;;    {number-delta|function-delta}
+;;    [(functions-to-redraw)])
+
+(defun button-to-sdlkey (button-name)
+  (intern
+   (concatenate 'string "SDL-KEY-"
+		(string-upcase (string button-name)))
+   "KEYWORD"))
+
 (defun plot (func-list
 	     &key (from 0) (to 100) (slack 1/20)
 	       (window-width 500) (window-height 500)
-	       (draw-labels *draw-labels*))
+	       (draw-labels *draw-labels*)
+	       bindings)
   (declare ((rational 0 1) slack))
   (sdl:initialise-default-font)
   (sdl:with-init()
@@ -685,6 +699,13 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
        (free-assets *draw-functions*)
        t)
 
+      (:key-down-event
+       (:key key)
+       (format t "Pressed: ~a~%" key)
+
+       
+       )
+      
       (:idle
        ()
        ))))
