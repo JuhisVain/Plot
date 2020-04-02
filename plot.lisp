@@ -27,11 +27,6 @@
   (data nil :type (or array null))
   (render))
 
-(defun store-funcdata (funcdata)
-  "Stores FUNCDATA into *draw-functions*."
-  (push funcdata *draw-functions*)
-  funcdata)
-
 ;;TODO: test that store works
 (defun remove-funcdata (funcdata &optional (store *draw-functions*))
   "Destroys FUNCDATA from STORE and frees SDL assets."
@@ -252,34 +247,32 @@ where the Xs are (integer 0 255)."
 				      (if is-master
 					  (values nil nil nil)
 					  (aux-colors (pop color-stack)))
-				    (store-funcdata
-				     (make-funcdata
-				      :function func
-				      :color-real real
-				      :color-realpart realpart
-				      :color-imagpart imagpart
-				      :label (concatenate 'string
-							  sub-of
-							  (when sub-of "-")
-							  (format nil "~a" id))
-				      :data (make-array resolution-width)))))
+				    (make-funcdata
+				     :function func
+				     :color-real real
+				     :color-realpart realpart
+				     :color-imagpart imagpart
+				     :label (concatenate 'string
+							 sub-of
+							 (when sub-of "-")
+							 (format nil "~a" id))
+				     :data (make-array resolution-width))))
 				 (symbol
 				  (multiple-value-bind
 					(real realpart imagpart)
 				      (if is-master
 					  (values nil nil nil)
 					  (aux-colors (pop color-stack)))
-				    (store-funcdata
-				     (make-funcdata
-				      :function (symbol-function func)
-				      :color-real real
-				      :color-realpart realpart
-				      :color-imagpart imagpart
-				      :label (concatenate 'string
-							  sub-of
-							  (when sub-of "-")
-							  (symbol-name func))
-				      :data (make-array resolution-width)))))
+				    (make-funcdata
+				     :function (symbol-function func)
+				     :color-real real
+				     :color-realpart realpart
+				     :color-imagpart imagpart
+				     :label (concatenate 'string
+							 sub-of
+							 (when sub-of "-")
+							 (symbol-name func))
+				     :data (make-array resolution-width))))
 				 (list
 				  (append
 				   (funcdata-gen (list (car func))
@@ -652,7 +645,7 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	;; TODO: memory should be freed only at exit from sdl loop
 	;; Might want to bind function's internal variables to some buttons
 	;; and then render changes dynamically etc..
-	(free-assets pfunc-list)
+	(setf *draw-functions* pfunc-list)
 	))))
 
 ;; Let's go with elements in func-list as (func key-list) or just func
@@ -688,7 +681,9 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
     
     (sdl:with-events (:poll)
       (:quit-event
-       () t)
+       ()
+       (free-assets *draw-functions*)
+       t)
 
       (:idle
        ()
