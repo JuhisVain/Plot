@@ -532,6 +532,7 @@ Result will still need to be inverted before drawing."
 	    (funcdata-label function)
 	    (funcdata-color-real function))))
       ;; Should probably write some smarter position determination...
+      ;; update: this is getting ugly
       (sdl:draw-surface-at-* string-render
 			     *label-position*
 			     (+
@@ -541,9 +542,12 @@ Result will still need to be inverted before drawing."
 				 (round
 				  (realpart
 				   (- (+ slack-pixels
-					 (* y-scale
-					    (aref (funcdata-data function)
-						  *label-position*)))
+					 (handler-case
+					     (* y-scale
+						(aref (funcdata-data function)
+						      *label-position*))
+					; if trying to label zerodiv:
+					   (type-error () 0)))
 				      screen-y0)))))
 			     :surface surface)
       (sdl:free string-render))
@@ -657,7 +661,8 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 ;;       :from -11 :to -1)
 
 ;;; Bindings key args should be in list of form
-;;  '((increase-button [decrease-button])
+;;  '(increase-button
+;;    decrease-button
 ;;    dynamic-variable
 ;;    {number-delta|function-delta}
 ;;    [(functions-to-redraw)])
