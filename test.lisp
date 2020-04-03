@@ -15,7 +15,7 @@
     (plot (list #'modsin)
 	  :from 0 :to 50
 	  :window-width 1500
-	  :bindings '(((q a) *wave-length* 0.1 (modsin))))))
+	  :bindings '((q a *wave-length* 0.1 (modsin))))))
 ;;                                       #'(lambda (dv) (* dv 2))
 
 (defun testlabel ()

@@ -673,6 +673,27 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		(string-upcase (string button-name)))
    "KEYWORD"))
 
+(defun member-sub (function plotfunc)
+  "Returns T if FUNCTION is found in funcdata-function slot in any
+ of PLOTFUNC's subfunctions at any depth."
+  (declare (function function)
+	   (plotfunc plotfunc))
+  (dolist (sub (plotfunc-subs plotfunc))
+    (when
+	(if (plotfunc-p sub)
+	    (member-sub function sub)
+	    (eq function (funcdata-function sub)))
+      (return-from member-sub t))))
+
+(defun master-funcdata (func &optional (root-level *draw-functions*))
+  "Find root function container for function FUNC in tree ROOT-LEVEL."
+  (dolist (master root-level)
+    (typecase master
+      (funcdata (when (eq func (funcdata-function master))
+		  (return-from master-funcdata master)))
+      (plotfunc (when (member-sub func master)
+		  (return-from master-funcdata master))))))
+
 (defun plot (func-list
 	     &key (from 0) (to 100) (slack 1/20)
 	       (window-width 500) (window-height 500)
@@ -707,7 +728,13 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
       (:key-down-event
        (:key key)
        (format t "Pressed: ~a~%" key)
-
+       (case key
+	 (:sdl-key-q
+;;	  (incf *wave-length* 0.1)
+;;	  (compute-2d-data (master-funcdata #'modsin *draw-functions*))
+;;	  (render-2d-tree *draw-functions*)
+	  ))
+       
        
        )
       
