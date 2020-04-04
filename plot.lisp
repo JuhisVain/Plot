@@ -584,6 +584,13 @@ Result will still need to be inverted before drawing."
        (sdl:free (funcdata-render func))))
     (free-assets (cdr pfunc-list))))
 
+(defun read-input-list (input-func-list dataset-width)
+  "Read a function description, store processed pfunc-list to *draw-functions*
+and return it."
+  (setf
+   *draw-functions*
+   (to-plotfunc (to-funcdata input-func-list dataset-width))))
+
 (defun draw-function (input-func-list
 		      min-x max-x
 		      slack
@@ -592,7 +599,7 @@ Result will still need to be inverted before drawing."
   "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
   
-  (let* ((pfunc-list (to-plotfunc (to-funcdata input-func-list (sdl:width surface))))
+  (let* ((pfunc-list (read-input-list input-func-list (sdl:width surface)))
 	 (win-width (sdl:width surface))
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
@@ -649,7 +656,6 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	;; TODO: memory should be freed only at exit from sdl loop
 	;; Might want to bind function's internal variables to some buttons
 	;; and then render changes dynamically etc..
-	(setf *draw-functions* pfunc-list)
 	))))
 
 ;; Let's go with elements in func-list as (func key-list) or just func
