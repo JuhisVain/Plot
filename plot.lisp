@@ -25,6 +25,8 @@
   (color-imagpart)
   (label nil :type string)
   (data nil :type (or array null))
+  (data-min nil :type (or real null))
+  (data-max nil :type (or real null))
   (render))
 
 ;;TODO: test that store works
@@ -298,12 +300,26 @@ where the Xs are (integer 0 255)."
 				  (list index))))
   "Funcall with handlers etc. for plottable data,
 stored into array in funcdata FUNCTION's data slot at aref INDEX."
-  (setf ;;;setfing an applied aref is used as example in the hyperspec!
-   (apply #'aref (funcdata-data function) lindex)
-   (handler-case
-       (apply (funcdata-function function) arguments)
-     (division-by-zero () 'ZERO-DIVISION)
-     (type-error () nil))))
+  (let ((value (handler-case
+		   (apply (funcdata-function function) arguments)
+		 (division-by-zero () 'ZERO-DIVISION)
+		 (type-error () nil))))
+
+    (when (numberp value)
+      (setf (funcdata-data-max function)
+	    (if (funcdata-data-max function)
+		(complex-max (funcdata-data-max function)
+			     value)
+		value))
+      (setf (funcdata-data-min function)
+	    (if (funcdata-data-min function)
+		(complex-min (funcdata-data-min function)
+			     value)
+		value)))
+    
+    (setf ;;;setfing an applied aref is used as example in the hyperspec!
+     (apply #'aref (funcdata-data function) lindex)
+     value)))
   
 (defun plotfunc-evaluate (plotfunc index &rest arguments)
   (let ((fvalue
@@ -432,36 +448,20 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 
 (defun compute-2d-data (function min-x x-step width)
   "Populates funcdata FUNCTION's (and FUNCTION's subs) data slot's array with
-results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP.
-Returns cons of maximum and minimum results on range."
-  (let ((max-y)
-	(min-y))
-    (loop
-       for x from min-x by x-step
-       for i from 0 below width
-       do (loop for value in (get-numbers
-			      (if (plotfunc-p function)
-				  (plotfunc-evaluate function i x)
-				  (plotcall function i x)))
-	     do (cond ((null max-y)
-		       (setf max-y value
-			     min-y value))
-		      (t
-		       (setf max-y (complex-max max-y value)
-			     min-y (complex-min min-y value)))))
-       finally (return (cons max-y min-y)))))
+results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
+  (loop
+     for x from min-x by x-step
+     for i from 0 below width
+     do (loop for value in (get-numbers
+			    (if (plotfunc-p function)
+				(plotfunc-evaluate function i x)
+				(plotcall function i x))))))
 
 (defun compute-2d-tree (func-list min-x x-step width)
   "Computes data for all funcdatas in FUNC-LIST."
-  (let* ((max-min (mapcar #'(lambda (func)
-			      (compute-2d-data func min-x x-step width))
-			  func-list))
-	 (max (caar max-min))
-	 (min (cdar max-min)))
-    (dolist (mm max-min)
-      (setf max (max max (car mm))
-	    min (min min (cdr mm))))
-    (values max min)))
+  (mapcar #'(lambda (func)
+	      (compute-2d-data func min-x x-step width))
+	  func-list))
 
 (defun render-string (string color &key (color-key sdl:*black*))
   "SDL:RENDER-STRING-SOLID picks it's color key in an unpredictable way.
@@ -591,6 +591,42 @@ and return it."
    *draw-functions*
    (to-plotfunc (to-funcdata input-func-list dataset-width))))
 
+(defun process-functree (function tree &key (do-masters t))
+  "Funcalls FUNCTION on every funcdata in TREE.
+Will ignore plotfunc-function if DO-MASTERS set to nil."
+  (dolist (func tree)
+    (etypecase func
+      (plotfunc (when do-masters
+		  (funcall function (plotfunc-function func)))
+		(process-functree function (plotfunc-subs func)))
+      (funcdata (funcall function func)))))
+
+(defun functree-max (tree)
+  "Returns greatest y-value to draw from tree."
+  (let ((max))
+    (process-functree
+     #'(lambda (f)
+	 (setf max
+	       (if max
+		   (max max (funcdata-data-max f))
+		   (funcdata-data-max f))))
+     tree
+     :do-masters nil)
+    max))
+
+(defun functree-min (tree)
+  "Returns smallest y-value to draw from a tree."
+  (let ((min))
+    (process-functree
+     #'(lambda (f)
+	 (setf min
+	       (if min
+		   (min min (funcdata-data-min f))
+		   (funcdata-data-min f))))
+     tree
+     :do-masters nil)
+    min))
+  
 (defun draw-function (input-func-list
 		      min-x max-x
 		      slack
@@ -607,9 +643,11 @@ dynamic based on extreme values on X's range."
 	 (x-step (/ x-range win-width)) ; rational, used to iterate arguments
 	 (screen-x0 (* min-x (/ win-width x-range)))
 	 )
+    
+    (compute-2d-tree pfunc-list min-x x-step (sdl:width surface))
 
-    (multiple-value-bind (max-y min-y)
-	(compute-2d-tree pfunc-list min-x x-step (sdl:width surface))
+    (let ((max-y (functree-max *draw-functions*))
+	  (min-y (functree-min *draw-functions*)))
       
       (format t "max ~a min ~a~%" max-y min-y)
 
