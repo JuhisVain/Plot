@@ -627,7 +627,7 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
      :do-masters nil)
     min))
   
-(defun draw-function (input-func-list
+(defun draw-function (pfunc-list
 		      min-x max-x
 		      slack
 		      &optional
@@ -635,8 +635,7 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
   "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
   
-  (let* ((pfunc-list (read-input-list input-func-list (sdl:width surface)))
-	 (win-width (sdl:width surface))
+  (let* ((win-width (sdl:width surface))
 	 (win-height (sdl:height surface))
 	 (x-range (- max-x min-x))
 	 (x-scale (/ win-width x-range))
@@ -744,44 +743,46 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	       (draw-labels *draw-labels*)
 	       bindings)
   (declare ((rational 0 1) slack))
-  (sdl:initialise-default-font)
-  (sdl:with-init()
-    (sdl:window window-width window-height
-		:title-caption "plot"
-		:hw t
-		:bpp 32)
-    ;;(setf (sdl:frame-rate) 30)
+  (let ((processed-func-list
+	 (read-input-list func-list window-width)))
+    (sdl:initialise-default-font)
+    (sdl:with-init()
+      (sdl:window window-width window-height
+		  :title-caption "plot"
+		  :hw t
+		  :bpp 32)
+      ;;(setf (sdl:frame-rate) 30)
 
-    (let ((*draw-labels* draw-labels)
-	  (*label-position* 0))
-      (declare (special *label-position* *draw-labels*))
+      (let ((*draw-labels* draw-labels)
+	    (*label-position* 0))
+	(declare (special *label-position* *draw-labels*))
 
-      (time ; might want to do some custom logging also/instead
-       (draw-function
-	func-list
-	from to slack)))
+	(time ; might want to do some custom logging also/instead
+	 (draw-function
+	  processed-func-list
+	  from to slack)))
 
-    (sdl:update-display)
-    
-    (sdl:with-events (:poll)
-      (:quit-event
-       ()
-       (free-assets *draw-functions*)
-       t)
-
-      (:key-down-event
-       (:key key)
-       (format t "Pressed: ~a~%" key)
-       (case key
-	 (:sdl-key-q
-;;	  (incf *wave-length* 0.1)
-;;	  (compute-2d-data (master-funcdata #'modsin *draw-functions*))
-;;	  (render-2d-tree *draw-functions*)
-	  ))
-       
-       
-       )
+      (sdl:update-display)
       
-      (:idle
-       ()
-       ))))
+      (sdl:with-events (:poll)
+	(:quit-event
+	 ()
+	 (free-assets *draw-functions*)
+	 t)
+
+	(:key-down-event
+	 (:key key)
+	 (format t "Pressed: ~a~%" key)
+	 (case key
+	   (:sdl-key-q
+	    ;;	  (incf *wave-length* 0.1)
+	    ;;	  (compute-2d-data (master-funcdata #'modsin *draw-functions*))
+	    ;;	  (render-2d-tree *draw-functions*)
+	    ))
+	 
+	 
+	 )
+	
+	(:idle
+	 ()
+	 )))))
