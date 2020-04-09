@@ -16,7 +16,17 @@
 	  :from 0 :to 50
 	  :window-width 1500
 	  :bindings '((q a *wave-length* 0.1 (modsin))))))
-;;                                       #'(lambda (dv) (* dv 2))
+;;                                       #'(lambda () (* *wave-length* 2))
+
+(defun testbind2 ()
+  (defparameter *ding-dong* 1)
+  (plot (list #'(lambda (x)
+		  (* x *ding-dong*)))
+	:bindings
+	`((q a *ding-dong*
+	     ,#'(lambda ()
+		  (* 0.1 *ding-dong*))
+	     nil))))
 
 (defun testlabel ()
   "Label background should be transparent"

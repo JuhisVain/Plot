@@ -14,6 +14,9 @@
 (defparameter *draw-functions* nil
   "Storage for funcdatas currently being drawn.")
 
+(defparameter *draw-labels* t)
+(defparameter *label-position* 0)
+
 (defstruct plotfunc
   (function) ; master function
   (subs)) ; keys, accessors or whatever to be called with master's value
@@ -584,6 +587,15 @@ Result will still need to be inverted before drawing."
        (sdl:free (funcdata-render func))))
     (free-assets (cdr pfunc-list))))
 
+(defun free-renders (pfunc-list)
+  (let ((func (car pfunc-list)))
+    (typecase func
+      (null (return-from free-renders))
+      (plotfunc (free-renders (plotfunc-subs func)))
+      (funcdata
+       (sdl:free (funcdata-render func))))
+    (free-renders (cdr pfunc-list))))
+
 (defun read-input-list (input-func-list dataset-width)
   "Read a function description, store processed pfunc-list to *draw-functions*
 and return it."
@@ -703,19 +715,6 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 ;;         (list #'log #'imagpart #'realpart))
 ;;       :from -11 :to -1)
 
-;;; Bindings key args should be in list of form
-;;  '(increase-button
-;;    decrease-button
-;;    dynamic-variable
-;;    {number-delta|function-delta}
-;;    [(functions-to-redraw)])
-
-(defun button-to-sdlkey (button-name)
-  (intern
-   (concatenate 'string "SDL-KEY-"
-		(string-upcase (string button-name)))
-   "KEYWORD"))
-
 (defun member-sub (function plotfunc)
   "Returns T if FUNCTION is found in funcdata-function slot in any
  of PLOTFUNC's subfunctions at any depth."
@@ -737,6 +736,52 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
       (plotfunc (when (member-sub func master)
 		  (return-from master-funcdata master))))))
 
+;;; Bindings key args should be in list of form
+;;  '(increase-button
+;;    decrease-button
+;;    dynamic-variable
+;;    {number-delta|function-delta}
+;;    [(functions-to-redraw)])
+;;;; for example:
+;;  (q a *ding-dong* #'(lambda () (* 0.1 *ding-dong*)) '(my-func other-func))
+
+(defun button-to-sdlkey (button-name)
+  "Will transform an ASCII key into a keyword understod by lispbuilder."
+  (intern
+   (concatenate 'string "SDL-KEY-"
+		(string-upcase (string button-name)))
+   "KEYWORD"))
+
+;; TODO: selectively redraw func-list
+(defun make-binding-hash-table (bindings)
+  (let ((hash-table (make-hash-table :size (* 2 (length bindings)))))
+    (dolist (binding bindings)
+      (destructuring-bind
+	    (inc-button dec-button dyn-var delta func-list)
+	  binding
+	
+	(unless (boundp dyn-var)
+	  (format t "Symbol ~a has not been dynamically bound!" dyn-var))
+	
+	(setf (gethash (button-to-sdlkey inc-button)
+		       hash-table)
+	      #'(lambda ()
+		  (incf (symbol-value dyn-var)
+			(etypecase delta
+			  (number delta)
+			  (function (funcall delta))))))
+	(setf (gethash (button-to-sdlkey dec-button)
+		       hash-table)
+	      #'(lambda ()
+		  (decf (symbol-value dyn-var)
+			(etypecase delta
+			  (number delta)
+			  (function (funcall delta))))))))
+    hash-table))
+
+(defun call-binding (button bindings-table)
+  (funcall (gethash button bindings-table)))
+
 (defun plot (func-list
 	     &key (from 0) (to 100) (slack 1/20)
 	       (window-width 500) (window-height 500)
@@ -744,7 +789,8 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	       bindings)
   (declare ((rational 0 1) slack))
   (let ((processed-func-list
-	 (read-input-list func-list window-width)))
+	 (read-input-list func-list window-width))
+	(binding-hash-table (make-binding-hash-table bindings)))
     (sdl:initialise-default-font)
     (sdl:with-init()
       (sdl:window window-width window-height
@@ -753,10 +799,9 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		  :bpp 32)
       ;;(setf (sdl:frame-rate) 30)
 
-      (let ((*draw-labels* draw-labels)
-	    (*label-position* 0))
-	(declare (special *label-position* *draw-labels*))
-
+      (let ((*draw-labels* draw-labels))
+	(declare (special *draw-labels*))
+	(setf *label-position* 0)
 	(time ; might want to do some custom logging also/instead
 	 (draw-function
 	  processed-func-list
@@ -772,15 +817,17 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 
 	(:key-down-event
 	 (:key key)
+	 (setf *label-position* 0)
 	 (format t "Pressed: ~a~%" key)
-	 (case key
-	   (:sdl-key-q
-	    ;;	  (incf *wave-length* 0.1)
-	    ;;	  (compute-2d-data (master-funcdata #'modsin *draw-functions*))
-	    ;;	  (render-2d-tree *draw-functions*)
-	    ))
-	 
-	 
+
+	 (call-binding key binding-hash-table)
+
+	 (sdl:clear-display sdl:*black*)
+
+	 (draw-function
+	  processed-func-list
+	  from to slack)
+	 (sdl:update-display)
 	 )
 	
 	(:idle
