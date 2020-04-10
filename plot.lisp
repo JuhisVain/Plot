@@ -455,10 +455,9 @@ results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
   (loop
      for x from min-x by x-step
      for i from 0 below width
-     do (loop for value in (get-numbers
-			    (if (plotfunc-p function)
-				(plotfunc-evaluate function i x)
-				(plotcall function i x))))))
+     do (if (plotfunc-p function)
+	    (plotfunc-evaluate function i x)
+	    (plotcall function i x))))
 
 (defun compute-2d-tree (func-list min-x x-step width)
   "Computes data for all funcdatas in FUNC-LIST."
@@ -824,6 +823,14 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 
 	 (sdl:clear-display sdl:*black*)
 
+	 ;;Have to unset mins and maxes here..
+	 (process-functree
+	  #'(lambda (func)
+	      (setf (funcdata-data-min func) nil
+		    (funcdata-data-max func) nil))
+	  processed-func-list)
+
+	 ;;Redraw:
 	 (draw-function
 	  processed-func-list
 	  from to slack)
