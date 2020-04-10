@@ -779,7 +779,10 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
     hash-table))
 
 (defun call-binding (button bindings-table)
-  (funcall (gethash button bindings-table)))
+  (funcall (or (gethash button bindings-table)
+	       ;;redrawing should most likely be handled from here
+	       #'(lambda ()
+		   (format t "No bindings on ~a~%" button)))))
 
 (defun plot (func-list
 	     &key (from 0) (to 100) (slack 1/20)
