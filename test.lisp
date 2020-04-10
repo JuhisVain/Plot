@@ -20,13 +20,15 @@
 
 (defun testbind2 ()
   (defparameter *ding-dong* 1)
+  (defparameter *dd-mod* 0.1)
   (plot (list #'(lambda (x)
 		  (* x *ding-dong*)))
 	:bindings
 	`((q a *ding-dong*
 	     ,#'(lambda ()
-		  (* 0.1 *ding-dong*))
-	     nil))))
+		  (* *dd-mod* *ding-dong*))
+	     nil)
+	  (w s *dd-mod* 0.01 nil))))
 
 (defun testlabel ()
   "Label background should be transparent"
