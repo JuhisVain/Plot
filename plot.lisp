@@ -525,6 +525,9 @@ Result will still need to be inverted before drawing."
 	   (sdl:surface surface)
 	   (special *label-position*))
 
+  (when (funcdata-render function) ; Free old render
+    (sdl:free (funcdata-render function)))
+  
   (setf (funcdata-render function) surface)
 
   (when (and draw-label
@@ -583,7 +586,11 @@ Result will still need to be inverted before drawing."
        (sdl:free (funcdata-color-real func))
        (sdl:free (funcdata-color-realpart func))
        (sdl:free (funcdata-color-imagpart func))
-       (sdl:free (funcdata-render func))))
+       (sdl:free (funcdata-render func))
+       (setf (funcdata-color-real func) nil
+	     (funcdata-color-realpart func) nil
+	     (funcdata-color-imagpart func) nil
+	     (funcdata-render func) nil)))
     (free-assets (cdr pfunc-list))))
 
 (defun free-renders (pfunc-list)
@@ -592,7 +599,8 @@ Result will still need to be inverted before drawing."
       (null (return-from free-renders))
       (plotfunc (free-renders (plotfunc-subs func)))
       (funcdata
-       (sdl:free (funcdata-render func))))
+       (sdl:free (funcdata-render func))
+       (setf (funcdata-render func) nil)))
     (free-renders (cdr pfunc-list))))
 
 (defun read-input-list (input-func-list dataset-width)
@@ -700,10 +708,6 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 			win-width win-height :draw-labels *draw-labels*)
 
 	(render-func-list pfunc-list surface)
-	
-	;; TODO: memory should be freed only at exit from sdl loop
-	;; Might want to bind function's internal variables to some buttons
-	;; and then render changes dynamically etc..
 	))))
 
 ;; Let's go with elements in func-list as (func key-list) or just func
