@@ -731,13 +731,15 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
       (return-from member-sub t))))
 
 (defun master-funcdata (func &optional (root-level *draw-functions*))
-  "Find root function container for function FUNC in tree ROOT-LEVEL."
-  (dolist (master root-level)
-    (typecase master
-      (funcdata (when (eq func (funcdata-function master))
-		  (return-from master-funcdata master)))
-      (plotfunc (when (member-sub func master)
-		  (return-from master-funcdata master))))))
+  "Find root function containers for function FUNC in tree ROOT-LEVEL."
+  (let ((masters nil))
+    (dolist (master root-level)
+      (typecase master
+	(funcdata (when (eq func (funcdata-function master))
+		    (push master masters)))
+	(plotfunc (when (member-sub func master)
+		    (push master masters)))))
+    masters))
 
 ;;; Bindings key args should be in list of form
 ;;  '(increase-button
@@ -755,7 +757,6 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		(string-upcase (string button-name)))
    "KEYWORD"))
 
-;; TODO: selectively redraw func-list
 (defun make-binding-hash-table (bindings)
   (let ((hash-table (make-hash-table :size (* 2 (length bindings)))))
     (dolist (binding bindings)
