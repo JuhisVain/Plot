@@ -30,6 +30,25 @@
 	     nil)
 	  (w s *dd-mod* 0.01 nil))))
 
+(defun testbind3 ()
+  (defparameter *h* 1)
+  (defparameter *c* 0)
+  (defparameter *w* 1)
+  (defparameter *mod* 0.01)
+  (plot (list #'(lambda (x)
+		  (gaussian x *h* *c* *w*))
+	      #'(lambda (x)
+		  (/ (1+ (cos x)) 2)))
+	:bindings `((q a *h* ,#'(lambda () *mod*) nil)
+		    (w s *c* ,#'(lambda () *mod*) nil)
+		    (e d *w* ,#'(lambda () *mod*) nil)
+		    (r f *mod*
+		       ,#'(lambda ()
+			    (format t "mod now ~a~%" *mod*)
+			    0.01)
+		       nil))
+	:to 4))
+
 (defun testlabel ()
   "Label background should be transparent"
   (plot (list (lambda (x) (+ x 0.01))
