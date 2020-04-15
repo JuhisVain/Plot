@@ -1,4 +1,5 @@
 (ql:quickload :lispbuilder-sdl)
+(load "state.lisp")
 
 (defvar *draw-labels* t
   "The default state of whether or not to write names for plotted data.")
@@ -645,7 +646,7 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
      tree
      :do-masters nil)
     min))
-  
+
 (defun draw-function (pfunc-list
 		      min-x max-x
 		      slack
@@ -804,7 +805,6 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		  :title-caption "plot"
 		  :hw t
 		  :bpp 32)
-      ;;(setf (sdl:frame-rate) 30)
 
       (let ((*draw-labels* draw-labels))
 	(declare (special *draw-labels*))
@@ -828,7 +828,11 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	 (format t "Pressed: ~a~%" key)
 
 	 (call-binding key binding-hash-table)
-
+	 ;;TODO: recompute funcs inside above then return funcdatas to redraw
+	 ;; draw function should return a state object
+	 ;; which will be given to a render func with above funcdatas
+	 ;; finally call a final render func that draws grid and blits all in pfunclist
+	 
 	 (sdl:clear-display sdl:*black*)
 
 	 ;;Have to unset mins and maxes here..
