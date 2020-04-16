@@ -450,21 +450,23 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 		   surface
 		   :mark "0")))
 
-(defun compute-2d-data (function min-x x-step width)
+(defun compute-2d-data (function state)
   "Populates funcdata FUNCTION's (and FUNCTION's subs) data slot's array with
 results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
   (loop
-     for x from min-x by x-step
-     for i from 0 below width
+     for x from (min-x state) by (x-step state)
+     for i from 0 below (width state)
      do (if (plotfunc-p function)
 	    (plotfunc-evaluate function i x)
 	    (plotcall function i x))))
 
-(defun compute-2d-tree (func-list min-x x-step width)
+(defun compute-2d-tree (state)
   "Computes data for all funcdatas in FUNC-LIST."
   (mapcar #'(lambda (func)
-	      (compute-2d-data func min-x x-step width))
-	  func-list))
+	      (compute-2d-data func state))
+	  (pfunc-list state))
+  (setf (max-y state) (functree-max (pfunc-list state))
+	(min-y state) (functree-min (pfunc-list state))))
 
 (defun render-string (string color &key (color-key sdl:*black*))
   "SDL:RENDER-STRING-SOLID picks it's color key in an unpredictable way.
@@ -647,6 +649,7 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
      :do-masters nil)
     min))
 
+;;This is now just an instance init, todo rename or remove
 (defun draw-function (pfunc-list
 		      min-x max-x
 		      slack
@@ -654,62 +657,31 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
 			(surface sdl:*default-display*))
   "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
+
   
-  (let* ((win-width (sdl:width surface))
-	 (win-height (sdl:height surface))
-	 (x-range (- max-x min-x))
-	 (x-scale (/ win-width x-range))
-	 (x-step (/ x-range win-width)) ; rational, used to iterate arguments
-	 (screen-x0 (* min-x (/ win-width x-range)))
-	 )
+  
+  (let* ((state
+	  (make-instance '2d-state
+			 :pfunc-list pfunc-list
+			 :min-x min-x :max-x max-x
+			 :slack slack
+			 :surface surface)))
     
-    (compute-2d-tree pfunc-list min-x x-step (sdl:width surface))
+    (format t "max ~a min ~a~%" (max-y state) (min-y state))
 
-    (let ((max-y (functree-max *draw-functions*))
-	  (min-y (functree-min *draw-functions*)))
-      
-      (format t "max ~a min ~a~%" max-y min-y)
-
-      (let* ((pre-y-range (- max-y min-y)) ; range in value
-	     (slack-mod (* pre-y-range slack)) ; total visible range in value
-	     (y-range (+ pre-y-range slack-mod))
-	     ;;handle funcs which always return the same value within range:
-	     (y-scale (if (zerop y-range)
-			  100
-			  (/ win-height y-range)))
-	     (slack-pixels (* 1/2 slack-mod y-scale)) ; pixels to add at y-extremes
-	     ;; screen-y0 is the location of actual y=0 line in relation to low
-	     ;; border of window and inverted.
-	     ;; If func produces 0 ...-> negative numbers and window is 500
-	     ;; tall, screen-y0 will be -500 etc..
-	     (screen-y0 (* min-y
-			   y-scale)))
-
-	(when (zerop y-range)
-	  (setf screen-y0 (/ win-height -2)))
-
-	;;debug:
-	(format t "y-range ~a, ~a~%slack-mod ~a, ~a~%y-scale ~a~%
+    ;;debug:
+    (format t "y-range ~a~%slack-pix ~a~%y-scale ~a~%
 screen-y0 ~a and x0 ~a, x-scale: ~a~%"
-		pre-y-range
-		y-range
-		slack-mod
-		(* slack-mod y-scale)
-		y-scale
-		screen-y0
-		screen-x0
-		x-scale)
+	    (y-range state)
+	    (slack-pixels state)
+	    (y-scale state)
+	    (screen-y0 state)
+	    (screen-x0 state)
+	    (x-scale state))
 
-	;;draw grid
-	(draw-grid min-y max-y y-range y-scale screen-y0
-		   min-x max-x x-range x-scale screen-x0
-		   slack-pixels surface)
-
-	(render-2d-tree pfunc-list y-scale slack-pixels screen-y0
-			win-width win-height :draw-labels *draw-labels*)
-
-	(render-func-list pfunc-list surface)
-	))))
+    state
+    
+    ))
 
 ;; Let's go with elements in func-list as (func key-list) or just func
 ;; key-list is list of functions to be applied to func's result
@@ -806,13 +778,12 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		  :hw t
 		  :bpp 32)
 
-      (let ((*draw-labels* draw-labels))
-	(declare (special *draw-labels*))
-	(setf *label-position* 0)
-	(time ; might want to do some custom logging also/instead
-	 (draw-function
-	  processed-func-list
-	  from to slack)))
+      (let ((state
+	     (time ; might want to do some custom logging also/instead
+	      (draw-function
+	       processed-func-list
+	       from to slack))))
+	(render-state state))
 
       (sdl:update-display)
       
@@ -832,6 +803,8 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	 ;; draw function should return a state object
 	 ;; which will be given to a render func with above funcdatas
 	 ;; finally call a final render func that draws grid and blits all in pfunclist
+	 ;;; DONE
+	 ;;TODO: handle bindings
 	 
 	 (sdl:clear-display sdl:*black*)
 
@@ -843,9 +816,9 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	  processed-func-list)
 
 	 ;;Redraw:
-	 (draw-function
-	  processed-func-list
-	  from to slack)
+;wrong now	 (draw-function
+;	  processed-func-list
+;	  from to slack)
 	 (sdl:update-display)
 	 )
 	

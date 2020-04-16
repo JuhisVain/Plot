@@ -1,19 +1,36 @@
 (defclass state ()
-  ((pfunc-list)
+  ((pfunc-list
+    :initarg :pfunc-list
+    :accessor pfunc-list)
    
-   (min-x :accessor min-x)
-   (max-x :accessor max-x)
+   (min-x
+    :initarg :min-x
+    :accessor min-x)
+   (max-x
+    :initarg :max-x
+    :accessor max-x)
 
-   (max-y :accessor max-y)
-   (min-y :accessor min-y)
+   (max-y
+    :initarg :max-y
+    :accessor max-y)
+   (min-y
+    :initarg :min-y
+    :accessor min-y)
 
-   (draw-labels :initform t)
+   (draw-labels
+    :initarg :draw-labels
+    :accessor draw-labels
+    :initform t)
    (label-position :initform 0)
 
-   (surface :accessor surface)))
+   (surface
+    :initarg :surface
+    :accessor surface)))
 
 (defclass 2d-state (state)
-  ((slack :accessor slack)))
+  ((slack
+    :initarg :slack
+    :accessor slack)))
 
 ;;;; Auxiliary attributes:
 
@@ -63,3 +80,21 @@
       (/ (height state) -2)
       (* (min-y state) (y-scale state))))
 
+
+(defmethod render-state ((state 2d-state))
+  (draw-grid (min-y state) (max-y state) (y-range state)
+	     (y-scale state) (screen-y0 state)
+	     (min-x state) (max-x state) (x-range state)
+	     (x-scale state) (screen-x0 state)
+	     (slack-pixels state) (surface state))
+
+  (render-2d-tree
+   (pfunc-list state) (y-scale state) (slack-pixels state)
+   (screen-y0 state) (width state) (height state)
+   :draw-labels (draw-labels state))
+
+  (render-func-list (pfunc-list state) (surface state)))
+
+
+(defmethod initialize-instance :after ((state 2d-state) &key)
+  (compute-2d-tree state))
