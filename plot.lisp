@@ -524,6 +524,8 @@ Result will still need to be inverted before drawing."
   
 (defun render-2d-data (function y-scale slack-pixels screen-y0 surface
 		       &key draw-label)
+  "Renders individual funcdata FUNCTION onto SURFACE, stored into
+FUNCTION's render slot."
   (declare (funcdata function)
 	   (sdl:surface surface)
 	   (special *label-position*))
