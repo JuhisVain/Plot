@@ -401,6 +401,7 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
   NIL)
 
 (defun render-func-list (func-list surface)
+  "Blits all funcdata-renders within FUNC-LIST tree onto SURFACE."
   (dolist (func func-list)
     (typecase func
       (plotfunc
