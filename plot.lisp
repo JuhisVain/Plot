@@ -33,6 +33,9 @@
   (data-max nil :type (or real null))
   (render))
 
+(defstruct (sub-funcdata (:include funcdata))
+  (master))
+
 ;;TODO: test that store works
 (defun remove-funcdata (funcdata &optional (store *draw-functions*))
   "Destroys FUNCDATA from STORE and frees SDL assets."
@@ -226,15 +229,25 @@ where the Xs are (integer 0 255)."
 	       (function (rec-plot-len (cdr flist) (1+ sum))))))
     (rec-plot-len func-list 0)))
 
-(defun to-plotfunc (funcdata-list)
+
+;;; to-plotfunc & to-funcdata are parsing functions to transform user's list of
+;; symbols / functions into function data containers used by the program
+(defun to-plotfunc (funcdata-list &key master)
   "Stores multipart functions' parts into plotfunc structures."
   (mapcar #'(lambda (fdata)
 	      (typecase fdata
+		(sub-funcdata
+		 (setf (sub-funcdata-master fdata) master)
+		 fdata)
 		(funcdata fdata)
 		(list
 		 (make-plotfunc
-		  :function (car fdata)
-		  :subs (to-plotfunc (cdr fdata))))))
+		  :function (progn
+			      (when master
+				(setf (sub-funcdata-master (car fdata)) master))
+			      (car fdata))
+		  :subs (to-plotfunc (cdr fdata)
+				     :master (car fdata))))))
 	  funcdata-list))
 
 ;;feed to above
@@ -244,6 +257,7 @@ where the Xs are (integer 0 255)."
 	  255 0 0
 	  (plottable-count input-func-list))))
     (labels ((funcdata-gen (list id &key (sub-of nil) (is-master nil))
+	       ;; Convert list of symbols/funcs to function container list:
 	       (mapcar #'(lambda (func)
 			   (prog1 ; don't return incremented id
 			       (typecase func
@@ -253,32 +267,40 @@ where the Xs are (integer 0 255)."
 				      (if is-master
 					  (values nil nil nil)
 					  (aux-colors (pop color-stack)))
-				    (make-funcdata
-				     :function func
-				     :color-real real
-				     :color-realpart realpart
-				     :color-imagpart imagpart
-				     :label (concatenate 'string
-							 sub-of
-							 (when sub-of "-")
-							 (format nil "~a" id))
-				     :data (make-array resolution-width))))
+				    (apply
+				     (if sub-of
+					 #'make-sub-funcdata
+					 #'make-funcdata)
+				     (list
+				      :function func
+				      :color-real real
+				      :color-realpart realpart
+				      :color-imagpart imagpart
+				      :label (concatenate 'string
+							  sub-of
+							  (when sub-of "-")
+							  (format nil "~a" id))
+				      :data (make-array resolution-width)))))
 				 (symbol
 				  (multiple-value-bind
 					(real realpart imagpart)
 				      (if is-master
 					  (values nil nil nil)
 					  (aux-colors (pop color-stack)))
-				    (make-funcdata
-				     :function (symbol-function func)
-				     :color-real real
-				     :color-realpart realpart
-				     :color-imagpart imagpart
-				     :label (concatenate 'string
-							 sub-of
-							 (when sub-of "-")
-							 (symbol-name func))
-				     :data (make-array resolution-width))))
+				    (apply
+				     (if sub-of
+					 #'make-sub-funcdata
+					 #'make-funcdata)
+				     (list
+				      :function (symbol-function func)
+				      :color-real real
+				      :color-realpart realpart
+				      :color-imagpart imagpart
+				      :label (concatenate 'string
+							  sub-of
+							  (when sub-of "-")
+							  (symbol-name func))
+				      :data (make-array resolution-width)))))
 				 (list
 				  (append
 				   (funcdata-gen (list (car func))
@@ -808,6 +830,9 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	 ;; finally call a final render func that draws grid and blits all in pfunclist
 	 ;;; DONE
 	 ;;TODO: handle bindings
+
+	 ;;;DONE: set masters on sub-funcdatas 
+	 ;; TODO: when computing refer to master's data array
 	 
 	 (sdl:clear-display sdl:*black*)
 
