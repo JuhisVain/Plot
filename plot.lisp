@@ -88,6 +88,14 @@ one of (1 2 NIL)"
   ;; This situation is already handled by previous for all other coords but last
   (draw-vertical x1 *bad-color* surface))
 
+(defmethod draw-line (x0 (y0 (eql nil)) x1 y1 function
+		      &optional (surface (funcdata-render function)))
+  (draw-vertical x0 *bad-color* surface))
+
+(defmethod draw-line (x0 y0 x1 (y1 (eql nil)) function
+		     &optional (surface (funcdata-render function)))
+  (draw-vertical x1 *bad-color* surface))
+
 (defmethod draw-line (x0 (y0 real) x1 (y1 real) function
 		     &optional (surface (funcdata-render function)))
   (sdl:draw-line-* x0 (- (sdl:height surface) y0)
@@ -336,12 +344,12 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 	    (if (funcdata-data-max function)
 		(complex-max (funcdata-data-max function)
 			     value)
-		value))
+		(complex-max value)))
       (setf (funcdata-data-min function)
 	    (if (funcdata-data-min function)
 		(complex-min (funcdata-data-min function)
 			     value)
-		value)))
+		(complex-min value))))
     
     (setf ;;;setfing an applied aref is used as example in the hyperspec!
      (apply #'aref (funcdata-data function) lindex)
