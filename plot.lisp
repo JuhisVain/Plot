@@ -764,7 +764,8 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
    "KEYWORD"))
 
 (defun make-binding-hash-table (bindings)
-  (let ((hash-table (make-hash-table :size (* 2 (length bindings)))))
+  (let ((hash-table
+	 (make-hash-table :size (* 2 (length bindings)))))
     (dolist (binding bindings)
       (destructuring-bind
 	    (inc-button dec-button dyn-var delta func-list)
@@ -803,7 +804,8 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
   (declare ((rational 0 1) slack))
   (let ((processed-func-list
 	 (read-input-list func-list window-width))
-	(binding-hash-table (make-binding-hash-table bindings)))
+	(binding-hash-table (make-binding-hash-table bindings))
+	(state nil))
     (sdl:initialise-default-font)
     (sdl:with-init()
       (sdl:window window-width window-height
@@ -811,12 +813,12 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		  :hw t
 		  :bpp 32)
 
-      (let ((state
-	     (time ; might want to do some custom logging also/instead
-	      (draw-function
-	       processed-func-list
-	       from to slack))))
-	(render-state state))
+      (setf state
+	    (time ; might want to do some custom logging also/instead
+	     (draw-function
+	      processed-func-list
+	      from to slack)))
+      (render-state state)
 
       (sdl:update-display)
       
@@ -832,29 +834,18 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	 (format t "Pressed: ~a~%" key)
 
 	 (call-binding key binding-hash-table)
-	 ;;TODO: recompute funcs inside above then return funcdatas to redraw
-	 ;; draw function should return a state object
-	 ;; which will be given to a render func with above funcdatas
-	 ;; finally call a final render func that draws grid and blits all in pfunclist
-	 ;;; DONE
-	 ;;TODO: handle bindings
-
-	 ;;;DONE: set masters on sub-funcdatas 
-	 ;; TODO: when computing refer to master's data array
 	 
 	 (sdl:clear-display sdl:*black*)
 
-	 ;;Have to unset mins and maxes here..
-	 (process-functree
+	 (compute-2d-tree state) ; not everything needs to be computed
+	 
+	 (process-functree ; should move to somewhere smarter
 	  #'(lambda (func)
 	      (setf (funcdata-data-min func) nil
 		    (funcdata-data-max func) nil))
 	  processed-func-list)
 
-	 ;;Redraw:
-;wrong now	 (draw-function
-;	  processed-func-list
-;	  from to slack)
+	 (render-state state)
 	 (sdl:update-display)
 	 )
 	
