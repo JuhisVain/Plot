@@ -49,6 +49,26 @@
 		       nil))
 	:to 4))
 
+(defun testbindclosure ()
+  (let ((h 1)
+	(c 0)
+	(w 1)
+	(cmod 0.1))
+    (declare (special h c w cmod)) ; 'mod' can't be declared special
+    (plot (list #'(lambda (x)
+		    (gaussian x h c w))
+		#'(lambda (x)
+		    (/ (1+ (cos x)) 2)))
+	  :bindings `((q a h ,#'(lambda () cmod) nil)
+		      (w s c ,#'(lambda () cmod) nil)
+		      (e d w ,#'(lambda () cmod) nil)
+		      (r f cmod
+			 ,#'(lambda ()
+			      (format t "mod now ~a~%" cmod)
+			      0.01)
+			 nil))
+	  :to 4)))
+
 (defun testlabel ()
   "Label background should be transparent"
   (plot (list (lambda (x) (+ x 0.01))
