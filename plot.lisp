@@ -724,6 +724,25 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 ;;         (list #'log #'imagpart #'realpart))
 ;;       :from -11 :to -1)
 
+;; Used in determining what to update with button bindings:
+(defun find-containers (function containers)
+  "Returns list of highest containers within tree CONTAINERS with FUNCTION
+as main function."
+  (let ((found nil))
+    (dolist (container containers)
+      (setf found
+      (nconc
+       found
+       (typecase container
+	 (plotfunc (if (eql (funcdata-function (plotfunc-function container))
+			    function)
+		       (list container)
+		       (find-containers function (plotfunc-subs container))))
+	 (funcdata (if (eql (funcdata-function container)
+			    function)
+		       (list container)))))))
+    found))
+       
 (defun member-sub (function plotfunc)
   "Returns T if FUNCTION is found in funcdata-function slot in any
  of PLOTFUNC's subfunctions at any depth."
@@ -763,7 +782,11 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 		(string-upcase (string button-name)))
    "KEYWORD"))
 
-(defun make-binding-hash-table (bindings)
+(defstruct binding
+  (action nil :type function)
+  (functions nil :type list)) ; list of function containers to recompute
+
+(defun make-binding-hash-table (bindings state)
   (let ((hash-table
 	 (make-hash-table :size (* 2 (length bindings)))))
     (dolist (binding bindings)
@@ -774,27 +797,50 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	(unless (boundp dyn-var)
 	  (format t "Symbol ~a has not been dynamically bound!" dyn-var))
 	
-	(setf (gethash (button-to-sdlkey inc-button)
-		       hash-table)
-	      #'(lambda ()
-		  (incf (symbol-value dyn-var)
-			(etypecase delta
-			  (number delta)
-			  (function (funcall delta))))))
-	(setf (gethash (button-to-sdlkey dec-button)
-		       hash-table)
-	      #'(lambda ()
-		  (decf (symbol-value dyn-var)
-			(etypecase delta
-			  (number delta)
-			  (function (funcall delta))))))))
+	(let ((to-update
+	       (or ;; failsafe, in case no matches -> update everything
+		;; would be smarter to only update anonymous funcs
+		(reduce #'append
+			(mapcar #'(lambda (fun)
+				    (find-containers
+				     (typecase fun
+				       (function fun)
+				       (symbol (symbol-function fun)))
+				     (pfunc-list state)))
+				func-list))
+		(pfunc-list state))))
+	  
+	  (setf (gethash (button-to-sdlkey inc-button)
+			 hash-table)
+		(make-binding
+		 :action
+		 #'(lambda ()
+		     (incf (symbol-value dyn-var)
+			   (etypecase delta
+			     (number delta)
+			     (function (funcall delta)))))
+		 :functions to-update))
+	  (setf (gethash (button-to-sdlkey dec-button)
+			 hash-table)
+		(make-binding
+		 :action
+		 #'(lambda ()
+		     (decf (symbol-value dyn-var)
+			   (etypecase delta
+			     (number delta)
+			     (function (funcall delta)))))
+		 :functions to-update)))))
     hash-table))
 
-(defun call-binding (button bindings-table)
-  (funcall (or (gethash button bindings-table)
-	       ;;redrawing should most likely be handled from here
-	       #'(lambda ()
-		   (format t "No bindings on ~a~%" button)))))
+(defun call-binding (button bindings-table state)
+  (let ((binding (gethash button bindings-table)))
+    (unless binding
+      (format t "No bindings on ~a~%" button)
+      (return-from call-binding))
+    
+    (funcall (binding-action binding))
+    (dolist (to-update (binding-functions binding))
+      (compute-2d-data to-update state))))
 
 (defun plot (func-list
 	     &key (from 0) (to 100) (slack 1/20)
@@ -804,7 +850,7 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
   (declare ((rational 0 1) slack))
   (let ((processed-func-list
 	 (read-input-list func-list window-width))
-	(binding-hash-table (make-binding-hash-table bindings))
+	(binding-hash-table nil)
 	(state nil))
     (sdl:initialise-default-font)
     (sdl:with-init()
@@ -818,6 +864,8 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	     (draw-function
 	      processed-func-list
 	      from to slack)))
+
+      (setf binding-hash-table (make-binding-hash-table bindings state))
       (render-state state)
 
       (sdl:update-display)
@@ -833,11 +881,13 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	 (setf *label-position* 0)
 	 (format t "Pressed: ~a~%" key)
 
-	 (call-binding key binding-hash-table)
+	 (call-binding key binding-hash-table state)
 	 
 	 (sdl:clear-display sdl:*black*)
 
-	 (compute-2d-tree state) ; not everything needs to be computed
+	 (setf (max-y state) (functree-max (pfunc-list state))
+	       (min-y state) (functree-min (pfunc-list state)))
+	 ;(compute-2d-tree state) ; not everything needs to be computed
 	 
 	 (process-functree ; should move to somewhere smarter
 	  #'(lambda (func)

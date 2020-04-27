@@ -15,7 +15,7 @@
     (plot (list #'modsin)
 	  :from 0 :to 50
 	  :window-width 1500
-	  :bindings '((q a *wave-length* 0.1 (modsin))))))
+	  :bindings '((q a *wave-length* 0.1 (#'modsin))))))
 ;;                                       #'(lambda () (* *wave-length* 2))
 
 (defun testbind2 ()
@@ -71,6 +71,22 @@
 			      0.01)
 			 nil))
 	  :to 4)))
+
+(defun named-fun (x)
+  (gaussian x *h* *c* *w*))
+
+(defun testbindnamedfun ()
+  (let ((*h* 1)
+	(*c* 0)
+	(*w* 1))
+    (declare (special *h* *c* *w*))
+    (plot (list #'named-fun)
+	  :bindings `((q a *h* ,#'(lambda () 0.1) ,(list #'named-fun))
+		      (w s *c* ,#'(lambda () 0.1) ,(list 'named-fun))
+		      (e d *w* ,#'(lambda () 0.1) ,(list #'named-fun)))
+	  :to 4)))
+
+;;TODO:test flet binds
 
 (defun testlabel ()
   "Label background should be transparent"
