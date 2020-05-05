@@ -36,7 +36,6 @@
 (defstruct (sub-funcdata (:include funcdata))
   (master))
 
-;;TODO: test that store works
 (defun remove-funcdata (funcdata &optional (store *draw-functions*))
   "Destroys FUNCDATA from STORE and frees SDL assets."
   (sdl:free (funcdata-color-real funcdata))
