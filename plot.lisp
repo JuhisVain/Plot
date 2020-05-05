@@ -832,14 +832,16 @@ as main function."
     hash-table))
 
 (defun call-binding (button bindings-table state)
+  "Funcalls binding on button"
   (let ((binding (gethash button bindings-table)))
     (unless binding
       (format t "No bindings on ~a~%" button)
-      (return-from call-binding))
+      (return-from call-binding nil))
     
     (funcall (binding-action binding))
     (dolist (to-update (binding-functions binding))
-      (compute-2d-data to-update state))))
+      (compute-2d-data to-update state))
+    t))
 
 (defun plot (func-list
 	     &key (from 0) (to 100) (slack 1/20)
@@ -880,23 +882,27 @@ as main function."
 	 (setf *label-position* 0)
 	 (format t "Pressed: ~a~%" key)
 
-	 (call-binding key binding-hash-table state)
-	 
-	 (sdl:clear-display sdl:*black*)
+	 (when (call-binding key binding-hash-table state)
+	   
+	   (sdl:clear-display sdl:*black*)
 
-	 (setf (max-y state) (functree-max (pfunc-list state))
-	       (min-y state) (functree-min (pfunc-list state)))
-	 ;(compute-2d-tree state) ; not everything needs to be computed
-	 
-	 (process-functree ; should move to somewhere smarter
-	  #'(lambda (func)
-	      (setf (funcdata-data-min func) nil
-		    (funcdata-data-max func) nil))
-	  processed-func-list)
+	   (setf (max-y state) (functree-max (pfunc-list state))
+		 (min-y state) (functree-min (pfunc-list state)))
 
-	 (render-state state)
-	 (sdl:update-display)
-	 )
+	   (format t "STATE: max-y ~a, min-y ~a~%" (max-y state) (min-y state))
+
+	   ;; Must reset funcdata-data extremes so we'll get correct extremes
+	   ;; next time when the new values are within old extremes
+	   ;; I think this should be done inside call-binding
+	   (process-functree ; should move to somewhere smarter
+	    #'(lambda (func)
+		(setf (funcdata-data-min func) nil
+		      (funcdata-data-max func) nil))
+	    processed-func-list)
+
+	   (render-state state)
+	   (sdl:update-display)
+	   ))
 	
 	(:idle
 	 ()
