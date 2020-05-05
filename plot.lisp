@@ -832,7 +832,9 @@ as main function."
     hash-table))
 
 (defun call-binding (button bindings-table state)
-  "Funcalls binding on button"
+  "Funcalls binding on BUTTON.
+Returns NIL when no binding found.
+Returns T when binding found and STATE changed."
   (let ((binding (gethash button bindings-table)))
     (unless binding
       (format t "No bindings on ~a~%" button)
