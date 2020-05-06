@@ -15,9 +15,6 @@
 (defparameter *draw-functions* nil
   "Storage for funcdatas currently being drawn.")
 
-(defparameter *draw-labels* t)
-(defparameter *label-position* 0)
-
 (defstruct plotfunc
   (function) ; master function
   (subs)) ; keys, accessors or whatever to be called with master's value
@@ -552,21 +549,19 @@ Result will still need to be inverted before drawing."
      (funcdata-data function)
      (subseq (funcdata-data function) 1))))
   
-(defun render-2d-data (function y-scale slack-pixels screen-y0 surface
-		       &key draw-label)
+(defun render-2d-data (function state surface)
   "Renders individual funcdata FUNCTION onto SURFACE, stored into
 FUNCTION's render slot."
   (declare (funcdata function)
-	   (sdl:surface surface)
-	   (special *label-position*))
+	   (sdl:surface surface))
 
   (when (funcdata-render function) ; Free old render
     (sdl:free (funcdata-render function)))
   
   (setf (funcdata-render function) surface)
 
-  (when (and draw-label
-	     (< *label-position* (length (funcdata-data function))))
+  (when (and (draw-labels state)
+	     (< (label-position state) (length (funcdata-data function))))
     (let ((string-render
 	   (render-string
 	    (funcdata-label function)
@@ -574,42 +569,42 @@ FUNCTION's render slot."
       ;; Should probably write some smarter position determination...
       ;; update: this is getting ugly
       (sdl:draw-surface-at-* string-render
-			     *label-position*
+			     (label-position state)
 			     (+
 			      ;; move label downwards:
 			      (sdl:char-height sdl:*default-font*)
 			      (- (sdl:height surface)
 				 (round
 				  (realpart
-				   (- (+ slack-pixels
+				   (- (+ (slack-pixels state)
 					 (handler-case
-					     (* y-scale
+					     (* (y-scale state)
 						(aref (funcdata-data function)
-						      *label-position*))
+						      (label-position state)))
 					; if trying to label zerodiv:
 					   (type-error () 0)))
-				      screen-y0)))))
+				      (screen-y0 state))))))
 			     :surface surface)
       (sdl:free string-render))
     
-    (incf *label-position* (* (sdl:char-width sdl:*default-font*)
-			      (length (funcdata-label function)))))
+    (incf (label-position state)
+	  (* (sdl:char-width sdl:*default-font*)
+	     (length (funcdata-label function)))))
 
-  (funcall *render-function* y-scale slack-pixels screen-y0 function surface))
+  (funcall *render-function* (y-scale state) (slack-pixels state)
+	   (screen-y0 state) function surface))
 
-(defun render-2d-tree (func-list y-scale slack-pixels screen-y0 width height
-		       &key draw-labels)
+(defun render-2d-tree (state func-list)
 
     (dolist (func func-list)
       (etypecase func
-	(plotfunc (render-2d-tree
-		   (plotfunc-subs func)
-		   y-scale slack-pixels screen-y0 width height
-		   :draw-labels draw-labels))
+	(plotfunc (render-2d-tree state (plotfunc-subs func-list)))
 	(funcdata (render-2d-data
-		   func y-scale slack-pixels screen-y0
-		   (sdl:create-surface width height :pixel-alpha 255)
-		   :draw-label draw-labels)))))
+		   func
+		   state
+		   ;;TODO: move surface creation (OR WIPE) to render-2d-data
+		   (sdl:create-surface (width state) (height state) :pixel-alpha 255)
+		   )))))
 
 ;; Placeholder memory manager
 (defun free-assets (pfunc-list)
@@ -885,7 +880,7 @@ Returns T when binding found and STATE changed."
 
 	(:key-down-event
 	 (:key key)
-	 (setf *label-position* 0)
+	 (setf (label-position state) 0)
 	 (format t "Pressed: ~a~%" key)
 
 	 (when (call-binding key binding-hash-table state)

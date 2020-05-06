@@ -21,7 +21,9 @@
     :initarg :draw-labels
     :accessor draw-labels
     :initform t)
-   (label-position :initform 0)
+   (label-position
+    :initform 0
+    :accessor label-position)
 
    (surface
     :initarg :surface
@@ -88,10 +90,7 @@
 	     (x-scale state) (screen-x0 state)
 	     (slack-pixels state) (surface state))
 
-  (render-2d-tree
-   (pfunc-list state) (y-scale state) (slack-pixels state)
-   (screen-y0 state) (width state) (height state)
-   :draw-labels (draw-labels state))
+  (render-2d-tree state (pfunc-list state))
 
   (render-func-list (pfunc-list state) (surface state)))
 
