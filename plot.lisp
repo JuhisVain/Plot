@@ -801,8 +801,8 @@ as main function."
 		;; would be smarter to only update anonymous funcs
 		;;;; In general the to-update func-list should only be provided
 		;;in case of extremely heavy functions and even then only if
-		;;there are several of them and not all need to be idividually
-		;;updated.
+		;;there are several of them and not all need to be updated
+		;;at the same time.
 		(reduce #'append
 			(mapcar #'(lambda (fun)
 				    (find-containers
