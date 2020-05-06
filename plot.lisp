@@ -790,7 +790,7 @@ as main function."
 	 (make-hash-table :size (* 2 (length bindings)))))
     (dolist (binding bindings)
       (destructuring-bind
-	    (inc-button dec-button dyn-var delta func-list)
+	    (inc-button dec-button dyn-var delta &optional func-list)
 	  binding
 	
 	(unless (boundp dyn-var)
@@ -799,6 +799,10 @@ as main function."
 	(let ((to-update
 	       (or ;; failsafe, in case no matches -> update everything
 		;; would be smarter to only update anonymous funcs
+		;;;; In general the to-update func-list should only be provided
+		;;in case of extremely heavy functions and even then only if
+		;;there are several of them and not all need to be idividually
+		;;updated.
 		(reduce #'append
 			(mapcar #'(lambda (fun)
 				    (find-containers

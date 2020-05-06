@@ -62,14 +62,13 @@
 		#'(lambda (x)
 		    (declare (ignore x))
 		    h))
-	  :bindings `((q a h ,#'(lambda () cmod) nil)
-		      (w s c ,#'(lambda () cmod) nil)
-		      (e d w ,#'(lambda () cmod) nil)
+	  :bindings `((q a h ,#'(lambda () cmod))
+		      (w s c ,#'(lambda () cmod))
+		      (e d w ,#'(lambda () cmod))
 		      (r f cmod
 			 ,#'(lambda ()
 			      (format t "mod now ~a~%" cmod)
-			      0.01)
-			 nil))
+			      0.01)))
 	  :to 4)))
 
 (defun named-fun (x)
