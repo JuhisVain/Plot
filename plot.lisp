@@ -12,6 +12,8 @@
 (defvar *grid-color* (sdl:color :r 50 :g 50 :b 50))
 (defvar *grid-origin-color* (sdl:color :r 150 :g 150 :b 150))
 
+(defvar *transparent* (sdl:color :r 0 :g 0 :b 0 :a 0)) ; alpha 0 is transparent
+
 (defparameter *draw-functions* nil
   "Storage for funcdatas currently being drawn.")
 
@@ -551,16 +553,17 @@ Result will still need to be inverted before drawing."
      (funcdata-data function)
      (subseq (funcdata-data function) 1))))
   
-(defun render-2d-data (function state surface)
+(defun render-2d-data (function state)
   "Renders individual funcdata FUNCTION onto SURFACE, stored into
 FUNCTION's render slot."
-  (declare (funcdata function)
-	   (sdl:surface surface))
+  (declare (funcdata function))
 
-  (when (funcdata-render function) ; Free old render
-    (sdl:free (funcdata-render function)))
-  
-  (setf (funcdata-render function) surface)
+  (if (funcdata-render function)
+      ;; Wipe render:
+      (sdl:clear-display *transparent* :surface (funcdata-render function))
+      ;; First time rendering -> create surface:
+      (setf (funcdata-render function)
+	    (sdl:create-surface (width state) (height state) :pixel-alpha 255)))
 
   (when (and (draw-labels state)
 	     (< (label-position state) (length (funcdata-data function))))
@@ -575,7 +578,7 @@ FUNCTION's render slot."
 			     (+
 			      ;; move label downwards:
 			      (sdl:char-height sdl:*default-font*)
-			      (- (sdl:height surface)
+			      (- (sdl:height (funcdata-render function))
 				 (round
 				  (realpart
 				   (- (+ (slack-pixels state)
@@ -586,25 +589,20 @@ FUNCTION's render slot."
 					; if trying to label zerodiv:
 					   (type-error () 0)))
 				      (screen-y0 state))))))
-			     :surface surface)
+			     :surface (funcdata-render function))
       (sdl:free string-render))
     
     (incf (label-position state)
 	  (* (sdl:char-width sdl:*default-font*)
 	     (length (funcdata-label function)))))
 
-  (funcall *render-function* function state surface))
+  (funcall *render-function* function state (funcdata-render function)))
 
 (defun render-2d-tree (state func-list)
   (dolist (func func-list)
     (etypecase func
       (plotfunc (render-2d-tree state (plotfunc-subs func)))
-      (funcdata (render-2d-data
-		 func
-		 state
-		 ;;TODO: move surface creation (OR WIPE) to render-2d-data
-		 (sdl:create-surface (width state) (height state) :pixel-alpha 255)
-		 )))))
+      (funcdata (render-2d-data func state)))))
 
 ;; Placeholder memory manager
 (defun free-assets (pfunc-list)
