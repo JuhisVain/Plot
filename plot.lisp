@@ -596,16 +596,15 @@ FUNCTION's render slot."
   (funcall *render-function* function state surface))
 
 (defun render-2d-tree (state func-list)
-
-    (dolist (func func-list)
-      (etypecase func
-	(plotfunc (render-2d-tree state (plotfunc-subs func-list)))
-	(funcdata (render-2d-data
-		   func
-		   state
-		   ;;TODO: move surface creation (OR WIPE) to render-2d-data
-		   (sdl:create-surface (width state) (height state) :pixel-alpha 255)
-		   )))))
+  (dolist (func func-list)
+    (etypecase func
+      (plotfunc (render-2d-tree state (plotfunc-subs func)))
+      (funcdata (render-2d-data
+		 func
+		 state
+		 ;;TODO: move surface creation (OR WIPE) to render-2d-data
+		 (sdl:create-surface (width state) (height state) :pixel-alpha 255)
+		 )))))
 
 ;; Placeholder memory manager
 (defun free-assets (pfunc-list)
