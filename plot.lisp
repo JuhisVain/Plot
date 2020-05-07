@@ -509,11 +509,11 @@ using COLOR for text."
 		       :type :hw)
    :color color))
 
-(defun render-2d-dots (y-scale slack-pixels screen-y0 function
+(defun render-2d-dots (function state
 		       &optional (surface (funcdata-render function)))
   (loop for x from 0 below (sdl:width surface)
      for y across (funcdata-data function)
-     do (draw-value x y y-scale slack-pixels screen-y0
+     do (draw-value x y (y-scale state) (slack-pixels state) (screen-y0 state)
 		    surface function)))
 
 (defun scale-y (y y-scale slack screen-y0)
@@ -533,19 +533,21 @@ Result will still need to be inverted before drawing."
 			screen-y0))))
     (t y))); come again! Pass through for non number values
 
-(defun render-2d-lineplot (y-scale slack-pixels screen-y0 function
+(defun render-2d-lineplot (function state
 			   &optional (surface (funcdata-render function)))
   (let ((x-pixel 0))
     (map
      NIL
      #'(lambda (from to)
 	 (draw-line x-pixel
-		   (scale-y from y-scale slack-pixels screen-y0)
-		   (incf x-pixel)
-		   (scale-y to y-scale slack-pixels screen-y0)
-		   function
-		   surface
-		   ))
+		    (scale-y from (y-scale state)
+			     (slack-pixels state) (screen-y0 state))
+		    (incf x-pixel)
+		    (scale-y to (y-scale state)
+			     (slack-pixels state) (screen-y0 state))
+		    function
+		    surface
+		    ))
      (funcdata-data function)
      (subseq (funcdata-data function) 1))))
   
@@ -591,8 +593,7 @@ FUNCTION's render slot."
 	  (* (sdl:char-width sdl:*default-font*)
 	     (length (funcdata-label function)))))
 
-  (funcall *render-function* (y-scale state) (slack-pixels state)
-	   (screen-y0 state) function surface))
+  (funcall *render-function* function state surface))
 
 (defun render-2d-tree (state func-list)
 
