@@ -860,10 +860,9 @@ Returns T when binding found and STATE changed."
 		  :bpp 32)
 
       (setf state
-	    (time ; might want to do some custom logging also/instead
-	     (draw-function
-	      processed-func-list
-	      from to slack)))
+	    (draw-function
+	     processed-func-list
+	     from to slack))
 
       (setf binding-hash-table (make-binding-hash-table bindings state))
       (render-state state)
