@@ -203,7 +203,7 @@ and value are both at max."
 
 (defun aux-colors (rgb-plist)
   "Returns sdl:colors to be used to draw reals, realparts and imagparts.
-RGB-PLIST shoould be a property list like (:r x :g x :b x),
+RGB-PLIST should be a property list like (:r x :g x :b x),
 where the Xs are (integer 0 255)."
   (values (apply #'sdl:color rgb-plist)
 	  (apply #'sdl:color
@@ -868,7 +868,7 @@ Returns T when binding found and STATE changed."
       (render-state state)
 
       (sdl:update-display)
-      
+
       (sdl:with-events (:poll)
 	(:quit-event
 	 ()
