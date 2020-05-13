@@ -3,6 +3,7 @@
     :initarg :func
     :reader func)
    (label ;; maybe move to class drawn?
+    :initarg :label
     :reader label)
    (data
     :initarg :data
@@ -19,6 +20,7 @@
 ;; Properties:
 (defclass data-res () ;; Data resolution determined on top level funcs
   ((data-per-pixel ;; Could be integer ??or ratio??
+    :initform 1
     :initarg :data-per-pixel
     :accessor data-per-pixel)))
 
@@ -46,11 +48,14 @@
 (defclass abstract-sub-funcdata (abstract-funcdata sub)
   ())
 
-;; Actual function containers:
-(defclass top-funcdata (abstract-funcdata data-res drawn)
+(defclass abstract-top-funcdata (abstract-funcdata data-res)
   ())
 
-(defclass master-funcdata (top-funcdata master)
+;; Actual function containers:
+(defclass top-funcdata (abstract-top-funcdata drawn)
+  ())
+
+(defclass master-funcdata (abstract-top-funcdata master)
   ())
 
 (defclass sub-funcdata (abstract-sub-funcdata drawn)
@@ -71,21 +76,55 @@
 		 (symbol (symbol-name (func funcdata)))
 		 (function (format nil "~a" id)))))
 
-(defmethod form-label ((funcdata top-funcdata) id)
+(defmethod form-label ((funcdata abstract-top-funcdata) id)
   (etypecase (func funcdata)
     (symbol (symbol-name (func funcdata)))
     (function (format nil "~a" id))))
 
-(defmethod initialize-instance :after
-    ((funcdata abstract-funcdata) &key (label-id -1))
+(defmethod initialize-instance :after ((funcdata abstract-funcdata) &key)
   (setf (slot-value funcdata 'label)
-	(form-label funcdata label-id))
+	(form-label funcdata (slot-value funcdata 'label)))
   (setf (slot-value funcdata 'function)
 	(etypecase (func funcdata)
 	  (symbol (symbol-function (func funcdata)))
 	  (function (func funcdata)))))
 
-;;;; TODO: make unified constructor (make-funcdata)
+(defun make-funcdata
+    (&key
+       function data label color-real color-realpart
+       color-imagpart master subs (data-per-pixel 1))
+  (cond ((null (or master subs))
+	 (make-instance 'top-funcdata
+			:func function
+			:label label
+			:data data
+			:data-per-pixel data-per-pixel
+			:color-real color-real
+			:color-realpart color-realpart
+			:color-imagpart color-imagpart))
+	((and subs (null master))
+	 (make-instance 'master-funcdata
+			:func function
+			:label label
+			:data data
+			:data-per-pixel data-per-pixel
+			:subs subs))
+	((and master (null subs))
+	 (make-instance 'sub-funcdata
+			:func function
+			:label label
+			:data data
+			:master master
+			:color-real color-real
+			:color-realpart color-realpart
+			:color-imagpart color-imagpart))
+	((and master subs)
+	 (make-instance 'submaster-funcdata
+			:func function
+			:label label
+			:data data
+			:master master
+			:subs subs))))
 
 (defun generate-function-containers (input-func-list resolution-width)
   (let ((color-stack (generate-colors
@@ -103,34 +142,22 @@
 				    (if (null subs);aka. master
 					(aux-colors (pop color-stack))
 					(values nil nil nil)) ;master funcs are not drawn
-				  (apply #'make-instance
-					 (append
-					  (cond ((null (or subs master))
-						 (list 'top-funcdata
-						       :color-real real
-						       :color-realpart realpart
-						       :color-imagpart imagpart))
-						((and (null subs) master)
-						 (list 'sub-funcdata
-						       :master master
-						       :color-real real
-						       :color-realpart realpart
-						       :color-imagpart imagpart))
-						((and subs (null master))
-						 (list 'master-funcdata))
-						((and subs master)
-						 (list 'submaster-funcdata
-						       :master master)))
-					  (list
-					   :func main-func
-					   :data (make-array resolution-width)
-					   :label-id (incf id-counter)))))))
+
+				  (make-funcdata
+				   :function main-func
+				   :data (make-array resolution-width)
+				   :label (incf id-counter)
+				   :color-real real
+				   :color-realpart realpart
+				   :color-imagpart imagpart
+				   :master master
+				   :subs subs))))
+			   
 			   (when subs
 			     (setf (subs processed-func)
-				   (funcdata-generator subs 0 processed-func))
-			     )
-			   processed-func)
-			 ))
+				   (funcdata-generator subs 0 processed-func)))
+			   
+			   processed-func)))
 		   func-list)))
       (funcdata-generator input-func-list 0))))
 
