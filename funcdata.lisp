@@ -137,11 +137,14 @@
 			     (main-func &rest subs)
 			   (if (listp func) func (list func))
 			 (let ((processed-func
+				;; NOTE: Could declare color-stack special and
+				;; pop it in (make-funcdata) to get aux colors
 				(multiple-value-bind
 				      (real realpart imagpart)
 				    (if (null subs);aka. master
 					(aux-colors (pop color-stack))
-					(values nil nil nil)) ;master funcs are not drawn
+					;master funcs are not drawn:
+					(values nil nil nil)) 
 
 				  (make-funcdata
 				   :function main-func
