@@ -64,6 +64,14 @@
 (defclass submaster-funcdata (abstract-sub-funcdata master)
   ())
 
+(defmethod print-object ((funcdata abstract-funcdata) stream)
+  (print-unreadable-object (funcdata stream :type t)
+    (let ((subs (when (typep funcdata 'master) (subs funcdata))))
+      (format stream ": ~a~[~%~4t~a~;~]"
+	      ;(type-of funcdata)
+	      (label funcdata)
+	      (if subs 0 1) subs))))
+
 (defmethod data-per-pixel ((sub sub-funcdata))
   "Fetches data resolution from master-funcdata on top level."
   (data-per-pixel (master sub)))
