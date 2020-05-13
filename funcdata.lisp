@@ -68,7 +68,6 @@
   (print-unreadable-object (funcdata stream :type t)
     (let ((subs (when (typep funcdata 'master) (subs funcdata))))
       (format stream ": ~a~[~%~4t~a~;~]"
-	      ;(type-of funcdata)
 	      (label funcdata)
 	      (if subs 0 1) subs))))
 
