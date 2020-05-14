@@ -7,12 +7,7 @@
     :reader label)
    (data
     :initarg :data
-    :accessor data)
-   (data-min
-    :accessor data-min)
-   (data-max
-    :accessor data-max)
-   ))
+    :accessor data)))
 
 ;; Properties:
 (defclass data-res () ;; Data resolution determined on top level funcs
@@ -36,6 +31,10 @@
    (color-imagpart
     :initarg :color-imagpart
     :reader color-imagpart)
+   (data-min
+    :accessor data-min)
+   (data-max
+    :accessor data-max)
    (render
     :accessor render)))
 
