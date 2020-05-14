@@ -1,7 +1,7 @@
 (defclass abstract-funcdata ()
   ((function
     :initarg :func
-    :reader func)
+    :reader funcdata-function)
    (label ; should really be in class drawn, but this is good for debugging.
     :initarg :label
     :reader label)
@@ -78,22 +78,22 @@
   (concatenate 'string
 	       (label (master funcdata))
 	       "-"
-	       (etypecase (func funcdata)
-		 (symbol (symbol-name (func funcdata)))
+	       (etypecase (funcdata-function funcdata)
+		 (symbol (symbol-name (funcdata-function funcdata)))
 		 (function (format nil "~a" id)))))
 
 (defmethod form-label ((funcdata abstract-top-funcdata) id)
-  (etypecase (func funcdata)
-    (symbol (symbol-name (func funcdata)))
+  (etypecase (funcdata-function funcdata)
+    (symbol (symbol-name (funcdata-function funcdata)))
     (function (format nil "~a" id))))
 
 (defmethod initialize-instance :after ((funcdata abstract-funcdata) &key)
   (setf (slot-value funcdata 'label)
 	(form-label funcdata (slot-value funcdata 'label)))
   (setf (slot-value funcdata 'function)
-	(etypecase (func funcdata)
-	  (symbol (symbol-function (func funcdata)))
-	  (function (func funcdata)))))
+	(etypecase (funcdata-function funcdata)
+	  (symbol (symbol-function (funcdata-function funcdata)))
+	  (function (funcdata-function funcdata)))))
 
 (defun make-funcdata
     (&key
