@@ -32,10 +32,13 @@
     :initarg :color-imagpart
     :reader color-imagpart)
    (data-min
+    :initform NIL
     :accessor data-min)
    (data-max
+    :initform NIL
     :accessor data-max)
    (render
+    :initform NIL
     :accessor render)))
 
 (defclass sub ()

@@ -1,5 +1,6 @@
 (ql:quickload :lispbuilder-sdl)
 (load "state.lisp")
+(load "funcdata.lisp")
 
 (defvar *draw-labels* t
   "The default state of whether or not to write names for plotted data.")
@@ -17,11 +18,11 @@
 (defparameter *draw-functions* nil
   "Storage for funcdatas currently being drawn.")
 
-(defstruct plotfunc
+'(defstruct plotfunc
   (function) ; master function
   (subs)) ; keys, accessors or whatever to be called with master's value
 
-(defstruct funcdata
+'(defstruct funcdata
   (function nil :type function)
   (color-real)
   (color-realpart)
@@ -32,16 +33,8 @@
   (data-max nil :type (or real null))
   (render))
 
-(defstruct (sub-funcdata (:include funcdata))
+'(defstruct (sub-funcdata (:include funcdata))
   (master))
-
-(defun remove-funcdata (funcdata &optional (store *draw-functions*))
-  "Destroys FUNCDATA from STORE and frees SDL assets."
-  (sdl:free (funcdata-color-real funcdata))
-  (sdl:free (funcdata-color-realpart funcdata))
-  (sdl:free (funcdata-color-imagpart funcdata))
-  (sdl:free (funcdata-render funcdata))
-  (setf store (delete funcdata store)))
 
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
@@ -78,61 +71,61 @@ one of (1 2 NIL)"
 				     :color color))))
 
 (defmethod draw-line (x0 (y0 (eql 'zero-division)) x1 y1 function
-		      &optional (surface (funcdata-render function)))
+		      &optional (surface (render function)))
   (draw-vertical x0 *bad-color* surface))
 
 (defmethod draw-line (x0 y0 x1 (y1 (eql 'zero-division)) function
-		     &optional (surface (funcdata-render function)))
+		     &optional (surface (render function)))
   ;; This situation is already handled by previous for all other coords but last
   (draw-vertical x1 *bad-color* surface))
 
 (defmethod draw-line (x0 (y0 (eql nil)) x1 y1 function
-		      &optional (surface (funcdata-render function)))
+		      &optional (surface (render function)))
   (draw-vertical x0 *bad-color* surface))
 
 (defmethod draw-line (x0 y0 x1 (y1 (eql nil)) function
-		     &optional (surface (funcdata-render function)))
+		     &optional (surface (render function)))
   (draw-vertical x1 *bad-color* surface))
 
 (defmethod draw-line (x0 (y0 real) x1 (y1 real) function
-		     &optional (surface (funcdata-render function)))
+		     &optional (surface (render function)))
   (sdl:draw-line-* x0 (- (sdl:height surface) y0)
 		   x1 (- (sdl:height surface) y1)
 		   :surface surface
-		   :color (funcdata-color-real function)))
+		   :color (color-real function)))
 
 (defmethod draw-line (x0 (y0 complex) x1 (y1 complex) function
-		     &optional (surface (funcdata-render function)))
+		     &optional (surface (render function)))
   (sdl:draw-line-* x0 (- (sdl:height surface) (realpart y0))
 		   x1 (- (sdl:height surface) (realpart y1))
 		   :surface surface
-		   :color (funcdata-color-realpart function))
+		   :color (color-realpart function))
   (sdl:draw-line-* x0 (- (sdl:height surface) (imagpart y0))
 		   x1 (- (sdl:height surface) (imagpart y1))
 		   :surface surface
-		   :color (funcdata-color-imagpart function)))
+		   :color (color-imagpart function)))
 
 (defmethod draw-line (x0 (y0 complex) x1 (y1 real) function
-		     &optional (surface (funcdata-render function)))
+		     &optional (surface (render function)))
   (sdl:draw-line-* x0 (- (sdl:height surface) (realpart y0))
 		   x1 (- (sdl:height surface) y1)
 		   :surface surface
-		   :color (funcdata-color-realpart function))
+		   :color (color-realpart function))
   (sdl:draw-line-* x0 (- (sdl:height surface) (imagpart y0))
 		   x1 (- (sdl:height surface) y1)
 		   :surface surface
-		   :color (funcdata-color-imagpart function)))
+		   :color (color-imagpart function)))
 
 (defmethod draw-line (x0 (y0 real) x1 (y1 complex) function
-		     &optional (surface (funcdata-render function)))
+		     &optional (surface (render function)))
   (sdl:draw-line-* x0 (- (sdl:height surface) y0)
 		   x1 (- (sdl:height surface) (realpart y1))
 		   :surface surface
-		   :color (funcdata-color-realpart function))
+		   :color (color-realpart function))
   (sdl:draw-line-* x0 (- (sdl:height surface) y0)
 		   x1 (- (sdl:height surface) (imagpart y1))
 		   :surface surface
-		   :color (funcdata-color-imagpart function)))
+		   :color (color-imagpart function)))
 
 (defun draw-circle (x y radius surface color)
   (sdl:draw-circle-* x (- (sdl:height surface) y) radius
@@ -235,98 +228,70 @@ where the Xs are (integer 0 255)."
 	       (function (rec-plot-len (cdr flist) (1+ sum))))))
     (rec-plot-len func-list 0)))
 
+(defmethod plotcall ((funcdata abstract-top-funcdata)
+		     index &rest arguments
+		     &aux (lindex (if (listp index)
+				      index
+				      (list index))))
+  (let ((value (handler-case
+		   (apply (funcdata-function funcdata) arguments)
+		 (division-by-zero () 'ZERO-DIVISION)
+		 (type-error () nil))))
 
-;;; to-plotfunc & to-funcdata are parsing functions to transform user's list of
-;; symbols / functions into function data containers used by the program
-(defun to-plotfunc (funcdata-list &key master)
-  "Stores multipart functions' parts into plotfunc structures."
-  (mapcar #'(lambda (fdata)
-	      (typecase fdata
-		(sub-funcdata
-		 (setf (sub-funcdata-master fdata) master)
-		 fdata)
-		(funcdata fdata)
-		(list
-		 (make-plotfunc
-		  :function (progn
-			      (when master
-				(setf (sub-funcdata-master (car fdata)) master))
-			      (car fdata))
-		  :subs (to-plotfunc (cdr fdata)
-				     :master (car fdata))))))
-	  funcdata-list))
+    (setf ;;;setfing an applied aref is used as example in the hyperspec!
+     (apply #'aref (data funcdata) lindex)
+     value)
 
-;;feed to above
-(defun to-funcdata (input-func-list resolution-width)
-  (let ((color-stack
-	 (generate-colors
-	  255 0 0
-	  (plottable-count input-func-list))))
-    (labels ((funcdata-gen (list id &key (sub-of nil) (is-master nil))
-	       ;; Convert list of symbols/funcs to function container list:
-	       (mapcar #'(lambda (func)
-			   (prog1 ; don't return incremented id
-			       (typecase func
-				 (function
-				  (multiple-value-bind
-					(real realpart imagpart)
-				      (if is-master
-					  (values nil nil nil)
-					  (aux-colors (pop color-stack)))
-				    (apply
-				     (if sub-of
-					 #'make-sub-funcdata
-					 #'make-funcdata)
-				     (list
-				      :function func
-				      :color-real real
-				      :color-realpart realpart
-				      :color-imagpart imagpart
-				      :label (concatenate 'string
-							  sub-of
-							  (when sub-of "-")
-							  (format nil "~a" id))
-				      :data (make-array resolution-width)))))
-				 (symbol
-				  (multiple-value-bind
-					(real realpart imagpart)
-				      (if is-master
-					  (values nil nil nil)
-					  (aux-colors (pop color-stack)))
-				    (apply
-				     (if sub-of
-					 #'make-sub-funcdata
-					 #'make-funcdata)
-				     (list
-				      :function (symbol-function func)
-				      :color-real real
-				      :color-realpart realpart
-				      :color-imagpart imagpart
-				      :label (concatenate 'string
-							  sub-of
-							  (when sub-of "-")
-							  (symbol-name func))
-				      :data (make-array resolution-width)))))
-				 (list
-				  (append
-				   (funcdata-gen (list (car func))
-						 id
-						 :sub-of sub-of
-						 :is-master t)
-				   (funcdata-gen
-				    (cdr func) 0
-				    :sub-of
-				    (concatenate 'string ; master's name
-						 sub-of
-						 (when sub-of "-")
-						 (if (functionp (car func))
-						     (format nil "~a" id)
-						     (symbol-name (car func))))))))
-			     (incf id)))
-		       list)))
-      (funcdata-gen input-func-list 0))))
+    (call-next-method)))
 
-(defun plotcall (function index &rest arguments
+(defmethod plotcall ((funcdata abstract-sub-funcdata)
+		     index &rest arguments
+		     &aux (lindex (if (listp index)
+				      index
+				      (list index))))
+  (declare (ignore arguments))
+  (let ((value (handler-case
+		   (apply (funcdata-function funcdata)
+			  (list
+			   (apply #'aref (data (master funcdata)) lindex)))
+		 (division-by-zero () 'ZERO-DIVISION)
+		 (type-error () nil))))
+    (setf
+     (apply #'aref (data funcdata) lindex)
+     value)
+    (call-next-method)))
+
+(defmethod plotcall ((funcdata master)
+		     index &rest arguments
+		     &aux (lindex (if (listp index)
+				      index
+				      (list index))))
+  (declare (ignore arguments lindex))
+  (dolist (sub (subs funcdata))
+    (plotcall sub index NIL))) ; arguments ignored
+
+(defmethod plotcall ((funcdata drawn)
+		     index &rest arguments
+		     &aux (lindex (if (listp index)
+				      index
+				      (list index))))
+  (declare (ignore arguments))
+  (let ((value (apply #'aref (data funcdata) lindex)))
+    (when (numberp value)
+      (setf (data-max funcdata)
+	    (if (data-max funcdata)
+		(complex-max (data-max funcdata)
+			     value)
+		(complex-max value)))
+      (setf (data-min funcdata)
+	    (if (data-min funcdata)
+		(complex-min (data-min funcdata)
+			     value)
+		(complex-min value))))))
+
+
+
+'(defun OBSOLETE-plotcall (function index &rest arguments
 		 &aux (lindex (if (listp index)
 				  index
 				  (list index))))
@@ -338,22 +303,22 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 		 (type-error () nil))))
 
     (when (numberp value)
-      (setf (funcdata-data-max function)
-	    (if (funcdata-data-max function)
-		(complex-max (funcdata-data-max function)
+      (setf (data-max function)
+	    (if (data-max function)
+		(complex-max (data-max function)
 			     value)
 		(complex-max value)))
-      (setf (funcdata-data-min function)
-	    (if (funcdata-data-min function)
-		(complex-min (funcdata-data-min function)
+      (setf (data-min function)
+	    (if (data-min function)
+		(complex-min (data-min function)
 			     value)
 		(complex-min value))))
     
     (setf ;;;setfing an applied aref is used as example in the hyperspec!
-     (apply #'aref (funcdata-data function) lindex)
+     (apply #'aref (data function) lindex)
      value)))
   
-(defun plotfunc-evaluate (plotfunc index &rest arguments)
+'(defun OBSOLETE-plotfunc-evaluate (plotfunc index &rest arguments)
   (let ((fvalue
 	 (apply #'plotcall (plotfunc-function plotfunc) index arguments)))
     ;;; above: PLOTCALL is APPLIED because ARGUMENTS is -of course- a list
@@ -411,18 +376,18 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
 		      surface
 		      (typecase pfunc
 			(funcdata
-			 (funcdata-color-real pfunc))
+			 (color-real pfunc))
 			(sdl:color
 			 pfunc))))
     ;;the components of a complex must be real:
     (complex (draw-value x-coord
 			 (realpart value)
 			 y-scale slack screen-y0 surface
-			 (funcdata-color-realpart pfunc))
+			 (color-realpart pfunc))
 	     (draw-value x-coord
 			 (imagpart value)
 			 y-scale slack screen-y0 surface
-			 (funcdata-color-imagpart pfunc)))
+			 (color-imagpart pfunc)))
     (t (draw-vertical x-coord ; bad value, most likely zero div
 		      *bad-color*
 		      surface)))
@@ -432,10 +397,10 @@ stored into array in funcdata FUNCTION's data slot at aref INDEX."
   "Blits all funcdata-renders within FUNC-LIST tree onto SURFACE."
   (dolist (func func-list)
     (typecase func
-      (plotfunc
-       (render-func-list (plotfunc-subs func) surface))
-      (funcdata
-       (sdl:blit-surface (funcdata-render func) surface))))
+      (master
+       (render-func-list (subs func) surface))
+      (drawn
+       (sdl:blit-surface (render func) surface))))
   surface)
 
 (defun draw-grid (min-y max-y y-range y-scale screen-y0
@@ -485,9 +450,10 @@ results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
   (loop
      for x from (min-x state) by (x-step state)
      for i from 0 below (width state)
-     do (if (plotfunc-p function)
-	    (plotfunc-evaluate function i x)
-	    (plotcall function i x))))
+     do ;(if (plotfunc-p function)
+	 ;   (plotfunc-evaluate function i x)
+	    (plotcall function i x)
+	    ));)
 
 (defun compute-2d-tree (state)
   "Computes data for all funcdatas in FUNC-LIST."
@@ -512,9 +478,9 @@ using COLOR for text."
    :color color))
 
 (defun render-2d-dots (function state
-		       &optional (surface (funcdata-render function)))
+		       &optional (surface (render function)))
   (loop for x from 0 below (sdl:width surface)
-     for y across (funcdata-data function)
+     for y across (data function)
      do (draw-value x y (y-scale state) (slack-pixels state) (screen-y0 state)
 		    surface function)))
 
@@ -536,7 +502,7 @@ Result will still need to be inverted before drawing."
     (t y))); come again! Pass through for non number values
 
 (defun render-2d-lineplot (function state
-			   &optional (surface (funcdata-render function)))
+			   &optional (surface (render function)))
   (let ((x-pixel 0))
     (map
      NIL
@@ -550,27 +516,27 @@ Result will still need to be inverted before drawing."
 		    function
 		    surface
 		    ))
-     (funcdata-data function)
-     (subseq (funcdata-data function) 1))))
+     (data function)
+     (subseq (data function) 1))))
   
 (defun render-2d-data (function state)
   "Renders individual funcdata FUNCTION onto SURFACE, stored into
 FUNCTION's render slot."
-  (declare (funcdata function))
+  ;;(declare (funcdata function))
 
-  (if (funcdata-render function)
+  (if (render function)
       ;; Wipe render:
-      (sdl:clear-display *transparent* :surface (funcdata-render function))
+      (sdl:clear-display *transparent* :surface (render function))
       ;; First time rendering -> create surface:
-      (setf (funcdata-render function)
+      (setf (render function)
 	    (sdl:create-surface (width state) (height state) :pixel-alpha 255)))
 
   (when (and (draw-labels state)
-	     (< (label-position state) (length (funcdata-data function))))
+	     (< (label-position state) (length (data function))))
     (let ((string-render
 	   (render-string
-	    (funcdata-label function)
-	    (funcdata-color-real function))))
+	    (label function)
+	    (color-real function))))
       ;; Should probably write some smarter position determination...
       ;; update: this is getting ugly
       (sdl:draw-surface-at-* string-render
@@ -578,47 +544,47 @@ FUNCTION's render slot."
 			     (+
 			      ;; move label downwards:
 			      (sdl:char-height sdl:*default-font*)
-			      (- (sdl:height (funcdata-render function))
+			      (- (sdl:height (render function))
 				 (round
 				  (realpart
 				   (- (+ (slack-pixels state)
 					 (handler-case
 					     (* (y-scale state)
-						(aref (funcdata-data function)
+						(aref (data function)
 						      (label-position state)))
 					; if trying to label zerodiv:
 					   (type-error () 0)))
 				      (screen-y0 state))))))
-			     :surface (funcdata-render function))
+			     :surface (render function))
       (sdl:free string-render))
     
     (incf (label-position state)
 	  (* (sdl:char-width sdl:*default-font*)
-	     (length (funcdata-label function)))))
+	     (length (label function)))))
 
-  (funcall *render-function* function state (funcdata-render function)))
+  (funcall *render-function* function state (render function)))
 
 (defun render-2d-tree (state func-list)
   (dolist (func func-list)
     (etypecase func
-      (plotfunc (render-2d-tree state (plotfunc-subs func)))
-      (funcdata (render-2d-data func state)))))
+      (master (render-2d-tree state (subs func)))
+      (drawn (render-2d-data func state)))))
 
 ;; Placeholder memory manager
 (defun free-assets (pfunc-list)
   (let ((func (car pfunc-list)))
     (typecase func
       (null (return-from free-assets))
-      (plotfunc (free-assets (plotfunc-subs func)))
-      (funcdata
-       (sdl:free (funcdata-color-real func))
-       (sdl:free (funcdata-color-realpart func))
-       (sdl:free (funcdata-color-imagpart func))
-       (sdl:free (funcdata-render func))
-       (setf (funcdata-color-real func) nil
-	     (funcdata-color-realpart func) nil
-	     (funcdata-color-imagpart func) nil
-	     (funcdata-render func) nil)))
+      (master (free-assets (subs func)))
+      (drawn
+       (sdl:free (color-real func))
+       (sdl:free (color-realpart func))
+       (sdl:free (color-imagpart func))
+       (sdl:free (render func))
+       (setf (slot-value func 'color-real) nil
+	     (slot-value func 'color-realpart) nil
+	     (slot-value func 'color-imagpart) nil
+	     (render func) nil)))
     (free-assets (cdr pfunc-list))))
 
 (defun free-renders (pfunc-list)
@@ -627,8 +593,8 @@ FUNCTION's render slot."
       (null (return-from free-renders))
       (plotfunc (free-renders (plotfunc-subs func)))
       (funcdata
-       (sdl:free (funcdata-render func))
-       (setf (funcdata-render func) nil)))
+       (sdl:free (render func))
+       (setf (render func) nil)))
     (free-renders (cdr pfunc-list))))
 
 (defun read-input-list (input-func-list dataset-width)
@@ -636,17 +602,20 @@ FUNCTION's render slot."
 and return it."
   (setf
    *draw-functions*
-   (to-plotfunc (to-funcdata input-func-list dataset-width))))
+   (generate-function-containers input-func-list dataset-width)
+   ;(to-plotfunc (to-funcdata input-func-list dataset-width))
+   ))
 
 (defun process-functree (function tree &key (do-masters t))
   "Funcalls FUNCTION on every funcdata in TREE.
 Will ignore plotfunc-function if DO-MASTERS set to nil."
   (dolist (func tree)
-    (etypecase func
-      (plotfunc (when do-masters
-		  (funcall function (plotfunc-function func)))
-		(process-functree function (plotfunc-subs func)))
-      (funcdata (funcall function func)))))
+    (typecase func
+      (drawn (funcall function func))
+      (t (when do-masters
+	   (funcall function (funcdata-function func)))
+	 (process-functree function (subs func)))
+      )))
 
 (defun functree-max (tree)
   "Returns greatest y-value to draw from tree."
@@ -655,8 +624,8 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
      #'(lambda (f)
 	 (setf max
 	       (if max
-		   (max max (funcdata-data-max f))
-		   (funcdata-data-max f))))
+		   (max max (data-max f))
+		   (data-max f))))
      tree
      :do-masters nil)
     max))
@@ -668,8 +637,8 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
      #'(lambda (f)
 	 (setf min
 	       (if min
-		   (min min (funcdata-data-min f))
-		   (funcdata-data-min f))))
+		   (min min (data-min f))
+		   (data-min f))))
      tree
      :do-masters nil)
     min))
@@ -777,6 +746,8 @@ as main function."
 (defstruct binding
   (action nil :type function)
   (functions nil :type list)) ; list of function containers to recompute
+
+;;;;TODO: fix bindings for clos
 
 (defun make-binding-hash-table (bindings state)
   (let ((hash-table
@@ -894,8 +865,8 @@ Returns T when binding found and STATE changed."
 	   ;; I think this should be done inside call-binding
 	   (process-functree ; should move to somewhere smarter
 	    #'(lambda (func)
-		(setf (funcdata-data-min func) nil
-		      (funcdata-data-max func) nil))
+		(setf (data-min func) nil
+		      (data-max func) nil))
 	    processed-func-list)
 
 	   (render-state state)
