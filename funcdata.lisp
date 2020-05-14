@@ -2,7 +2,7 @@
   ((function
     :initarg :func
     :reader func)
-   (label ;; maybe move to class drawn?
+   (label ; should really be in class drawn, but this is good for debugging.
     :initarg :label
     :reader label)
    (data
@@ -12,10 +12,7 @@
     :accessor data-min)
    (data-max
     :accessor data-max)
-   ;; TODO: after object implementation ->
-   ;;investigate whether masters / submasters should be rendered
-   (render
-    :accessor render)))
+   ))
 
 ;; Properties:
 (defclass data-res () ;; Data resolution determined on top level funcs
@@ -38,7 +35,9 @@
     :reader color-realpart)
    (color-imagpart
     :initarg :color-imagpart
-    :reader color-imagpart)))
+    :reader color-imagpart)
+   (render
+    :accessor render)))
 
 (defclass sub ()
   ((master
