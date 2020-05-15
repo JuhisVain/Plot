@@ -808,6 +808,8 @@ Returns T when binding found and STATE changed."
     
     (funcall (binding-action binding))
     (dolist (to-update (binding-functions binding))
+      (setf (data-min to-update) NIL ;must be "unset" so extremes set correctly
+	    (data-max to-update) NIL)
       (compute-2d-data to-update state))
     t))
 
@@ -857,15 +859,6 @@ Returns T when binding found and STATE changed."
 		 (min-y state) (functree-min (pfunc-list state)))
 
 	   (format t "STATE: max-y ~a, min-y ~a~%" (max-y state) (min-y state))
-
-	   ;; Must reset funcdata-data extremes so we'll get correct extremes
-	   ;; next time when the new values are within old extremes
-	   ;; I think this should be done inside call-binding
-	   (process-functree ; should move to somewhere smarter
-	    #'(lambda (func)
-		(setf (data-min func) nil
-		      (data-max func) nil))
-	    processed-func-list)
 
 	   (render-state state)
 	   (sdl:update-display)
