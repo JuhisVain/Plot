@@ -62,7 +62,7 @@
 		#'(lambda (x)
 		    (declare (ignore x))
 		    h))
-	  :bindings `((q a h ,#'(lambda () cmod))
+	  :bindings `((q a h ,#'(lambda () cmod)) ;; are these even closures?
 		      (w s c ,#'(lambda () cmod))
 		      (e d w ,#'(lambda () cmod))
 		      (r f cmod
@@ -111,6 +111,18 @@
 	    ,@(loop for i from 50 to 500 by 50
 		 collect `#'(lambda (x) (gaussian x 1 0 ,i))))
 	:from 0 :to 1000))
+
+(defun test-selective-redraw ()
+  (let ((*modifier* 1000))
+    (declare (special *modifier*))
+    (flet ((modfun (x)
+	     (/ x *modifier*)))
+      (plot #.`(list
+		,@(loop for i from 50 to 500 by 5
+		     collect `#'(lambda (x) (gaussian x 1 0 ,i)))
+		#'modfun)
+	    :bindings `((q a *modifier* 10 ,(list #'modfun)))
+	    :from 0 :to 1000))))
 
 ;; Uses a lot of memory:
 (defun test-memory ()

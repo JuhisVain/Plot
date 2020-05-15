@@ -450,10 +450,7 @@ results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
   (loop
      for x from (min-x state) by (x-step state)
      for i from 0 below (width state)
-     do ;(if (plotfunc-p function)
-	 ;   (plotfunc-evaluate function i x)
-	    (plotcall function i x)
-	    ));)
+     do (plotcall function i x)))
 
 (defun compute-2d-tree (state)
   "Computes data for all funcdatas in FUNC-LIST."
@@ -565,6 +562,8 @@ FUNCTION's render slot."
   (funcall *render-function* function state (render function)))
 
 (defun render-2d-tree (state func-list)
+  "Will (re)draw all funcdatas in FUNC-LIST ot their sub-funcdatas
+that are of class drawn."
   (dolist (func func-list)
     (etypecase func
       (master (render-2d-tree state (subs func)))
@@ -811,6 +810,7 @@ Returns T when binding found and STATE changed."
       (setf (data-min to-update) NIL ;must be "unset" so extremes set correctly
 	    (data-max to-update) NIL)
       (compute-2d-data to-update state))
+    (render-2d-tree state (binding-functions binding)) ;redraw internal renders
     t))
 
 (defun plot (func-list
@@ -836,6 +836,9 @@ Returns T when binding found and STATE changed."
 	     from to slack))
 
       (setf binding-hash-table (make-binding-hash-table bindings state))
+      ;; produce renders for all drawn funcs:
+      (render-2d-tree state (pfunc-list state))
+      ;; render to main surface:
       (render-state state)
 
       (sdl:update-display)
@@ -852,8 +855,6 @@ Returns T when binding found and STATE changed."
 	 (format t "Pressed: ~a~%" key)
 
 	 (when (call-binding key binding-hash-table state)
-	   
-	   (sdl:clear-display sdl:*black*)
 
 	   (setf (max-y state) (functree-max (pfunc-list state))
 		 (min-y state) (functree-min (pfunc-list state)))

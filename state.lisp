@@ -11,9 +11,11 @@
     :accessor max-x)
 
    (max-y
+    :initform nil
     :initarg :max-y
     :accessor max-y)
    (min-y
+    :initform nil
     :initarg :min-y
     :accessor min-y)
 
@@ -83,14 +85,25 @@
       (* (min-y state) (y-scale state))))
 
 
+(defmethod (setf max-y) (new-max-y (state state))
+  (let ((old (max-y state)))
+    (setf (slot-value state 'max-y) new-max-y)
+    (when (and old (/= new-max-y old)) ; state changed, rerender all
+      (render-2d-tree state (pfunc-list state)))))
+
+(defmethod (setf min-y) (new-min-y (state state))
+  (let ((old (min-y state)))
+    (setf (slot-value state 'min-y) new-min-y)
+    (when (and old (/= new-min-y old)) ; state changed, rerender all
+      (render-2d-tree state (pfunc-list state)))))
+
 (defmethod render-state ((state 2d-state))
+  (sdl:clear-display sdl:*black*)
   (draw-grid (min-y state) (max-y state) (y-range state)
 	     (y-scale state) (screen-y0 state)
 	     (min-x state) (max-x state) (x-range state)
 	     (x-scale state) (screen-x0 state)
 	     (slack-pixels state) (surface state))
-
-  (render-2d-tree state (pfunc-list state))
 
   (render-func-list (pfunc-list state) (surface state)))
 
