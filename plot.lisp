@@ -687,21 +687,21 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 
 ;; Used in determining what to update with button bindings:
 (defun find-containers (function containers)
-  "Returns list of highest containers within tree CONTAINERS with FUNCTION
-as main function."
+  "Returns list of funcdatas from list CONTAINERS,
+whose function is eql to FUNCTION."
   (let ((found nil))
     (dolist (container containers)
       (setf found
-      (nconc
-       found
-       (typecase container
-	 (plotfunc (if (eql (funcdata-function (plotfunc-function container))
-			    function)
-		       (list container)
-		       (find-containers function (plotfunc-subs container))))
-	 (funcdata (if (eql (funcdata-function container)
-			    function)
-		       (list container)))))))
+	    (nconc
+	     found
+	     (typecase container
+	       (master (if (eql (funcdata-function container)
+				function)
+			   (list container)
+			   (find-containers function (subs container))))
+	       (drawn (if (eql (funcdata-function container)
+			       function)
+			  (list container)))))))
     found))
        
 (defun member-sub (function plotfunc)
@@ -746,8 +746,6 @@ as main function."
 (defstruct binding
   (action nil :type function)
   (functions nil :type list)) ; list of function containers to recompute
-
-;;;;TODO: fix bindings for clos
 
 (defun make-binding-hash-table (bindings state)
   (let ((hash-table
