@@ -85,6 +85,7 @@
       (* (min-y state) (y-scale state))))
 
 
+;; TODO: what if max-y and min-y change at same time?
 (defmethod (setf max-y) (new-max-y (state state))
   (let ((old (max-y state)))
     (setf (slot-value state 'max-y) new-max-y)
