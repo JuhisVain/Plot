@@ -84,18 +84,14 @@
       (/ (height state) -2)
       (* (min-y state) (y-scale state))))
 
-
-;; TODO: what if max-y and min-y change at same time?
-(defmethod (setf max-y) (new-max-y (state state))
-  (let ((old (max-y state)))
-    (setf (slot-value state 'max-y) new-max-y)
-    (when (and old (/= new-max-y old)) ; state changed, rerender all
-      (render-2d-tree state (pfunc-list state)))))
-
-(defmethod (setf min-y) (new-min-y (state state))
-  (let ((old (min-y state)))
-    (setf (slot-value state 'min-y) new-min-y)
-    (when (and old (/= new-min-y old)) ; state changed, rerender all
+(defun set-y-extremes (state)
+  (let ((old-max (max-y state))
+	(old-min (min-y state)))
+    (setf (slot-value state 'max-y) (functree-max (pfunc-list state))
+	  (slot-value state 'min-y) (functree-min (pfunc-list state)))
+    (when (and old-max old-min
+	       (or (/= old-max (max-y state))
+		   (/= old-min (min-y state))))
       (render-2d-tree state (pfunc-list state)))))
 
 (defmethod render-state ((state 2d-state))

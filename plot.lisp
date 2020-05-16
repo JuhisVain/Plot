@@ -457,8 +457,7 @@ results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
   (mapcar #'(lambda (func)
 	      (compute-2d-data func state))
 	  (pfunc-list state))
-  (setf (max-y state) (functree-max (pfunc-list state))
-	(min-y state) (functree-min (pfunc-list state))))
+  (set-y-extremes state))
 
 (defun render-string (string color &key (color-key sdl:*black*))
   "SDL:RENDER-STRING-SOLID picks it's color key in an unpredictable way.
@@ -520,7 +519,7 @@ Result will still need to be inverted before drawing."
   "Renders individual funcdata FUNCTION onto SURFACE, stored into
 FUNCTION's render slot."
   ;;(declare (funcdata function))
-
+  (format t "Rendering ~a~%" (label function))
   (if (render function)
       ;; Wipe render:
       (sdl:clear-display *transparent* :surface (render function))
@@ -856,8 +855,7 @@ Returns T when binding found and STATE changed."
 
 	 (when (call-binding key binding-hash-table state)
 
-	   (setf (max-y state) (functree-max (pfunc-list state))
-		 (min-y state) (functree-min (pfunc-list state)))
+	   (set-y-extremes state)
 
 	   (format t "STATE: max-y ~a, min-y ~a~%" (max-y state) (min-y state))
 
