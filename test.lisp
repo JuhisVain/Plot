@@ -85,8 +85,6 @@
 		      (e d *w* ,#'(lambda () 0.1) ,(list #'named-fun)))
 	  :to 4)))
 
-;;TODO:test flet binds
-
 (defun testlabel ()
   "Label background should be transparent"
   (plot (list (lambda (x) (+ x 0.01))
