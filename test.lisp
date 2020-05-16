@@ -111,15 +111,18 @@
 	:from 0 :to 1000))
 
 (defun test-selective-redraw ()
-  (let ((*modifier* 1000))
-    (declare (special *modifier*))
+  (let ((*modifier* 1000)
+	(*shifter* 0.0))
+    (declare (special *modifier* *shifter*))
     (flet ((modfun (x)
-	     (/ x *modifier*)))
+	     (+ (/ x *modifier*)
+		*shifter*)))
       (plot #.`(list
 		,@(loop for i from 50 to 500 by 5
 		     collect `#'(lambda (x) (gaussian x 1 0 ,i)))
 		#'modfun)
-	    :bindings `((q a *modifier* 10 ,(list #'modfun)))
+	    :bindings `((q a *modifier* 10 ,(list #'modfun))
+			(w s *shifter* 0.1 ,(list #'modfun)))
 	    :from 0 :to 1000))))
 
 ;; Uses a lot of memory:
