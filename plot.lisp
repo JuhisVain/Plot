@@ -18,24 +18,6 @@
 (defparameter *draw-functions* nil
   "Storage for funcdatas currently being drawn.")
 
-'(defstruct plotfunc
-  (function) ; master function
-  (subs)) ; keys, accessors or whatever to be called with master's value
-
-'(defstruct funcdata
-  (function nil :type function)
-  (color-real)
-  (color-realpart)
-  (color-imagpart)
-  (label nil :type string)
-  (data nil :type (or array null))
-  (data-min nil :type (or real null))
-  (data-max nil :type (or real null))
-  (render))
-
-'(defstruct (sub-funcdata (:include funcdata))
-  (master))
-
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
 one of (1 2 NIL)"
