@@ -457,7 +457,7 @@ results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
   (mapcar #'(lambda (func)
 	      (compute-2d-data func state))
 	  (pfunc-list state))
-  (set-y-extremes state))
+  (check-y-extremes state))
 
 (defun render-string (string color &key (color-key sdl:*black*))
   "SDL:RENDER-STRING-SOLID picks it's color key in an unpredictable way.
@@ -809,7 +809,10 @@ Returns T when binding found and STATE changed."
       (setf (data-min to-update) NIL ;must be "unset" so extremes set correctly
 	    (data-max to-update) NIL)
       (compute-2d-data to-update state))
-    (render-2d-tree state (binding-functions binding)) ;redraw internal renders
+    ;; check-y-extremes will take care of redrawing if extremes change:
+    (unless (check-y-extremes state)
+      ;; if extremes did not change only redraw what's on the menu:
+      (render-2d-tree state (binding-functions binding)))
     t))
 
 (defun plot (func-list
@@ -855,7 +858,7 @@ Returns T when binding found and STATE changed."
 
 	 (when (call-binding key binding-hash-table state)
 
-	   (set-y-extremes state)
+	   (check-y-extremes state)
 
 	   (format t "STATE: max-y ~a, min-y ~a~%" (max-y state) (min-y state))
 

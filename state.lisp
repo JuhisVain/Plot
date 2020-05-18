@@ -84,7 +84,9 @@
       (/ (height state) -2)
       (* (min-y state) (y-scale state))))
 
-(defun set-y-extremes (state)
+(defun check-y-extremes (state)
+  "Controlled max-y and min-y slot assignment function for state STATE.
+Will return T when state changed and NIL if not."
   (let ((old-max (max-y state))
 	(old-min (min-y state)))
     (setf (slot-value state 'max-y) (functree-max (pfunc-list state))
@@ -92,7 +94,8 @@
     (when (and old-max old-min
 	       (or (/= old-max (max-y state))
 		   (/= old-min (min-y state))))
-      (render-2d-tree state (pfunc-list state)))))
+      (render-2d-tree state (pfunc-list state))
+      t)))
 
 (defmethod render-state ((state 2d-state))
   (sdl:clear-display sdl:*black*)
