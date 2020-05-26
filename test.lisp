@@ -110,9 +110,6 @@
 		 collect `#'(lambda (x) (gaussian x 1 0 ,i))))
 	:from 0 :to 1000))
 
-;;;; TODO: there's too much rendering. compare with (testbindclosure) output
-;;  listing nil to-updates in bindings will rerender everything twice when
-;; state extremes change
 (defun test-selective-redraw ()
   (let ((*modifier* 1000)
 	(*shifter* 0.0))
