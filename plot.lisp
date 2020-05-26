@@ -196,10 +196,12 @@ where the Xs are (integer 0 255)."
   (labels ((rec-plot-len (flist sum)
 	     (typecase (car flist)
 	       (null sum)
-	       (list 
-		(rec-plot-len
-		 (cdr flist)
-		 (rec-plot-len (cdar flist) sum)))
+	       (list
+		(if (keywordp (cadar flist))
+		    (rec-plot-len (cdr flist) (1+ sum))
+		    (rec-plot-len
+		     (cdr flist)
+		     (rec-plot-len (cdar flist) sum))))
 	       (symbol
 		(if (fboundp (car flist))
 		    (rec-plot-len (cdr flist) (1+ sum))
@@ -664,6 +666,11 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 ;;         (list #'sqrt #'imagpart #'realpart)
 ;;         (list #'log #'imagpart #'realpart))
 ;;       :from -11 :to -1)
+
+;; By wrapping a function in parens it should be possible to give arguments
+;;to func container init
+;; f.ex:
+;; (plot (list '((log :data-res 2) identity -)))
 
 ;; Used in determining what to update with button bindings:
 (defun find-containers (function containers)

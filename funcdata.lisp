@@ -142,8 +142,18 @@
 	((funcdata-generator (func-list id-counter &optional master)
 	   (mapcar #'(lambda (func)
 		       (destructuring-bind
-			     (main-func &rest subs)
-			   (if (listp func) func (list func))
+			     (main-func options &rest subs)
+			   (cond
+			     ((listp func) ; maybe subs or maybe opts?
+			      (if (listp (car func)) ; first is list -> options
+				  (list* (caar func) (cdar func) (cdr func))
+				  (if (keywordp (cadr func))
+				      (list (car func) (cdr func))
+				      (list* (car func) NIL (cdr func)))))
+			     ((or (functionp func)
+				  (symbolp func))
+			      (list func nil)))
+			 ;;(if (listp func) func (list func))
 			 (let ((processed-func
 				;; NOTE: Could declare color-stack special and
 				;; pop it in (make-funcdata) to get aux colors
@@ -162,7 +172,8 @@
 				   :color-realpart realpart
 				   :color-imagpart imagpart
 				   :master master
-				   :subs subs))))
+				   :subs subs
+				   :data-per-pixel (getf options :data-per-pixel)))))
 			   
 			   (when subs
 			     (setf (subs processed-func)
