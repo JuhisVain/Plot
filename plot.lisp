@@ -192,6 +192,22 @@ where the Xs are (integer 0 255)."
 					 (t x)))
 			 rgb-plist))))
 
+(defun identify-input-token (input)
+  (etypecase input
+    (null nil)
+    (symbol (cond ((fboundp input) 'function)
+		  ((boundp input)
+		   (identify-input-token (symbol-value input)))
+		  (t (format t "~a is an invalid token!~%" input))))
+    (function 'function)
+    (list (cond ((keywordp (cadr input)) 'function)
+		((and (identify-input-token (car input))
+		      (null (cdr input)))
+		 'function)
+		((and (car input) (cdr input))
+		 'master-function)))))
+    
+
 (defun plottable-count (func-list)
   (labels ((rec-plot-len (flist sum)
 	     (typecase (car flist)
