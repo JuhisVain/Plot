@@ -206,27 +206,18 @@ where the Xs are (integer 0 255)."
 		 'function)
 		((and (car input) (cdr input))
 		 'master-function)))))
-    
 
 (defun plottable-count (func-list)
-  (labels ((rec-plot-len (flist sum)
-	     (typecase (car flist)
-	       (null sum)
-	       (list
-		(if (keywordp (cadar flist))
-		    (rec-plot-len (cdr flist) (1+ sum))
-		    (rec-plot-len
-		     (cdr flist)
-		     (rec-plot-len (cdar flist) sum))))
-	       (symbol
-		(if (fboundp (car flist))
-		    (rec-plot-len (cdr flist) (1+ sum))
-		    (rec-plot-len (cdr flist)
-				  (rec-plot-len
-				   (list (symbol-value (car flist)))
-				   sum))))
-	       (function (rec-plot-len (cdr flist) (1+ sum))))))
-    (rec-plot-len func-list 0)))
+  (let ((sum 0))
+    (labels ((rec-plot-len (flist)
+
+	       (dolist (func flist)
+		 (case (identify-input-token func)
+		   (function (incf sum))
+		   (master-function (rec-plot-len (cdr func)))))))
+      
+      (rec-plot-len func-list)
+      sum)))
 
 (defmethod plotcall ((funcdata abstract-top-funcdata)
 		     index &rest arguments
