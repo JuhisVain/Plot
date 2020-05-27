@@ -8,6 +8,23 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
+;;; TODO: finish & test data-per-pixel
+;;;(plot '((+ :data-per-pixel 3))) etc..
+
+(defun test-plottable-count ()
+  (flet ((test-count (should-return input-list)
+	   (let ((test-returns (plottable-count input-list)))
+	     (or (= should-return test-returns)
+		 (format t "Error on ~a = ~a != ~a~%"
+			 input-list test-returns should-return)))))
+    (and (test-count 1 '(+))
+	 (test-count 1 '((+)))
+	 (test-count 1 (list +))
+	 (test-count 1 (list '+))
+	 (test-count 1 (list #'+))
+	 (test-count 1 (list (list #'+))))))
+	   
+
 (defun testbind ()
   (defparameter *wave-length* 1)
   (flet ((modsin (x)
