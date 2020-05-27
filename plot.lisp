@@ -208,15 +208,15 @@ where the Xs are (integer 0 255)."
 		 'master-function)))))
 
 (defun plottable-count (func-list)
+  "Counts drawn functions in user input FUNC-LIST."
   (let ((sum 0))
-    (labels ((rec-plot-len (flist)
-
+    (labels ((plot-len (flist)
 	       (dolist (func flist)
 		 (case (identify-input-token func)
 		   (function (incf sum))
-		   (master-function (rec-plot-len (cdr func)))))))
+		   (master-function (plot-len (cdr func)))))))
       
-      (rec-plot-len func-list)
+      (plot-len func-list)
       sum)))
 
 (defmethod plotcall ((funcdata abstract-top-funcdata)
