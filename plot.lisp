@@ -396,8 +396,9 @@ where the Xs are (integer 0 255)."
   "Populates funcdata FUNCTION's (and FUNCTION's subs) data slot's array with
 results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
   (loop
-     for x from (min-x state) by (x-step state)
-     for i from 0 below (width state)
+     for x from (min-x state) by (/ (x-step state)
+				    (data-per-pixel function))
+     for i from 0 below (length (data function)) ;data array length set at init
      do (plotcall function i x)))
 
 (defun compute-2d-tree (state)
@@ -451,10 +452,10 @@ Result will still need to be inverted before drawing."
     (map
      NIL
      #'(lambda (from to)
-	 (draw-line x-pixel
+	 (draw-line (floor x-pixel (data-per-pixel function))
 		    (scale-y from (y-scale state)
 			     (slack-pixels state) (screen-y0 state))
-		    (incf x-pixel)
+		    (floor (incf x-pixel) (data-per-pixel function))
 		    (scale-y to (y-scale state)
 			     (slack-pixels state) (screen-y0 state))
 		    function

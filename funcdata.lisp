@@ -99,13 +99,14 @@
 
 (defun make-funcdata
     (&key
-       function data label color-real color-realpart
+       function resolution-width label color-real color-realpart
        color-imagpart master subs (data-per-pixel 1))
   (cond ((null (or master subs))
 	 (make-instance 'top-funcdata
 			:func function
 			:label label
-			:data data
+			:data (make-array (* data-per-pixel
+					     resolution-width))
 			:data-per-pixel data-per-pixel
 			:color-real color-real
 			:color-realpart color-realpart
@@ -114,14 +115,16 @@
 	 (make-instance 'master-funcdata
 			:func function
 			:label label
-			:data data
+			:data (make-array (* data-per-pixel
+					     resolution-width))
 			:data-per-pixel data-per-pixel
 			:subs subs))
 	((and master (null subs))
 	 (make-instance 'sub-funcdata
 			:func function
 			:label label
-			:data data
+			:data (make-array (* (data-per-pixel master)
+					     resolution-width))
 			:master master
 			:color-real color-real
 			:color-realpart color-realpart
@@ -130,7 +133,8 @@
 	 (make-instance 'submaster-funcdata
 			:func function
 			:label label
-			:data data
+			:data (make-array (* (data-per-pixel master)
+					     resolution-width))
 			:master master
 			:subs subs))))
 
@@ -164,16 +168,18 @@
 					;master funcs are not drawn:
 					(values nil nil nil)) 
 
-				  (make-funcdata
-				   :function main-func
-				   :data (make-array resolution-width)
-				   :label (incf id-counter)
-				   :color-real real
-				   :color-realpart realpart
-				   :color-imagpart imagpart
-				   :master master
-				   :subs subs
-				   :data-per-pixel (getf options :data-per-pixel)))))
+				  (let ((data-per-pixel
+					 (or (getf options :data-per-pixel) 1)))
+				    (make-funcdata
+				     :function main-func
+				     :resolution-width resolution-width
+				     :label (incf id-counter)
+				     :color-real real
+				     :color-realpart realpart
+				     :color-imagpart imagpart
+				     :master master
+				     :subs subs
+				     :data-per-pixel data-per-pixel)))))
 			   
 			   (when subs
 			     (setf (subs processed-func)

@@ -8,9 +8,6 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
-;;; TODO: finish & test data-per-pixel
-;;;(plot '((+ :data-per-pixel 3))) etc..
-
 (defun test-plottable-count ()
   (flet ((test-count (should-return input-list)
 	   (let ((test-returns (plottable-count input-list)))
@@ -29,7 +26,14 @@
 
 	 (test-count 5 (list (list #'+ :foo 1 :bar 2) '+
 			     '((+ :test 1 :tset 2) (+ - log (sqrt))))))))
-	   
+
+(defun test-data-res ()
+  (flet ((testfun (x)
+	   (gaussian x 1 0.15 0.001)))
+    ;; plot "1" should show a spike:
+    (plot (list (list #'testfun :data-per-pixel 5)
+		#'(lambda (x) (+ 0.01 (testfun x))))
+	  :from -5 :to 5)))
 
 (defun testbind ()
   (defparameter *wave-length* 1)
@@ -171,6 +175,16 @@
 		    #'(lambda (y) ;red
 			(+ y 0.00000001d0))) ;shift up
 	      (list #'testdoublefun
+		    #'identity ;green
+		    #'(lambda (x) ;blue
+			(coerce x 'single-float))))
+	:from 0 :to 0.3))
+
+(defun test-testfuns-datares ()
+  (plot (list (list (list #'testfun :data-per-pixel 5)
+		    #'(lambda (y) ;red
+			(+ y 0.00000001d0))) ;shift up
+	      (list (list #'testdoublefun :data-per-pixel 2)
 		    #'identity ;green
 		    #'(lambda (x) ;blue
 			(coerce x 'single-float))))
