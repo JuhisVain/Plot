@@ -280,49 +280,6 @@ where the Xs are (integer 0 255)."
 			     value)
 		(complex-min value))))))
 
-
-
-'(defun OBSOLETE-plotcall (function index &rest arguments
-		 &aux (lindex (if (listp index)
-				  index
-				  (list index))))
-  "Funcall with handlers etc. for plottable data,
-stored into array in funcdata FUNCTION's data slot at aref INDEX."
-  (let ((value (handler-case
-		   (apply (funcdata-function function) arguments)
-		 (division-by-zero () 'ZERO-DIVISION)
-		 (type-error () nil))))
-
-    (when (numberp value)
-      (setf (data-max function)
-	    (if (data-max function)
-		(complex-max (data-max function)
-			     value)
-		(complex-max value)))
-      (setf (data-min function)
-	    (if (data-min function)
-		(complex-min (data-min function)
-			     value)
-		(complex-min value))))
-    
-    (setf ;;;setfing an applied aref is used as example in the hyperspec!
-     (apply #'aref (data function) lindex)
-     value)))
-  
-'(defun OBSOLETE-plotfunc-evaluate (plotfunc index &rest arguments)
-  (let ((fvalue
-	 (apply #'plotcall (plotfunc-function plotfunc) index arguments)))
-    ;;; above: PLOTCALL is APPLIED because ARGUMENTS is -of course- a list
-    ;; plotcall might produce a symbol to represent an error
-    ;; which the user might want to handle himself...
-    (mapcar #'(lambda (sub)
-		(etypecase sub
-		  (funcdata
-		   (plotcall sub index fvalue))
-		  (plotfunc
-		   (apply #'plotfunc-evaluate sub index arguments))))
-	    (plotfunc-subs plotfunc))))
-
 (defun extract-numbers (tree)
   "Get flat list of numbers in TREE."
   (loop for element in tree
