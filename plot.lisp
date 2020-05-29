@@ -56,18 +56,26 @@ one of (1 2 NIL)"
 		      &optional (surface (render function)))
   (draw-vertical x0 *bad-color* surface))
 
+;;; Drawing *bad-color* line for last value when 'zero-division or nil should
+;; have been taken care of by increasing array size by one in funcdata init.
+;; Could be investigated further but this doesn't seem too important.
 (defmethod draw-line (x0 y0 x1 (y1 (eql 'zero-division)) function
-		     &optional (surface (render function)))
-  ;; This situation is already handled by previous for all other coords but last
-  (draw-vertical x1 *bad-color* surface))
+		      &optional (surface (render function)))
+  (declare (ignore surface))
+  ;; don't do nuthin
+  ;;;(draw-vertical x1 *bad-color* surface)
+  )
 
 (defmethod draw-line (x0 (y0 (eql nil)) x1 y1 function
 		      &optional (surface (render function)))
   (draw-vertical x0 *bad-color* surface))
 
 (defmethod draw-line (x0 y0 x1 (y1 (eql nil)) function
-		     &optional (surface (render function)))
-  (draw-vertical x1 *bad-color* surface))
+		      &optional (surface (render function)))
+  (declare (ignore surface))
+  ;; don't do nuthin
+  ;;;(draw-vertical x1 *bad-color* surface)
+  )
 
 (defmethod draw-line (x0 (y0 real) x1 (y1 real) function
 		     &optional (surface (render function)))
