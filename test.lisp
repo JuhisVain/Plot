@@ -28,12 +28,41 @@
 			     '((+ :test 1 :tset 2) (+ - log (sqrt))))))))
 
 (defun test-data-res ()
-  (flet ((testfun (x)
-	   (gaussian x 1 0.15 0.001)))
-    ;; plot "1" should show a spike:
-    (plot (list (list #'testfun :data-per-pixel 5)
-		#'(lambda (x) (+ 0.01 (testfun x))))
-	  :from -5 :to 5)))
+  (let ((cen 0.15))
+    (declare (special cen))
+    (flet ((testfun (x)
+	     (gaussian x 1 cen 0.001)))
+      ;; plot "1" should show a spike:
+      (plot (list (list #'testfun :data-per-pixel 5)
+		  #'(lambda (x) (+ 0.01 (testfun x))))
+	    :from -5 :to 5
+	    :bindings '((q a cen 0.005 nil))))))
+
+(defun test-data-res-ratio ()
+  (let ((cen 0.15))
+    (declare (special cen))
+    (flet ((testfun (x)
+	     (gaussian x 1 cen 0.001)))
+      ;; I don't know if this works but it sure does something
+      (plot (list (list #'testfun :data-per-pixel 1/2)
+		  #'(lambda (x) (+ 0.01 (testfun x))))
+	    :from -5 :to 5
+	    :bindings '((q a cen 0.005 nil))))))
+
+(defun test-data-res-ratio2 ()
+  (plot (list
+	 (list '(gauss :data-per-pixel 1/300) #'identity)
+	 (list '(gauss :data-per-pixel 1/100) #'identity)
+	 (list '(gauss :data-per-pixel 1/75) #'identity)
+	 (list '(gauss :data-per-pixel 1/50) #'identity)
+	 (list '(gauss :data-per-pixel 1/25) #'identity)
+	 (list '(gauss :data-per-pixel 1/10) #'identity)
+	 (list '(gauss :data-per-pixel 1/5) #'identity)
+	 (list '(gauss :data-per-pixel 1) #'identity)
+	 )
+	:from 0 :to 600
+	:window-width 600
+	))
 
 (defun testbind ()
   (defparameter *wave-length* 1)

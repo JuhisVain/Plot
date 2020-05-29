@@ -105,8 +105,10 @@
 	 (make-instance 'top-funcdata
 			:func function
 			:label label
-			:data (make-array (* data-per-pixel
-					     resolution-width))
+			:data (make-array
+			       (1+ (ceiling
+				    (* data-per-pixel
+				       resolution-width))))
 			:data-per-pixel data-per-pixel
 			:color-real color-real
 			:color-realpart color-realpart
@@ -115,16 +117,17 @@
 	 (make-instance 'master-funcdata
 			:func function
 			:label label
-			:data (make-array (* data-per-pixel
-					     resolution-width))
+			:data (make-array
+			       (1+ (ceiling
+				    (* data-per-pixel
+				       resolution-width))))
 			:data-per-pixel data-per-pixel
 			:subs subs))
 	((and master (null subs))
 	 (make-instance 'sub-funcdata
 			:func function
 			:label label
-			:data (make-array (* (data-per-pixel master)
-					     resolution-width))
+			:data (make-array (length (data master)))
 			:master master
 			:color-real color-real
 			:color-realpart color-realpart
@@ -133,8 +136,7 @@
 	 (make-instance 'submaster-funcdata
 			:func function
 			:label label
-			:data (make-array (* (data-per-pixel master)
-					     resolution-width))
+			:data (make-array (length (data master)))
 			:master master
 			:subs subs))))
 
