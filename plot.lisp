@@ -214,7 +214,7 @@ where the Xs are (integer 0 255)."
 		      (null (cdr input)))
 		 'function)
 		((and (car input) (cdr input)) ; (foo bar ...)
-		 (multiple-value-call 
+		 (multiple-value-call ; check is master has options
 		     #'(lambda (id &optional second)
 			 (declare (ignore id))
 			 (values 'master-function second))
