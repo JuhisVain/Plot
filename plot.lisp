@@ -208,12 +208,17 @@ where the Xs are (integer 0 255)."
 		   (identify-input-token (symbol-value input)))
 		  (t (format t "~a is an invalid token!~%" input))))
     (function 'function)
-    (list (cond ((keywordp (cadr input)) 'function)
-		((and (identify-input-token (car input))
+    (list (cond ((keywordp (cadr input)) ; (foo :bar ...)
+		 (values 'function 'options))
+		((and (identify-input-token (car input)) ; (foo)
 		      (null (cdr input)))
 		 'function)
-		((and (car input) (cdr input))
-		 'master-function)))))
+		((and (car input) (cdr input)) ; (foo bar ...)
+		 (multiple-value-call 
+		     #'(lambda (id &optional second)
+			 (declare (ignore id))
+			 (values 'master-function second))
+		   (identify-input-token (car input))))))))
 
 (defun plottable-count (func-list)
   "Counts drawn functions in user input FUNC-LIST."
