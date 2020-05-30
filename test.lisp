@@ -16,7 +16,6 @@
 			 input-list test-returns should-return)))))
     (and (test-count 1 '(+))
 	 (test-count 1 '((+)))
-	 (test-count 1 (list +))
 	 (test-count 1 (list '+))
 	 (test-count 1 (list #'+))
 	 (test-count 1 (list (list #'+)))
