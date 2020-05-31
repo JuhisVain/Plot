@@ -147,19 +147,11 @@
     (labels
 	((funcdata-generator (func-list id-counter &optional master)
 	   (mapcar #'(lambda (func)
-		       (destructuring-bind
-			     (main-func options &rest subs)
-			   (cond
-			     ((listp func) ; maybe subs or maybe opts?
-			      (if (listp (car func)) ; first is list -> options
-				  (list* (caar func) (cdar func) (cdr func))
-				  (if (keywordp (cadr func))
-				      (list (car func) (cdr func))
-				      (list* (car func) NIL (cdr func)))))
-			     ((or (functionp func)
-				  (symbolp func))
-			      (list func nil)))
-			 ;;(if (listp func) func (list func))
+		       (let* ((plist (identify-input-token func))
+			      (main-func (getf plist :function))
+			      (options (getf plist :options))
+			      (subs (getf plist :subs)))
+			 
 			 (let ((processed-func
 				;; NOTE: Could declare color-stack special and
 				;; pop it in (make-funcdata) to get aux colors
