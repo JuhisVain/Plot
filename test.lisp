@@ -14,17 +14,17 @@
 	     (or (= should-return test-returns)
 		 (format t "Error on ~a = ~a != ~a~%"
 			 input-list test-returns should-return)))))
-    (and (test-count 1 '(+))
-	 (test-count 1 '((+)))
-	 (test-count 1 (list '+))
-	 (test-count 1 (list #'+))
-	 (test-count 1 (list (list #'+)))
+    (test-count 1 '(+))
+    (test-count 1 '((+)))
+    (test-count 1 (list '+))
+    (test-count 1 (list #'+))
+    (test-count 1 (list (list #'+)))
 
-	 (test-count 2 '(+ +))
-	 (test-count 2 (list '(+) #'+))
+    (test-count 2 '(+ +))
+    (test-count 2 (list '(+) #'+))
 
-	 (test-count 5 (list (list #'+ :foo 1 :bar 2) '+
-			     '((+ :test 1 :tset 2) (+ - log (sqrt))))))))
+    (test-count 5 (list (list #'+ :foo 1 :bar 2) '+
+			'((+ :test 1 :tset 2) (+ - log (sqrt)))))))
 
 (defun test-data-res ()
   (let ((cen 0.15))

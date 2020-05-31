@@ -201,34 +201,37 @@ where the Xs are (integer 0 255)."
 			 rgb-plist))))
 
 (defun identify-input-token (input)
+  "Reads input and partitions it into elements of propertylist
+(:function foo :options (opt ...) :subs (sub ...))"
   (etypecase input
     (null nil)
-    (symbol (cond ((fboundp input) 'function)
+    (symbol (cond ((fboundp input)
+		   (list :function input))
 		  ((boundp input)
 		   (identify-input-token (symbol-value input)))
-		  (t (format t "~a is an invalid token!~%" input))))
-    (function 'function)
+		  (t
+		   (format t "~a is an invalid token!~%" input))))
+    (function (list :function input))
     (list (cond ((keywordp (cadr input)) ; (foo :bar ...)
-		 (values 'function 'options))
+		 (list :function (car input)
+		       :options (cdr input)))
 		((and (identify-input-token (car input)) ; (foo)
 		      (null (cdr input)))
-		 'function)
+		 (list :function (car input)))
 		((and (car input) (cdr input)) ; (foo bar ...)
-		 (multiple-value-call ; check is master has options
-		     #'(lambda (id &optional second)
-			 (declare (ignore id))
-			 (values 'master-function second))
-		   (identify-input-token (car input))))))))
+		 (append (identify-input-token (car input))
+			 (list :subs (cdr input))))))))
 
 (defun plottable-count (func-list)
   "Counts drawn functions in user input FUNC-LIST."
   (let ((sum 0))
     (labels ((plot-len (flist)
 	       (dolist (func flist)
-		 (case (identify-input-token func)
-		   (function (incf sum))
-		   (master-function (plot-len (cdr func)))))))
-      
+		 (let* ((prop-list (identify-input-token func))
+			(subs (getf prop-list :subs)))
+		   (if subs
+		       (plot-len subs)
+		       (incf sum))))))
       (plot-len func-list)
       sum)))
 
