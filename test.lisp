@@ -50,14 +50,14 @@
 
 (defun test-data-res-ratio2 ()
   (plot (list
-	 (list '(gauss :data-per-pixel 1/300) #'identity)
-	 (list '(gauss :data-per-pixel 1/100) #'identity)
-	 (list '(gauss :data-per-pixel 1/75) #'identity)
-	 (list '(gauss :data-per-pixel 1/50) #'identity)
-	 (list '(gauss :data-per-pixel 1/25) #'identity)
-	 (list '(gauss :data-per-pixel 1/10) #'identity)
-	 (list '(gauss :data-per-pixel 1/5) #'identity)
-	 (list '(gauss :data-per-pixel 1) #'identity)
+	 (list #'gauss :data-per-pixel 1/300)
+	 (list #'gauss :data-per-pixel 1/100)
+	 (list #'gauss :data-per-pixel 1/75)
+	 (list #'gauss :data-per-pixel 1/50)
+	 (list #'gauss :data-per-pixel 1/25)
+	 (list #'gauss :data-per-pixel 1/10)
+	 (list #'gauss :data-per-pixel 1/5)
+	 (list #'gauss :data-per-pixel 1)
 	 )
 	:from 0 :to 600
 	:window-width 600
