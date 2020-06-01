@@ -479,7 +479,68 @@ Result will still need to be inverted before drawing."
 		    ))
      (data function)
      (subseq (data function) 1))))
-  
+
+(defun render-2d-label (function state)
+  (when (and (draw-labels state)
+	     (< (label-position state)
+		(/ (length (data function))
+		   (data-per-pixel function))))
+    (let ((string-render
+	   (render-string
+	    (label function)
+	    (color-real function))))
+      (unwind-protect
+	   (progn
+	     (sdl:draw-surface-at-*
+	      string-render
+	      (label-position state)
+	      (+
+	       ;; move label downwards:
+	       (sdl:char-height sdl:*default-font*)
+	       (- (sdl:height (render function))
+		  (round
+		   (realpart
+		    (- (+ (slack-pixels state)
+			  
+			  (handler-case
+			      (let* ((pre-x0 (floor ;index of low bound
+					      (* (data-per-pixel function)
+						 (label-position state))))
+				     (pre-x1 (ceiling ;index of high bound
+					      (* (data-per-pixel function)
+						 (label-position state))))
+				     (x0 (/ ;pixel of low bound
+					  pre-x0
+					  (data-per-pixel function)))
+				     (x1 (/ ;pixel of high bound
+					  pre-x1
+					  (data-per-pixel function)))
+				     (y0 (* (y-scale state) ; pixel value
+					    (aref (data function)
+						  pre-x0)))
+				     (y1 (* (y-scale state)
+					    (aref (data function)
+						  pre-x1)))
+				     (x (label-position state)))
+
+				(if (= x0 x1) ; comparing floats
+				    y0
+				    ;; y-value of X:
+				    (+ y0
+				       (* (/ (- y1 y0)
+					     (- x1 x0))
+					  (- x x0)))))
+				
+			    (type-error () 0)))
+		       
+		       (screen-y0 state))))))
+	      :surface (render function))
+	     (incf (label-position state)
+		   (* (sdl:char-width sdl:*default-font*)
+		      (length (label function)))))
+	;; unwind-protect cleanup:
+	(sdl:free string-render)))))
+
 (defun render-2d-data (function state)
   "Renders individual funcdata FUNCTION onto SURFACE, stored into
 FUNCTION's render slot."
@@ -492,37 +553,8 @@ FUNCTION's render slot."
       (setf (render function)
 	    (sdl:create-surface (width state) (height state) :pixel-alpha 255)))
 
-  (when (and (draw-labels state)
-	     (< (label-position state) (length (data function))))
-    (let ((string-render
-	   (render-string
-	    (label function)
-	    (color-real function))))
-      ;; Should probably write some smarter position determination...
-      ;; update: this is getting ugly
-      (sdl:draw-surface-at-* string-render
-			     (label-position state)
-			     (+
-			      ;; move label downwards:
-			      (sdl:char-height sdl:*default-font*)
-			      (- (sdl:height (render function))
-				 (round
-				  (realpart
-				   (- (+ (slack-pixels state)
-					 (handler-case
-					     (* (y-scale state)
-						(aref (data function)
-						      (label-position state)))
-					; if trying to label zerodiv:
-					   (type-error () 0)))
-				      (screen-y0 state))))))
-			     :surface (render function))
-      (sdl:free string-render))
-    
-    (incf (label-position state)
-	  (* (sdl:char-width sdl:*default-font*)
-	     (length (label function)))))
-
+  (render-2d-label function state)
+  
   (funcall *render-function* function state (render function)))
 
 (defun render-2d-tree (state func-list)
