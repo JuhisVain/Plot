@@ -66,6 +66,17 @@
 	:window-width 600
 	))
 
+(defun test-data-res-ratio-dots ()
+  (let ((*render-function* #'render-2d-dots))
+    (plot (list
+	   (list #'gauss :data-per-pixel 1/300) ; 1
+	   (list #'gauss :data-per-pixel 1/125) ; 2
+	   (list #'gauss :data-per-pixel 1/75)  ; 3
+	   )
+	  :from 0 :to 600
+	  :window-width 600
+	  )))
+
 (defun testbind ()
   (defparameter *wave-length* 1)
   (flet ((modsin (x)

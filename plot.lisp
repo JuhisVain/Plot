@@ -338,11 +338,7 @@ where the Xs are (integer 0 255)."
 				   slack)
 				screen-y0))
 		      surface
-		      (typecase pfunc
-			(funcdata
-			 (color-real pfunc))
-			(sdl:color
-			 pfunc))))
+		      (color-real pfunc)))
     ;;the components of a complex must be real:
     (complex (draw-value x-coord
 			 (realpart value)
@@ -441,9 +437,10 @@ using COLOR for text."
 (defun render-2d-dots (function state
 		       &optional (surface (render function)))
   (loop for x from 0 below (sdl:width surface)
+     by (/ 1 (data-per-pixel function))
      for y across (data function)
-     do (draw-value x y (y-scale state) (slack-pixels state) (screen-y0 state)
-		    surface function)))
+     do (draw-value (floor x) y (y-scale state) (slack-pixels state)
+		    (screen-y0 state) surface function)))
 
 (defun scale-y (y y-scale slack screen-y0)
   "Transforms value Y into plot's scale.
