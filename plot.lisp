@@ -636,16 +636,13 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
     min))
 
 ;;This is now just an instance init, todo rename or remove
-(defun draw-function (pfunc-list
-		      min-x max-x
-		      slack
-		      &optional
-			(surface sdl:*default-display*))
+(defun make-state (pfunc-list
+		   min-x max-x
+		   slack
+		   &optional
+		     (surface sdl:*default-display*))
   "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
-
-  
-  
   (let* ((state
 	  (make-instance '2d-state
 			 :pfunc-list pfunc-list
@@ -665,9 +662,7 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 	    (screen-x0 state)
 	    (x-scale state))
 
-    state
-    
-    ))
+    state))
 
 ;; Let's go with elements in func-list as (func key-list) or just func
 ;; key-list is list of functions to be applied to func's result
@@ -832,7 +827,7 @@ Returns T when binding found and STATE changed."
 		  :bpp 32)
 
       (setf state
-	    (draw-function
+	    (make-state
 	     processed-func-list
 	     from to slack))
 
