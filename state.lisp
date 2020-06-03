@@ -23,7 +23,7 @@
     :initarg :draw-labels
     :accessor draw-labels
     :initform t)
-   (label-position
+   (label-position ; there should be a better solution than this
     :initform 0
     :accessor label-position)
 
@@ -35,6 +35,16 @@
   ((slack
     :initarg :slack
     :accessor slack)))
+
+(defclass 3d-state (state)
+  ((max-z ; TODO: Z or Y as value??
+    :initform nil
+    :initarg :max-z
+    :accessor max-z)
+   (min-z
+    :initform nil
+    :initarg :min-z
+    :accessor min-z)))
 
 ;;;; Auxiliary attributes:
 
