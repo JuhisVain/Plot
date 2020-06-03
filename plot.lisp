@@ -635,7 +635,6 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
      :do-masters nil)
     min))
 
-;;This is now just an instance init, todo rename or remove
 (defun make-state (pfunc-list
 		   min-x max-x
 		   slack
