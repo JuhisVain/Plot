@@ -8,6 +8,10 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
+;;;TODO 3d-state
+(defun test-3d ()
+  (plot '((+ :arg-count 2)) :from 0 :to 10))
+
 (defun test-plottable-count ()
   (flet ((test-count (should-return input-list)
 	   (let ((test-returns (plottable-count input-list)))
