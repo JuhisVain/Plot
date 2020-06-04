@@ -7,7 +7,10 @@
     :reader label)
    (data
     :initarg :data
-    :accessor data)))
+    :accessor data)
+   (arg-count ; does this belong here?
+    :initarg :arg-count
+    :reader arg-count)))
 
 ;; Properties:
 (defclass data-res () ;; Data resolution determined on top level funcs
@@ -100,7 +103,7 @@
 (defun make-funcdata
     (&key
        function resolution-width label color-real color-realpart
-       color-imagpart master subs (data-per-pixel 1))
+       color-imagpart master subs (data-per-pixel 1) arg-count)
   (cond ((null (or master subs))
 	 (make-instance 'top-funcdata
 			:func function
@@ -112,7 +115,8 @@
 			:data-per-pixel data-per-pixel
 			:color-real color-real
 			:color-realpart color-realpart
-			:color-imagpart color-imagpart))
+			:color-imagpart color-imagpart
+			:arg-count arg-count))
 	((and subs (null master))
 	 (make-instance 'master-funcdata
 			:func function
@@ -122,7 +126,8 @@
 				    (* data-per-pixel
 				       resolution-width))))
 			:data-per-pixel data-per-pixel
-			:subs subs))
+			:subs subs
+			:arg-count arg-count))
 	((and master (null subs))
 	 (make-instance 'sub-funcdata
 			:func function
@@ -131,14 +136,16 @@
 			:master master
 			:color-real color-real
 			:color-realpart color-realpart
-			:color-imagpart color-imagpart))
+			:color-imagpart color-imagpart
+			:arg-count arg-count))
 	((and master subs)
 	 (make-instance 'submaster-funcdata
 			:func function
 			:label label
 			:data (make-array (length (data master)))
 			:master master
-			:subs subs))))
+			:subs subs
+			:arg-count arg-count))))
 
 (defun generate-function-containers (input-func-list resolution-width)
   (let ((color-stack (generate-colors
@@ -163,7 +170,10 @@
 					(values nil nil nil)) 
 
 				  (let ((data-per-pixel
-					 (or (getf options :data-per-pixel) 1)))
+					 (or (getf options :data-per-pixel) 1))
+					(arg-count
+					 (or (getf options :arg-count)
+					     (get-arg-count main-func))))
 				    (make-funcdata
 				     :function main-func
 				     :resolution-width resolution-width
@@ -173,7 +183,8 @@
 				     :color-imagpart imagpart
 				     :master master
 				     :subs subs
-				     :data-per-pixel data-per-pixel)))))
+				     :data-per-pixel data-per-pixel
+				     :arg-count arg-count)))))
 			   
 			   (when subs
 			     (setf (subs processed-func)
