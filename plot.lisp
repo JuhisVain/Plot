@@ -635,33 +635,14 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
      :do-masters nil)
     min))
 
-(defun make-state (pfunc-list
-		   min-x max-x
-		   slack
-		   &optional
-		     (surface sdl:*default-display*))
-  "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
-dynamic based on extreme values on X's range."
-  (let* ((state
-	  (make-instance '2d-state
-			 :pfunc-list pfunc-list
-			 :min-x min-x :max-x max-x
-			 :slack slack
-			 :surface surface)))
-    
-    (format t "max ~a min ~a~%" (max-y state) (min-y state))
-
-    ;;debug:
-    (format t "y-range ~a~%slack-pix ~a~%y-scale ~a~%
-screen-y0 ~a and x0 ~a, x-scale: ~a~%"
-	    (y-range state)
-	    (slack-pixels state)
-	    (y-scale state)
-	    (screen-y0 state)
-	    (screen-x0 state)
-	    (x-scale state))
-
-    state))
+(defun highest-arg-count (pfunc-list)
+  (apply #'max
+	 (mapcar #'(lambda (pf)
+		     (max (arg-count pf)
+			  (if (typep pf 'master)
+			      (highest-arg-count (subs pf))
+			      0)))
+		 pfunc-list)))
 
 ;; Let's go with elements in func-list as (func key-list) or just func
 ;; key-list is list of functions to be applied to func's result

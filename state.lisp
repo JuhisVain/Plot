@@ -120,3 +120,35 @@ Will return T when state changed and NIL if not."
 
 (defmethod initialize-instance :after ((state 2d-state) &key)
   (compute-2d-tree state))
+
+(defun make-state (pfunc-list
+		   min-x max-x
+		   slack
+		   &optional
+		     (surface sdl:*default-display*))
+  "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
+dynamic based on extreme values on X's range."
+  (let* ((state-type (ecase (highest-arg-count pfunc-list)
+		       (1 '2d-state)
+		       (2 '3d-state)))
+	 (state
+	  (make-instance state-type
+			 :pfunc-list pfunc-list
+			 :min-x min-x :max-x max-x
+			 :slack slack
+			 :surface surface
+			 :allow-other-keys t)))
+    
+    (format t "max ~a min ~a~%" (max-y state) (min-y state))
+
+    ;;debug:
+    (format t "y-range ~a~%slack-pix ~a~%y-scale ~a~%
+screen-y0 ~a and x0 ~a, x-scale: ~a~%"
+	    (y-range state)
+	    (slack-pixels state)
+	    (y-scale state)
+	    (screen-y0 state)
+	    (screen-x0 state)
+	    (x-scale state))
+
+    state))
