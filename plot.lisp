@@ -604,12 +604,12 @@ that are of class drawn."
        (setf (render func) nil)))
     (free-renders (cdr pfunc-list))))
 
-(defun read-input-list (input-func-list dataset-width)
+(defun read-input-list (input-func-list input-dimensions)
   "Read a function description, store processed pfunc-list to *draw-functions*
 and return it."
   (setf
    *draw-functions*
-   (generate-function-containers input-func-list dataset-width)
+   (generate-function-containers input-func-list input-dimensions)
    ;(to-plotfunc (to-funcdata input-func-list dataset-width))
    ))
 
@@ -811,7 +811,7 @@ Returns T when binding found and STATE changed."
 	       bindings)
   (declare ((rational 0 1) slack))
   (let ((processed-func-list
-	 (read-input-list func-list window-width))
+	 (read-input-list func-list (list window-width window-height)))
 	(binding-hash-table nil)
 	(state nil))
     (sdl:initialise-default-font)

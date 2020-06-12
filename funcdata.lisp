@@ -102,16 +102,21 @@
 
 (defun make-funcdata
     (&key
-       function resolution-width label color-real color-realpart
+       function resolution-width resolution-height label color-real color-realpart
        color-imagpart master subs (data-per-pixel 1) arg-count)
   (cond ((null (or master subs))
 	 (make-instance 'top-funcdata
 			:func function
 			:label label
 			:data (make-array
-			       (1+ (ceiling
-				    (* data-per-pixel
-				       resolution-width))))
+			       (cons
+				(1+ (ceiling
+				     (* data-per-pixel
+					resolution-width)))
+				(when (= 2 arg-count)
+				  (list (1+ (ceiling
+					     (* data-per-pixel
+						resolution-height)))))))
 			:data-per-pixel data-per-pixel
 			:color-real color-real
 			:color-realpart color-realpart
@@ -122,9 +127,14 @@
 			:func function
 			:label label
 			:data (make-array
-			       (1+ (ceiling
-				    (* data-per-pixel
-				       resolution-width))))
+			       (cons
+				(1+ (ceiling
+				     (* data-per-pixel
+					resolution-width)))
+				(when (= 2 arg-count)
+				  (list (1+ (ceiling
+					     (* data-per-pixel
+						resolution-height)))))))
 			:data-per-pixel data-per-pixel
 			:subs subs
 			:arg-count arg-count))
@@ -147,10 +157,12 @@
 			:subs subs
 			:arg-count arg-count))))
 
-(defun generate-function-containers (input-func-list resolution-width)
+(defun generate-function-containers (input-func-list input-dimensions)
   (let ((color-stack (generate-colors
 		      255 0 0
-		      (plottable-count input-func-list))))
+		      (plottable-count input-func-list)))
+	(resolution-width (car input-dimensions))
+	(resolution-height (cadr input-dimensions)))
     (labels
 	((funcdata-generator (func-list id-counter &optional master)
 	   (mapcar #'(lambda (func)
@@ -177,6 +189,7 @@
 				    (make-funcdata
 				     :function main-func
 				     :resolution-width resolution-width
+				     :resolution-height resolution-height
 				     :label (incf id-counter)
 				     :color-real real
 				     :color-realpart realpart
