@@ -538,28 +538,43 @@ Result will still need to be inverted before drawing."
 	;; unwind-protect cleanup:
 	(sdl:free string-render)))))
 
-(defun render-2d-data (function state)
-  "Renders individual funcdata FUNCTION onto SURFACE, stored into
-FUNCTION's render slot."
-  ;;(declare (funcdata function))
-  (format t "Rendering ~a~%" (label function))
+(defgeneric render-data (function state)
+  (:documentation "Renders individual funcdata FUNCTION onto SURFACE, stored into
+FUNCTION's render slot."))
+
+(defmethod render-data :before (function state)
   (if (render function)
       ;; Wipe render:
       (sdl:clear-display *transparent* :surface (render function))
       ;; First time rendering -> create surface:
       (setf (render function)
-	    (sdl:create-surface (width state) (height state) :pixel-alpha 255)))
+	    (sdl:create-surface (width state)
+				(height state)
+				:pixel-alpha 255))))
 
-  (render-2d-label function state)
+(defmethod render-data (function (state 2d-state))
+  (format t "Rendering ~a~%" (label function))
   
+  (render-2d-label function state)
+
+  ;; TODO: handle with style
+  ;; ps. the state slot style
   (funcall *render-function* function state (render function)))
 
-(defun render-2d-tree (state func-list)
-  "Will (re)draw all funcdatas in FUNC-LIST ot their sub-funcdatas
+(defmethod render-data (function (state 3d-state))
+  (format t "3d-Rendering ~a~%" (label function))
+
+  (case (style state)
+    (heatmap
+     ;; TODO
+     )))
+
+(defun render-tree (state func-list)
+  "Will (re)draw all funcdatas in FUNC-LIST or their sub-funcdatas
 that are of class drawn."
   (dolist (func func-list)
     (etypecase func
-      (master (render-2d-tree state (subs func)))
+      (master (render-tree state (subs func)))
       (drawn (render-2d-data func state)))))
 
 ;; Placeholder memory manager
@@ -786,7 +801,7 @@ Returns T when binding found and STATE changed."
     ;; check-y-extremes will take care of redrawing if extremes change:
     (unless (check-y-extremes state)
       ;; if extremes did not change only redraw what's on the menu:
-      (render-2d-tree state (binding-functions binding)))
+      (render-tree state (binding-functions binding)))
     t))
 
 (defun plot (func-list
@@ -813,7 +828,7 @@ Returns T when binding found and STATE changed."
 
       (setf binding-hash-table (make-binding-hash-table bindings state))
       ;; produce renders for all drawn funcs:
-      (render-2d-tree state (pfunc-list state))
+      (render-tree state (pfunc-list state))
       ;; render to main surface:
       (render-state state)
 

@@ -1,3 +1,6 @@
+;;; Y axis should always represent the return values of functions
+;; X, Z etc. are the inputs.
+
 (defclass state ()
   ((pfunc-list
     :initarg :pfunc-list
@@ -27,6 +30,11 @@
     :initform 0
     :accessor label-position)
 
+   (style ; for now to be used with 3d-state, either 'heatmap or ???'planes???
+    :initarg :style
+    :reader style
+    :initform 'heatmap)
+
    (surface
     :initarg :surface
     :accessor surface)))
@@ -37,7 +45,7 @@
     :accessor slack)))
 
 (defclass 3d-state (state)
-  ((max-z ; TODO: Z or Y as value??
+  ((max-z
     :initform nil
     :initarg :max-z
     :accessor max-z)
@@ -76,6 +84,9 @@
 	(min-y state))
      (1+ (slack state))))
 
+(defgeneric y-scale (state)
+  (:documentation "Returns pixel/value scale."))
+
 (defmethod y-scale ((state 2d-state))
   (if (zerop (y-range state))
       100
@@ -104,7 +115,7 @@ Will return T when state changed and NIL if not."
     (when (and old-max old-min
 	       (or (/= old-max (max-y state))
 		   (/= old-min (min-y state))))
-      (render-2d-tree state (pfunc-list state))
+      (render-tree state (pfunc-list state))
       t)))
 
 (defmethod render-state ((state 2d-state))
@@ -122,33 +133,38 @@ Will return T when state changed and NIL if not."
   (compute-2d-tree state))
 
 (defun make-state (pfunc-list
-		   min-x max-x
+		   min max
 		   slack
-		   &optional
+		   &key
 		     (surface sdl:*default-display*))
   "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
 dynamic based on extreme values on X's range."
   (let* ((state-type (ecase (highest-arg-count pfunc-list)
 		       (1 '2d-state)
 		       (2 '3d-state)))
+	 (min-x (if (listp min) (car min) min))
+	 (max-x (if (listp max) (car max) max))
+	 (min-z (if (listp min) (cadr min) nil))
+	 (max-z (if (listp max) (cadr max) nil))
 	 (state
 	  (make-instance state-type
 			 :pfunc-list pfunc-list
 			 :min-x min-x :max-x max-x
+			 :min-z min-z :max-z max-z
 			 :slack slack
 			 :surface surface
 			 :allow-other-keys t)))
     
     (format t "max ~a min ~a~%" (max-y state) (min-y state))
-
     ;;debug:
-    (format t "y-range ~a~%slack-pix ~a~%y-scale ~a~%
+    (typecase state
+      (2d-state (format t "y-range ~a~%slack-pix ~a~%y-scale ~a~%
 screen-y0 ~a and x0 ~a, x-scale: ~a~%"
-	    (y-range state)
-	    (slack-pixels state)
-	    (y-scale state)
-	    (screen-y0 state)
-	    (screen-x0 state)
-	    (x-scale state))
+			(y-range state)
+			(slack-pixels state)
+			(y-scale state)
+			(screen-y0 state)
+			(screen-x0 state)
+			(x-scale state))))
 
     state))

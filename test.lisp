@@ -10,7 +10,7 @@
 
 ;;;TODO 3d-state
 (defun test-3d ()
-  (plot '((+ :arg-count 2)) :from 0 :to 10))
+  (plot '((+ :arg-count 2)) :from '(0 5) :to '(10 15)))
 
 (defun test-plottable-count ()
   (flet ((test-count (should-return input-list)
