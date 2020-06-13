@@ -575,7 +575,7 @@ that are of class drawn."
   (dolist (func func-list)
     (etypecase func
       (master (render-tree state (subs func)))
-      (drawn (render-2d-data func state)))))
+      (drawn (render-data func state)))))
 
 ;; Placeholder memory manager
 (defun free-assets (pfunc-list)
