@@ -12,6 +12,13 @@
 (defun test-3d ()
   (plot '((+ :arg-count 2)) :from '(0 5) :to '(10 15)))
 
+;; TODO: fix this
+(defun test-flat-line ()
+  (plot (list
+	 #'(lambda (x)
+	     (declare (ignore x))
+	     100))))
+
 (defun test-plottable-count ()
   (flet ((test-count (should-return input-list)
 	   (let ((test-returns (plottable-count input-list)))
