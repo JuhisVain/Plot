@@ -78,6 +78,15 @@
      (/ (width state)
 	(x-range state))))
 
+(defmethod z-range ((state 3d-state))
+  (- (max-z state) (min-z state)))
+
+(defmethod z-scale ((state 3d-state))
+  (/ (height state) (z-range state)))
+
+(defmethod z-step ((state 3d-state))
+  (/ (z-range state) (height state)))
+
 (defmethod y-range ((state 2d-state))
   "Range of y on grid to be displayed."
   (* (- (max-y state)
@@ -128,9 +137,13 @@ Will return T when state changed and NIL if not."
 
   (render-func-list (pfunc-list state) (surface state)))
 
+(defmethod render-state ((state 3d-state))
+  (sdl:clear-display sdl:*black*)
+  (render-func-list (pfunc-list state) (surface state))
+  )
 
-(defmethod initialize-instance :after ((state 2d-state) &key)
-  (compute-2d-tree state))
+(defmethod initialize-instance :after ((state state) &key)
+  (compute-tree state))
 
 (defun make-state (pfunc-list
 		   min max

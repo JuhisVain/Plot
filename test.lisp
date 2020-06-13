@@ -8,9 +8,15 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
-;;;TODO 3d-state
+;; TODO: performance testing on 3d-plotting
 (defun test-3d ()
   (plot '((+ :arg-count 2)) :from '(0 5) :to '(10 15)))
+
+(defun test-3d-2 ()
+  (plot (list (list #'(lambda (x z)
+			(gaussian x 1 0 z))
+		    :arg-count 2))
+	:from '(0 0) :to '(500 500)))
 
 ;; TODO: fix this
 (defun test-flat-line ()

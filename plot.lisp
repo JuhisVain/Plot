@@ -404,7 +404,7 @@ where the Xs are (integer 0 255)."
 		   surface
 		   :mark "0")))
 
-(defun compute-2d-data (function state)
+(defmethod compute-data (function (state 2d-state))
   "Populates funcdata FUNCTION's (and FUNCTION's subs) data slot's array with
 results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
   (loop
@@ -413,10 +413,21 @@ results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
      for i from 0 below (length (data function)) ;data array length set at init
      do (plotcall function i x)))
 
-(defun compute-2d-tree (state)
+(defmethod compute-data (function (state 3d-state))
+  (loop
+     for x from (min-x state) by (/ (x-step state)
+				    (data-per-pixel function))
+     for i from 0 below (array-dimension (data function) 0)
+     do (loop
+	   for z from (min-z state) by (/ (z-step state)
+					  (data-per-pixel function))
+	   for j from 0 below (array-dimension (data function) 1)
+	     do (plotcall function (list i j) x z))))
+
+(defun compute-tree (state)
   "Computes data for all funcdatas in FUNC-LIST."
   (mapcar #'(lambda (func)
-	      (compute-2d-data func state))
+	      (compute-data func state))
 	  (pfunc-list state))
   (check-y-extremes state))
 
@@ -566,8 +577,30 @@ FUNCTION's render slot."))
 
   (case (style state)
     (heatmap
-     ;; TODO
-     )))
+     (multiple-value-bind
+	   (red green blue)
+	 (sdl:color-* (color-real function))
+       (let ((color (sdl:color)))
+	 (dotimes (x (array-dimension (data function) 0))
+	   (dotimes (z (array-dimension (data function) 1))
+
+	     ;; Handle zero div:
+	     (if (realp (aref (data function) x z))
+		 (let ((value (/ (- (aref (data function) x z) (min-y state))
+				 (- (max-y state) (min-y state)))))
+		   
+		   (sdl:set-color-* color
+				    :r (* value red)
+				    :g (* value green)
+				    :b (* value blue)))
+		 ;;if not real:
+		 (sdl:set-color color *bad-color*))
+	       
+	       
+	     (draw-pixel x z (render function) color)))
+	 (sdl:free color))))
+    
+    ))
 
 (defun render-tree (state func-list)
   "Will (re)draw all funcdatas in FUNC-LIST or their sub-funcdatas
