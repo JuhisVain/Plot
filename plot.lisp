@@ -580,7 +580,7 @@ FUNCTION's render slot."))
      (multiple-value-bind
 	   (red green blue)
 	 (sdl:color-* (color-real function))
-       (let ((color (sdl:color)))
+       (let ((color (sdl:color :a 0)))
 	 (dotimes (x (array-dimension (data function) 0))
 	   (dotimes (z (array-dimension (data function) 1))
 
@@ -590,9 +590,10 @@ FUNCTION's render slot."))
 				 (- (max-y state) (min-y state)))))
 		   
 		   (sdl:set-color-* color
-				    :r (* value red)
-				    :g (* value green)
-				    :b (* value blue)))
+				    :r red
+				    :g green
+				    :b blue
+				    :a (* 255 value)))
 		 ;;if not real:
 		 (sdl:set-color color *bad-color*))
 	       

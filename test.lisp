@@ -18,6 +18,36 @@
 		    :arg-count 2))
 	:from '(0 0) :to '(500 500)))
 
+(defun test-3d-3 ()
+  (plot (list
+	 #'(lambda (x z)
+	     (cond ((< x 10)
+		    10)
+		   ((> x 90)
+		    7)
+		   ((< z 10)
+		    0)
+		   ((> z 90)
+		    2)
+		   (t 5))))
+	:from '(0 0) :to '(100 100)))
+
+(defun test-3d-4 ()
+  (plot (list
+	 '(+ :arg-count 2)
+	 '(- :arg-count 2)
+	 #'(lambda (x z)
+	     (if (and (< (- x z) 5)
+		      (> (- x z) 4))
+		 5
+		 -10))
+	 #'(lambda (x z)
+	     (declare (ignore x))
+	     (if (and (> z 2) (< z 3))
+		 5
+		 -10)))
+	:from '(0 0) :to '(10 10)))
+
 ;; TODO: fix this
 (defun test-flat-line ()
   (plot (list
