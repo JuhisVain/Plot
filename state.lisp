@@ -139,6 +139,9 @@ Will return T when state changed and NIL if not."
 
 (defmethod render-state ((state 3d-state))
   (sdl:clear-display sdl:*black*)
+  ;; TODO: when using heatmap: blitting function renders sequentially
+  ;; will obscure prior blits with more recent ones
+  ;; will have to average all functions and only blit final surface
   (render-func-list (pfunc-list state) (surface state))
   )
 
