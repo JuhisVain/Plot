@@ -353,15 +353,18 @@ where the Xs are (integer 0 255)."
 		      surface)))
   NIL)
 
-(defun render-func-list (func-list surface)
+(defun render-func-list (func-list surface
+			 &optional (drawn-func #'sdl:blit-surface))
   "Blits all funcdata-renders within FUNC-LIST tree onto SURFACE."
-  (dolist (func func-list)
-    (typecase func
-      (master
-       (render-func-list (subs func) surface))
-      (drawn
-       (sdl:blit-surface (render func) surface))))
-  surface)
+  (labels ((sub-render (flist)
+	     (dolist (func flist)
+	       (typecase func
+		 (master
+		  (sub-render (subs func)))
+		 (drawn
+		  (funcall drawn-func (render func) surface))))
+	     surface))
+    (sub-render func-list)))
 
 (defun draw-grid (min-y max-y y-range y-scale screen-y0
 		  min-x max-x x-range x-scale screen-x0
