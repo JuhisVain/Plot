@@ -142,7 +142,9 @@
 	 (make-instance 'sub-funcdata
 			:func function
 			:label label
-			:data (make-array (length (data master)))
+			:data (make-array
+			       (list (array-dimension (data master) 0)
+				     (array-dimension (data master) 1)))
 			:master master
 			:color-real color-real
 			:color-realpart color-realpart
@@ -152,7 +154,9 @@
 	 (make-instance 'submaster-funcdata
 			:func function
 			:label label
-			:data (make-array (length (data master)))
+			:data (make-array
+			       (list (array-dimension (data master) 0)
+				     (array-dimension (data master) 1)))
 			:master master
 			:subs subs
 			:arg-count arg-count))))

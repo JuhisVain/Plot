@@ -12,6 +12,10 @@
 (defun test-3d ()
   (plot '((+ :arg-count 2)) :from '(0 5) :to '(10 15)))
 
+(defun test-3d-subs ()
+  (plot (list (list '(+ :arg-count 2)
+		    #'-)) :from '(0 5) :to '(10 15)))
+
 (defun test-3d-2 ()
   (plot (list (list #'(lambda (x z)
 			(gaussian x 1 0 z))
