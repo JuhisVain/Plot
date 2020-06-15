@@ -578,6 +578,8 @@ FUNCTION's render slot."))
 (defmethod render-data (function (state 3d-state))
   (format t "3d-Rendering ~a~%" (label function))
 
+  ;; TODO: heatmap for lonely functions
+  ;; should encompass all the colors of the rainbow
   (case (style state)
     (heatmap
      (multiple-value-bind
