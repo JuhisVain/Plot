@@ -139,11 +139,11 @@ Will return T when state changed and NIL if not."
 
 (defmethod render-state ((state 3d-state))
   (sdl:clear-display sdl:*black*)
-  ;; TODO: when using heatmap: blitting function renders sequentially
-  ;; will obscure prior blits with more recent ones
-  ;; will have to average all functions and only blit final surface
-  (render-func-list (pfunc-list state) (surface state))
-  )
+  ;; rendering multiple 2 arg functions using heatmap will drawn them
+  ;; sequentially, potentially obscuring earlier renders.
+  ;; Could be handled using when max 3 functions with just adding
+  ;; primary colors together
+  (render-func-list (pfunc-list state) (surface state)))
 
 (defmethod initialize-instance :after ((state state) &key)
   (compute-tree state))
