@@ -577,11 +577,10 @@ FUNCTION's render slot."))
 
 (defmethod render-data (function (state 3d-state))
   (format t "3d-Rendering ~a~%" (label function))
-
-  ;; TODO: heatmap for lonely functions
-  ;; should encompass all the colors of the rainbow
   (case (style state)
-    (heatmap
+    (sequential-heatmap
+     ;; Functions rendered sequentially using their respective colors,
+     ;; low values = low alpha
      (multiple-value-bind
 	   (red green blue)
 	 (sdl:color-* (color-real function))
@@ -605,8 +604,26 @@ FUNCTION's render slot."))
 	       
 	     (draw-pixel x z (render function) color)))
 	 (sdl:free color))))
-    
-    ))
+
+    (heatmap
+     ;; A single function rendered using a bunch of colors
+     (let ((color (sdl:color)))
+       (dotimes (x (array-dimension (data function) 0))
+	 (dotimes (z (array-dimension (data function) 1))
+	   (if (realp (aref (data function) x z))
+	       (let* ((value (/ (- (aref (data function) x z) (min-y state))
+				(- (max-y state) (min-y state))))
+		      ;; magic number modifies color for highest value:
+		      (rgb (hue-to-rgb (* value 1.8 pi)))
+		      (r (cadr rgb)) ; fuck it
+		      (g (cadddr rgb))
+		      (b (cadr (cddddr rgb))))
+		 
+		 (sdl:set-color-* color :r r :g g :b b))
+	       ;;if not real:
+	       (sdl:set-color color *bad-color*))
+	   (draw-pixel x z (render function) color)))
+       (sdl:free color)))))
 
 (defun render-tree (state func-list)
   "Will (re)draw all funcdatas in FUNC-LIST or their sub-funcdatas
