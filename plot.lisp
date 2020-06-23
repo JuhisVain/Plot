@@ -235,6 +235,21 @@ where the Xs are (integer 0 255)."
       (plot-len func-list)
       sum)))
 
+(defun function-count (pfunc-list &optional test)
+  "Processes all functions, counting when test returns non-nil."
+  (when (null test)
+    (setf test #'(lambda (x)
+		   (not (null x)))))
+  (let ((sum 0))
+    (labels ((rec-function-count (pfuncs)
+	       (dolist (func pfuncs)
+		 (when (funcall test func)
+		   (incf sum))
+		 (when (typep func 'master)
+		   (rec-function-count (subs func))))))
+      (rec-function-count pfunc-list)
+      sum)))
+
 (defmethod plotcall ((funcdata abstract-top-funcdata)
 		     index &rest arguments
 		     &aux (lindex (if (listp index)
