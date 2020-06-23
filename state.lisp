@@ -30,7 +30,11 @@
     :initform 0
     :accessor label-position)
 
-   (style ; for now to be used with 3d-state, either 'heatmap or ???'planes???
+   ;;for now to be used with 3d-state, one of:
+   ;; 'heatmap :: for a solitary function
+   ;; 'sequential-heatmap :: somewhat unusable multi-func heatmap
+   ;; TODO: investigate use of RGB colorspaces for 2 and 3 func version of above
+   (style 
     :initarg :style
     :reader style
     :initform 'heatmap)
@@ -164,6 +168,20 @@ dynamic based on extreme values on X's range."
 	 (max-z (if (listp max) (cadr max) nil))
 	 (state
 	  (make-instance state-type
+			 :style
+			 ;; Seemed like a good idea
+			 ;;TODO: make function after more styles implemented
+			 (if (eql state-type '3d-state)
+			     (block big-count
+			       (function-count
+				pfunc-list
+				#'(lambda (f sum)
+				 (when (>= sum 2)
+				   (return-from big-count 'sequential-heatmap))
+				 (when (typep f 'drawn)
+				   t)))
+			       'heatmap)
+			     'i-am-missing)
 			 :pfunc-list pfunc-list
 			 :min-x min-x :max-x max-x
 			 :min-z min-z :max-z max-z
