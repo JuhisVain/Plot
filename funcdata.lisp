@@ -143,8 +143,7 @@
 			:func function
 			:label label
 			:data (make-array
-			       (list (array-dimension (data master) 0)
-				     (array-dimension (data master) 1)))
+			       (array-dimensions (data master)))
 			:master master
 			:color-real color-real
 			:color-realpart color-realpart
@@ -155,8 +154,7 @@
 			:func function
 			:label label
 			:data (make-array
-			       (list (array-dimension (data master) 0)
-				     (array-dimension (data master) 1)))
+			       (array-dimensions (data master)))
 			:master master
 			:subs subs
 			:arg-count arg-count))))
