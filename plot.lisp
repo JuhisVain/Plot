@@ -870,7 +870,7 @@ Returns T when binding found and STATE changed."
     (dolist (to-update (binding-functions binding))
       (setf (data-min to-update) NIL ;must be "unset" so extremes set correctly
 	    (data-max to-update) NIL)
-      (compute-2d-data to-update state))
+      (compute-data to-update state))
     ;; check-y-extremes will take care of redrawing if extremes change:
     (unless (check-y-extremes state)
       ;; if extremes did not change only redraw what's on the menu:

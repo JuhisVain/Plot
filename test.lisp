@@ -54,10 +54,14 @@
 
 ;; TODO: fix this
 (defun test-flat-line ()
-  (plot (list
-	 #'(lambda (x)
-	     (declare (ignore x))
-	     100))))
+  (let ((constnum 5))
+    (declare (special constnum))
+    (plot (list
+	   #'(lambda (x)
+	       (declare (ignore x))
+	       constnum))
+	  :bindings
+	  '((q a constnum 0.5 nil)))))
 
 (defun test-plottable-count ()
   (flet ((test-count (should-return input-list)
