@@ -125,6 +125,13 @@ Will return T when state changed and NIL if not."
 	(old-min (min-y state)))
     (setf (slot-value state 'max-y) (functree-max (pfunc-list state))
 	  (slot-value state 'min-y) (functree-min (pfunc-list state)))
+
+    ;; min-y and max-y should not be equal:
+    (when (= (slot-value state 'min-y)
+	     (slot-value state 'max-y))
+      (decf (slot-value state 'min-y) 0.1)
+      (incf (slot-value state 'max-y) 0.1))
+    
     (when (and old-max old-min
 	       (or (/= old-max (max-y state))
 		   (/= old-min (min-y state))))

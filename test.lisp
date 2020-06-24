@@ -52,7 +52,6 @@
 		 -10)))
 	:from '(0 0) :to '(10 10)))
 
-;; TODO: fix this
 (defun test-flat-line ()
   (let ((constnum 5))
     (declare (special constnum))
