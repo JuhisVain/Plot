@@ -52,6 +52,14 @@
 		 -10)))
 	:from '(0 0) :to '(10 10)))
 
+(defun test-3d-res ()
+  (plot
+   (list (list #'(lambda (x z) ; 3d gaussian
+		   (exp (- (+ (/ (expt x 2) 1)
+			      (/ (expt z 2) 1)))))
+	       :data-per-pixel 1/10)) ; not working
+   :from '(-3 -3) :to '(3 3)))
+
 (defun test-flat-line ()
   (let ((constnum 5))
     (declare (special constnum))
