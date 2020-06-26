@@ -135,7 +135,7 @@ Will return T when state changed and NIL if not."
     (when (and old-max old-min
 	       (or (/= old-max (max-y state))
 		   (/= old-min (min-y state))))
-      (render-tree state (pfunc-list state))
+      ;(render-tree state (pfunc-list state))
       t)))
 
 (defmethod render-state ((state 2d-state))
@@ -146,7 +146,9 @@ Will return T when state changed and NIL if not."
 	     (x-scale state) (screen-x0 state)
 	     (slack-pixels state) (surface state))
 
-  (render-func-list (pfunc-list state) (surface state)))
+  (render-funcs state)
+  ;(render-func-list (pfunc-list state) (surface state))
+  )
 
 (defmethod render-state ((state 3d-state))
   (sdl:clear-display sdl:*black*)
@@ -154,7 +156,9 @@ Will return T when state changed and NIL if not."
   ;; sequentially, potentially obscuring earlier renders.
   ;; Could be handled using when max 3 functions with just adding
   ;; primary colors together
-  (render-func-list (pfunc-list state) (surface state)))
+  (render-funcs state)
+  ;(render-func-list (pfunc-list state) (surface state))
+  )
 
 (defmethod initialize-instance :after ((state state) &key)
   (compute-tree state))

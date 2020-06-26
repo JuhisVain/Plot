@@ -2,6 +2,7 @@
 (load "state.lisp")
 (load "funcdata.lisp")
 
+(defvar *auto-quit* nil)
 (defvar *draw-labels* t
   "The default state of whether or not to write names for plotted data.")
 
@@ -383,6 +384,82 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 	     surface))
     (sub-render func-list)))
 
+(defun collect-drawn (pfunc-list) ; TODO: move to state init, make slot
+  (let ((drawns nil))
+    (labels ((rec-col (flist)
+	       (dolist (func flist)
+		 (typecase func
+		   (master
+		    (rec-col (subs func)))
+		   (drawn
+		    (push func drawns))))))
+      (rec-col pfunc-list)
+      (reverse drawns))))
+
+(defgeneric render-funcs (state))
+
+(defmethod render-funcs ((state 2d-state))
+  (let ((drawns (collect-drawn (pfunc-list state))))
+    (dolist (func drawns)
+      (render-2d-label func state))
+    (dolist (func drawns)
+      (render-2d-lineplot func state (surface state)))))
+  
+(defmethod render-funcs ((state 3d-state))
+  (let ((drawns (collect-drawn (pfunc-list state))))
+    (case (style state)
+      (wireframe
+       nil)
+      
+      (sequential-heatmap
+       ;; Functions rendered sequentially using their respective colors,
+       ;; low values = low alpha
+       (dolist (function drawns)
+	 (multiple-value-bind
+	       (red green blue)
+	     (sdl:color-* (color-real function))
+	   (let ((color (sdl:color :a 0)))
+	     (dotimes (x (array-dimension (data function) 0))
+	       (dotimes (z (array-dimension (data function) 1))
+
+		 ;; Handle zero div:
+		 (if (realp (aref (data function) x z))
+		     (let ((value (/ (- (aref (data function) x z) (min-y state))
+				     (- (max-y state) (min-y state)))))
+		       
+		       (sdl:set-color-* color
+					:r red
+					:g green
+					:b blue
+					:a (* 255 value)))
+		     ;;if not real:
+		     (sdl:set-color color *bad-color*))
+		 
+		 
+		 (draw-pixel x z (surface state) color)))
+	     (sdl:free color)))))
+
+      (heatmap
+       ;; A single function rendered using a bunch of colors
+       (dolist (function drawns)
+	 (let ((color (sdl:color)))
+	   (dotimes (x (array-dimension (data function) 0))
+	     (dotimes (z (array-dimension (data function) 1))
+	       (if (realp (aref (data function) x z))
+		   (let* ((value (/ (- (aref (data function) x z) (min-y state))
+				    (- (max-y state) (min-y state))))
+			  ;; magic number modifies color for highest value:
+			  (rgb (hue-to-rgb (* value 1.8 pi)))
+			  (r (cadr rgb)) ; fuck it
+			  (g (cadddr rgb))
+			  (b (cadr (cddddr rgb))))
+		     
+		     (sdl:set-color-* color :r r :g g :b b))
+		   ;;if not real:
+		   (sdl:set-color color *bad-color*))
+	       (draw-pixel x z (surface state) color)))
+	   (sdl:free color)))))))
+
 (defun draw-grid (min-y max-y y-range y-scale screen-y0
 		  min-x max-x x-range x-scale screen-x0
 		  slack-pixels surface)
@@ -525,7 +602,7 @@ Result will still need to be inverted before drawing."
 	      (+
 	       ;; move label downwards:
 	       (sdl:char-height sdl:*default-font*)
-	       (- (sdl:height (render function))
+	       (- (height state)
 		  (round
 		   (realpart
 		    (- (+ (slack-pixels state)
@@ -562,7 +639,7 @@ Result will still need to be inverted before drawing."
 			    (type-error () 0)))
 		       
 		       (screen-y0 state))))))
-	      :surface (render function))
+	      :surface (surface state))
 	     (incf (label-position state)
 		   (* (sdl:char-width sdl:*default-font*)
 		      (length (label function)))))
@@ -595,6 +672,9 @@ FUNCTION's render slot."))
 (defmethod render-data (function (state 3d-state))
   (format t "3d-Rendering ~a~%" (label function))
   (case (style state)
+    (wireframe
+     nil)
+    
     (sequential-heatmap
      ;; Functions rendered sequentially using their respective colors,
      ;; low values = low alpha
@@ -872,9 +952,9 @@ Returns T when binding found and STATE changed."
 	    (data-max to-update) NIL)
       (compute-data to-update state))
     ;; check-y-extremes will take care of redrawing if extremes change:
-    (unless (check-y-extremes state)
+;    (unless (check-y-extremes state)
       ;; if extremes did not change only redraw what's on the menu:
-      (render-tree state (binding-functions binding)))
+;      (render-tree state (binding-functions binding)))
     t))
 
 (defun plot (func-list
@@ -901,16 +981,19 @@ Returns T when binding found and STATE changed."
 
       (setf binding-hash-table (make-binding-hash-table bindings state))
       ;; produce renders for all drawn funcs:
-      (render-tree state (pfunc-list state))
+      ;(render-tree state (pfunc-list state))
       ;; render to main surface:
       (render-state state)
 
       (sdl:update-display)
 
+      (when *auto-quit*
+	(sdl:push-quit-event))
+      
       (sdl:with-events (:poll)
 	(:quit-event
 	 ()
-	 (free-assets *draw-functions*)
+	 ;(free-assets *draw-functions*)
 	 t)
 
 	(:key-down-event
