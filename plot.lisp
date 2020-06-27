@@ -378,29 +378,17 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 		      surface)))
   NIL)
 
-(defun collect-drawn (pfunc-list) ; TODO: move to state init, make slot
-  (let ((drawns nil))
-    (labels ((rec-col (flist)
-	       (dolist (func flist)
-		 (typecase func
-		   (master
-		    (rec-col (subs func)))
-		   (drawn
-		    (push func drawns))))))
-      (rec-col pfunc-list)
-      (reverse drawns))))
-
 (defgeneric render-funcs (state))
 
 (defmethod render-funcs ((state 2d-state))
-  (let ((drawns (collect-drawn (pfunc-list state))))
+  (let ((drawns (drawn-list state)))
     (dolist (func drawns)
       (render-2d-label func state))
     (dolist (func drawns)
       (render-2d-lineplot func state (surface state)))))
   
 (defmethod render-funcs ((state 3d-state))
-  (let ((drawns (collect-drawn (pfunc-list state))))
+  (let ((drawns (drawn-list state)))
     (case (style state)
       (wireframe
        nil)

@@ -5,6 +5,9 @@
   ((pfunc-list
     :initarg :pfunc-list
     :accessor pfunc-list)
+   (drawn-list
+    :initarg :drawn-list
+    :accessor drawn-list)
    
    (min-x
     :initarg :min-x
@@ -146,9 +149,7 @@ Will return T when state changed and NIL if not."
 	     (x-scale state) (screen-x0 state)
 	     (slack-pixels state) (surface state))
 
-  (render-funcs state)
-  ;(render-func-list (pfunc-list state) (surface state))
-  )
+  (render-funcs state))
 
 (defmethod render-state ((state 3d-state))
   (sdl:clear-display sdl:*black*)
@@ -156,12 +157,22 @@ Will return T when state changed and NIL if not."
   ;; sequentially, potentially obscuring earlier renders.
   ;; Could be handled using when max 3 functions with just adding
   ;; primary colors together
-  (render-funcs state)
-  ;(render-func-list (pfunc-list state) (surface state))
-  )
+  (render-funcs state))
 
 (defmethod initialize-instance :after ((state state) &key)
   (compute-tree state))
+
+(defun collect-drawn (pfunc-list) ; TODO: move to state init, make slot
+  (let ((drawns nil))
+    (labels ((rec-col (flist)
+	       (dolist (func flist)
+		 (typecase func
+		   (master
+		    (rec-col (subs func)))
+		   (drawn
+		    (push func drawns))))))
+      (rec-col pfunc-list)
+      (reverse drawns))))
 
 (defun make-state (pfunc-list
 		   min max
@@ -194,6 +205,7 @@ dynamic based on extreme values on X's range."
 			       'heatmap)
 			     'i-am-missing)
 			 :pfunc-list pfunc-list
+			 :drawn-list (collect-drawn pfunc-list)
 			 :min-x min-x :max-x max-x
 			 :min-z min-z :max-z max-z
 			 :slack slack
