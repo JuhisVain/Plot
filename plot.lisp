@@ -53,40 +53,45 @@ one of (1 2 NIL)"
 				     :surface surface
 				     :color color))))
 
-(defmethod draw-line (x0 (y0 (eql 'zero-division)) x1 y1 function
-		      &optional (surface (render function)))
+(defgeneric draw-line (x0 y0 x1 y1 function surface))
+
+(defmethod draw-line (x0 (y0 (eql 'zero-division))
+		      x1 y1
+		      function surface)
   (draw-vertical x0 *bad-color* surface))
 
 ;;; Drawing *bad-color* line for last value when 'zero-division or nil should
 ;; have been taken care of by increasing array size by one in funcdata init.
 ;; Could be investigated further but this doesn't seem too important.
-(defmethod draw-line (x0 y0 x1 (y1 (eql 'zero-division)) function
-		      &optional (surface (render function)))
-  (declare (ignore surface))
+(defmethod draw-line (x0 y0
+		      x1 (y1 (eql 'zero-division))
+		      function
+		      surface)
   ;; don't do nuthin
-  ;;;(draw-vertical x1 *bad-color* surface)
-  )
+  NIL)
 
-(defmethod draw-line (x0 (y0 (eql nil)) x1 y1 function
-		      &optional (surface (render function)))
+(defmethod draw-line (x0 (y0 (eql nil))
+		      x1 y1
+		      function surface)
   (draw-vertical x0 *bad-color* surface))
 
-(defmethod draw-line (x0 y0 x1 (y1 (eql nil)) function
-		      &optional (surface (render function)))
-  (declare (ignore surface))
+(defmethod draw-line (x0 y0
+		      x1 (y1 (eql nil))
+		      function surface)
   ;; don't do nuthin
-  ;;;(draw-vertical x1 *bad-color* surface)
-  )
+  NIL)
 
-(defmethod draw-line (x0 (y0 real) x1 (y1 real) function
-		     &optional (surface (render function)))
+(defmethod draw-line (x0 (y0 real)
+		      x1 (y1 real)
+		      function surface)
   (sdl:draw-line-* x0 (- (sdl:height surface) y0)
 		   x1 (- (sdl:height surface) y1)
 		   :surface surface
 		   :color (color-real function)))
 
-(defmethod draw-line (x0 (y0 complex) x1 (y1 complex) function
-		     &optional (surface (render function)))
+(defmethod draw-line (x0 (y0 complex)
+		      x1 (y1 complex)
+		      function surface)
   (sdl:draw-line-* x0 (- (sdl:height surface) (realpart y0))
 		   x1 (- (sdl:height surface) (realpart y1))
 		   :surface surface
@@ -96,8 +101,9 @@ one of (1 2 NIL)"
 		   :surface surface
 		   :color (color-imagpart function)))
 
-(defmethod draw-line (x0 (y0 complex) x1 (y1 real) function
-		     &optional (surface (render function)))
+(defmethod draw-line (x0 (y0 complex)
+		      x1 (y1 real)
+		      function surface)
   (sdl:draw-line-* x0 (- (sdl:height surface) (realpart y0))
 		   x1 (- (sdl:height surface) y1)
 		   :surface surface
@@ -107,8 +113,9 @@ one of (1 2 NIL)"
 		   :surface surface
 		   :color (color-imagpart function)))
 
-(defmethod draw-line (x0 (y0 real) x1 (y1 complex) function
-		     &optional (surface (render function)))
+(defmethod draw-line (x0 (y0 real)
+		      x1 (y1 complex)
+		      function surface)
   (sdl:draw-line-* x0 (- (sdl:height surface) y0)
 		   x1 (- (sdl:height surface) (realpart y1))
 		   :surface surface
@@ -371,19 +378,6 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 		      surface)))
   NIL)
 
-(defun render-func-list (func-list surface
-			 &optional (drawn-func #'sdl:blit-surface))
-  "Blits all funcdata-renders within FUNC-LIST tree onto SURFACE."
-  (labels ((sub-render (flist)
-	     (dolist (func flist)
-	       (typecase func
-		 (master
-		  (sub-render (subs func)))
-		 (drawn
-		  (funcall drawn-func (render func) surface))))
-	     surface))
-    (sub-render func-list)))
-
 (defun collect-drawn (pfunc-list) ; TODO: move to state init, make slot
   (let ((drawns nil))
     (labels ((rec-col (flist)
@@ -543,7 +537,7 @@ using COLOR for text."
    :color color))
 
 (defun render-2d-dots (function state
-		       &optional (surface (render function)))
+		       &optional (surface (surface state)))
   (loop for x from 0 below (sdl:width surface)
      by (/ 1 (data-per-pixel function))
      for y across (data function)
@@ -568,7 +562,7 @@ Result will still need to be inverted before drawing."
     (t y))); come again! Pass through for non number values
 
 (defun render-2d-lineplot (function state
-			   &optional (surface (render function)))
+			   &optional (surface (surface state)))
   (let ((x-pixel 0))
     (map
      NIL
@@ -645,117 +639,6 @@ Result will still need to be inverted before drawing."
 		      (length (label function)))))
 	;; unwind-protect cleanup:
 	(sdl:free string-render)))))
-
-(defgeneric render-data (function state)
-  (:documentation "Renders individual funcdata FUNCTION onto SURFACE, stored into
-FUNCTION's render slot."))
-
-(defmethod render-data :before (function state)
-  (if (render function)
-      ;; Wipe render:
-      (sdl:clear-display *transparent* :surface (render function))
-      ;; First time rendering -> create surface:
-      (setf (render function)
-	    (sdl:create-surface (width state)
-				(height state)
-				:pixel-alpha 255))))
-
-(defmethod render-data (function (state 2d-state))
-  (format t "Rendering ~a~%" (label function))
-  
-  (render-2d-label function state)
-
-  ;; TODO: handle with style
-  ;; ps. the state slot style
-  (funcall *render-function* function state (render function)))
-
-(defmethod render-data (function (state 3d-state))
-  (format t "3d-Rendering ~a~%" (label function))
-  (case (style state)
-    (wireframe
-     nil)
-    
-    (sequential-heatmap
-     ;; Functions rendered sequentially using their respective colors,
-     ;; low values = low alpha
-     (multiple-value-bind
-	   (red green blue)
-	 (sdl:color-* (color-real function))
-       (let ((color (sdl:color :a 0)))
-	 (dotimes (x (array-dimension (data function) 0))
-	   (dotimes (z (array-dimension (data function) 1))
-
-	     ;; Handle zero div:
-	     (if (realp (aref (data function) x z))
-		 (let ((value (/ (- (aref (data function) x z) (min-y state))
-				 (- (max-y state) (min-y state)))))
-		   
-		   (sdl:set-color-* color
-				    :r red
-				    :g green
-				    :b blue
-				    :a (* 255 value)))
-		 ;;if not real:
-		 (sdl:set-color color *bad-color*))
-	       
-	       
-	     (draw-pixel x z (render function) color)))
-	 (sdl:free color))))
-
-    (heatmap
-     ;; A single function rendered using a bunch of colors
-     (let ((color (sdl:color)))
-       (dotimes (x (array-dimension (data function) 0))
-	 (dotimes (z (array-dimension (data function) 1))
-	   (if (realp (aref (data function) x z))
-	       (let* ((value (/ (- (aref (data function) x z) (min-y state))
-				(- (max-y state) (min-y state))))
-		      ;; magic number modifies color for highest value:
-		      (rgb (hue-to-rgb (* value 1.8 pi)))
-		      (r (cadr rgb)) ; fuck it
-		      (g (cadddr rgb))
-		      (b (cadr (cddddr rgb))))
-		 
-		 (sdl:set-color-* color :r r :g g :b b))
-	       ;;if not real:
-	       (sdl:set-color color *bad-color*))
-	   (draw-pixel x z (render function) color)))
-       (sdl:free color)))))
-
-(defun render-tree (state func-list)
-  "Will (re)draw all funcdatas in FUNC-LIST or their sub-funcdatas
-that are of class drawn."
-  (dolist (func func-list)
-    (etypecase func
-      (master (render-tree state (subs func)))
-      (drawn (render-data func state)))))
-
-;; Placeholder memory manager
-(defun free-assets (pfunc-list)
-  (let ((func (car pfunc-list)))
-    (typecase func
-      (null (return-from free-assets))
-      (master (free-assets (subs func)))
-      (drawn
-       (sdl:free (color-real func))
-       (sdl:free (color-realpart func))
-       (sdl:free (color-imagpart func))
-       (sdl:free (render func))
-       (setf (slot-value func 'color-real) nil
-	     (slot-value func 'color-realpart) nil
-	     (slot-value func 'color-imagpart) nil
-	     (render func) nil)))
-    (free-assets (cdr pfunc-list))))
-
-(defun free-renders (pfunc-list)
-  (let ((func (car pfunc-list)))
-    (typecase func
-      (null (return-from free-renders))
-      (plotfunc (free-renders (plotfunc-subs func)))
-      (funcdata
-       (sdl:free (render func))
-       (setf (render func) nil)))
-    (free-renders (cdr pfunc-list))))
 
 (defun read-input-list (input-func-list input-dimensions)
   "Read a function description, store processed pfunc-list to *draw-functions*

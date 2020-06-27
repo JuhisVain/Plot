@@ -39,11 +39,7 @@
     :accessor data-min)
    (data-max
     :initform NIL
-    :accessor data-max)
-;   (render
-;    :initform NIL
-;    :accessor render)
-   ))
+    :accessor data-max)))
 
 (defclass sub ()
   ((master
