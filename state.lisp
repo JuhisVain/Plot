@@ -162,7 +162,7 @@ Will return T when state changed and NIL if not."
 (defmethod initialize-instance :after ((state state) &key)
   (compute-tree state))
 
-(defun collect-drawn (pfunc-list) ; TODO: move to state init, make slot
+(defun collect-drawn (pfunc-list)
   (let ((drawns nil))
     (labels ((rec-col (flist)
 	       (dolist (func flist)
