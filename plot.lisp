@@ -386,12 +386,90 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
       (render-2d-label func state))
     (dolist (func drawns)
       (render-2d-lineplot func state (surface state)))))
+
+(defun render-wireframe (state)
+  (declare (3d-state state))
+  (let ((wire-density 1/10)
+	(centre-x (+ (min-x state)
+		     (/ (- (max-x state)
+			   (min-x state))
+			2)))
+	(centre-z (+ (min-z state)
+		     (/ (- (max-z state)
+			   (min-z state))
+			2))))
+
+    '(let ((furthest (cond ((< (yaw state) (* 1/2 pi))
+			   'min-min)
+			  ((< (yaw state) pi)
+			   'min-max)
+			  ((< (yaw state) (* 3/2 pi))
+			   'max-max)
+			  (t
+			   'max-min)))))
+
+      ;; furthest drawn first
+      (dolist (func (pfunc-list state))
+	(dotimes (x-wire (ceiling (* wire-density ; 0 1 2 3
+				     (array-dimension (data func) 0))))
+
+	  (dotimes (z (min (array-dimension (data func) 1)
+			   (width state))) ; 0 1 2 3
+	    (format t "xw: ~a  :: z: ~a~%" x-wire z)
+	    (let* ((multi-multi (/ (width state)
+				   (sqrt (+ (expt (width state) 2)
+					    (expt (height state) 2)))))
+
+		   (x (/ x-wire wire-density)) ; 0 10 20 30
+		   (y-value0 (aref (data func) x z))
+		   (rel-x0 (- x centre-x))
+		   (rel-z0 (- z centre-z))
+		   (unit-multi0 (* multi-multi
+				   (sqrt (+ (expt x 2)
+					    (expt z 2)))))
+		   (zero-yaw0 (atan ;(abs (/ rel-x0 rel-z0))
+				    rel-x0 rel-z0))
+
+		   (y-value1 (aref (data func) x (1+ z)))
+		   (rel-x1 (- x centre-x))
+		   (rel-z1 (- (1+ z) centre-z))
+		   (unit-multi1 (* multi-multi
+				   (sqrt (+ (expt x 2)
+					    (expt (1+ z) 2)))))
+		   (zero-yaw1 (atan ;(abs (/ rel-x1 rel-z1))
+				    rel-x1 rel-z1)))
+	      
+	      (draw-line (round
+			  (+ (/ (width state) 2)
+			     (* (cos (+ zero-yaw0 (yaw state)))
+				unit-multi0)))
+			 
+			 (+ (round (* y-value0 100))
+			  (round
+			  (* (sin (+ zero-yaw0 (yaw state)))
+			     unit-multi0))
+			  )
+			 (round
+			  (+ (/ (width state) 2)
+			     (* (cos (+ zero-yaw1 (yaw state)))
+				unit-multi1)))
+			 
+			 (+ (round (* y-value1 100))
+			  (round
+			   (* (sin (+ zero-yaw1 (yaw state)))
+			      unit-multi1))
+			  )
+			 
+			 func
+			 (surface state))
+	      ))
+	  ))))
   
 (defmethod render-funcs ((state 3d-state))
   (let ((drawns (drawn-list state)))
     (case (style state)
       (wireframe
-       nil)
+       (render-wireframe state))
       
       (sequential-heatmap
        ;; Functions rendered sequentially using their respective colors,

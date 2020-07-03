@@ -8,6 +8,13 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
+(defun test-wireframe ()
+  (plot
+   (list (list #'(lambda (x z) ; 3d gaussian
+		   (exp (- (+ (/ (expt x 2) 1)
+			      (/ (expt z 2) 1)))))))
+   :from '(-3 -3) :to '(3 3)))
+
 ;; TODO: performance testing on 3d-plotting
 (defun test-3d ()
   (plot '((+ :arg-count 2)) :from '(0 5) :to '(10 15)))

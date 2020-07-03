@@ -59,7 +59,16 @@
    (min-z
     :initform nil
     :initarg :min-z
-    :accessor min-z)))
+    :accessor min-z)
+
+   (yaw
+    :initform (* 1/4 pi)
+    :initarg :yaw
+    :accessor yaw)
+   (pitch
+    :initform (* 1/4 pi)
+    :initarg :pitch
+    :accessor pitch)))
 
 ;;;; Auxiliary attributes:
 
@@ -194,15 +203,17 @@ dynamic based on extreme values on X's range."
 			 ;; Seemed like a good idea
 			 ;;TODO: make function after more styles implemented
 			 (if (eql state-type '3d-state)
-			     (block big-count
-			       (function-count
-				pfunc-list
-				#'(lambda (f sum)
-				 (when (>= sum 2)
-				   (return-from big-count 'sequential-heatmap))
-				 (when (typep f 'drawn)
-				   t)))
-			       'heatmap)
+			     (progn
+			       '(block big-count
+				 (function-count
+				  pfunc-list
+				  #'(lambda (f sum)
+				   (when (>= sum 2)
+				     (return-from big-count 'sequential-heatmap))
+				   (when (typep f 'drawn)
+				     t)))
+				 'heatmap)
+			       'wireframe)
 			     'i-am-missing)
 			 :pfunc-list pfunc-list
 			 :drawn-list (collect-drawn pfunc-list)
