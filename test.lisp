@@ -12,7 +12,13 @@
   (plot
    (list (list #'(lambda (x z) ; 3d gaussian
 		   (exp (- (+ (/ (expt x 2) 1)
-			      (/ (expt z 2) 1)))))))
+			      (/ (expt z 2) 1))))))
+	 ;(list #'(lambda (x z) ;; this is pretty ugly
+	;	   (+ (/ x 10)
+	;	      (/ z 10))))
+	 )
+   :window-height 1000
+   :window-width 1000
    :from '(-3 -3) :to '(3 3)))
 
 ;; TODO: performance testing on 3d-plotting

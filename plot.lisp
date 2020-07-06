@@ -389,81 +389,225 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 
 (defun render-wireframe (state)
   (declare (3d-state state))
-  (let ((wire-density 1/10)
-	(centre-x (+ (min-x state)
-		     (/ (- (max-x state)
-			   (min-x state))
-			2)))
-	(centre-z (+ (min-z state)
-		     (/ (- (max-z state)
-			   (min-z state))
-			2))))
+  (let ((wire-density 1/50)
+	(log-centre-x (+ (min-x state)
+			 (/ (- (max-x state)
+			       (min-x state))
+			    2)))
+	(log-centre-z (+ (min-z state)
+			 (/ (- (max-z state)
+			       (min-z state))
+			    2)))
+	(gra-centre-x (/ (width state) 2))
+	(gra-centre-z (/ (height state) 2))
+	(gra-render-radius (/ (- (min (width state)
+				      (height state))
+				 (* 2 (margin state)))
+			      2)))
 
-    '(let ((furthest (cond ((< (yaw state) (* 1/2 pi))
-			   'min-min)
-			  ((< (yaw state) pi)
-			   'min-max)
-			  ((< (yaw state) (* 3/2 pi))
-			   'max-max)
-			  (t
-			   'max-min)))))
+    (let ((corner-x0
+	   (round (+ (/ (width state) 2)
+		     (* gra-render-radius
+			(cos (+ (atan 1 1)
+				(yaw state)))))))
+	  (corner-y0
+	   (round
+	    (+ (/ (height state) 2)
+	       (* (sin (pitch state))
+		  (* gra-render-radius
+		     (sin (+ (atan 1 1)
+			     (yaw state))))))))
+	  (corner-x1
+	   (round (+ (/ (width state) 2)
+		     (* gra-render-radius
+			(cos (+ (atan 1 -1)
+				(yaw state)))))))
+	  (corner-y1
+	   (round
+	    (+ (/ (height state) 2)
+	       (* (sin (pitch state))
+		  (* gra-render-radius
+		     (sin (+ (atan 1 -1)
+			     (yaw state))))))))
+	  (corner-x2
+	   (round (+ (/ (width state) 2)
+		     (* gra-render-radius
+			(cos (+ (atan -1 -1)
+				(yaw state)))))))
+	  (corner-y2
+	   (round
+	    (+ (/ (height state) 2)
+	       (* (sin (pitch state))
+		  (* gra-render-radius
+		     (sin (+ (atan -1 -1)
+			     (yaw state))))))))
+	  (corner-x3
+	   (round (+ (/ (width state) 2)
+		     (* gra-render-radius
+			(cos (+ (atan -1 1)
+				(yaw state)))))))
+	  (corner-y3
+	   (round
+	    (+ (/ (height state) 2)
+	       (* (sin (pitch state))
+		  (* gra-render-radius
+		     (sin (+ (atan -1 1)
+			     (yaw state)))))))))
 
-      ;; furthest drawn first
-      (dolist (func (pfunc-list state))
-	(dotimes (x-wire (ceiling (* wire-density ; 0 1 2 3
-				     (array-dimension (data func) 0))))
+      '(progn
+	;; TODO: wireframe grid, make own function, use smart color
+	(draw-line corner-x0 corner-y0 corner-x1 corner-y1
+	 (car (pfunc-list state))
+	 (surface state))
+	(draw-line corner-x1 corner-y1 corner-x2 corner-y2
+	 (car (pfunc-list state))
+	 (surface state))
+	(draw-line corner-x2 corner-y2 corner-x3 corner-y3
+	 (car (pfunc-list state))
+	 (surface state))
+	(draw-line corner-x3 corner-y3 corner-x0 corner-y0
+	 (car (pfunc-list state))
+	 (surface state))
+	)	
 
-	  (dotimes (z (min (array-dimension (data func) 1)
-			   (width state))) ; 0 1 2 3
-	    (format t "xw: ~a  :: z: ~a~%" x-wire z)
-	    (let* ((multi-multi (/ (width state)
-				   (sqrt (+ (expt (width state) 2)
-					    (expt (height state) 2)))))
+      (let* ((z-length (abs (- corner-x0 corner-x1)))
+	     (z-step (/ (array-dimension
+			 (data (car (pfunc-list state))) 1)
+			z-length))
+	     (x-wire-step (round (* wire-density ; 0 1 2 3 
+				    (array-dimension
+				     (data (car (pfunc-list state))) 0)))))
 
-		   (x (/ x-wire wire-density)) ; 0 10 20 30
-		   (y-value0 (aref (data func) x z))
-		   (rel-x0 (- x centre-x))
-		   (rel-z0 (- z centre-z))
-		   (unit-multi0 (* multi-multi
-				   (sqrt (+ (expt x 2)
-					    (expt z 2)))))
-		   (zero-yaw0 (atan ;(abs (/ rel-x0 rel-z0))
-				    rel-x0 rel-z0))
+	(dotimes (x-wire (/ 1 wire-density))
+	  (dotimes (z (1- z-length)) ; 0 1 2 3
+	    (dolist (func (pfunc-list state))
+	      (let* ((gra-x-coord (* x-wire x-wire-step))
+		     (gra-z-coord (round (* z z-step)))
+		     (gra-rel-x (* (/ (* (cos (/ pi 4))
+					 gra-render-radius)
+				      (/ (width state) 2))
+				   (- gra-centre-x gra-x-coord)))
+		     (gra-rel-z (* (/ (* (cos (/ pi 4))
+					 gra-render-radius)
+				      (/ (height state) 2))
+				   (- gra-centre-z gra-z-coord)))
+		     (gra-rel-z-next (* (/ (* (cos (/ pi 4))
+					      gra-render-radius)
+					   (/ (height state) 2))
+					(- gra-centre-z
+					   (+ z-step gra-z-coord))))
 
-		   (y-value1 (aref (data func) x (1+ z)))
-		   (rel-x1 (- x centre-x))
-		   (rel-z1 (- (1+ z) centre-z))
-		   (unit-multi1 (* multi-multi
-				   (sqrt (+ (expt x 2)
-					    (expt (1+ z) 2)))))
-		   (zero-yaw1 (atan ;(abs (/ rel-x1 rel-z1))
-				    rel-x1 rel-z1)))
-	      
-	      (draw-line (round
+		     (x0 (round
 			  (+ (/ (width state) 2)
-			     (* (cos (+ zero-yaw0 (yaw state)))
-				unit-multi0)))
-			 
-			 (+ (round (* y-value0 100))
-			  (round
-			  (* (sin (+ zero-yaw0 (yaw state)))
-			     unit-multi0))
-			  )
-			 (round
+			     (* 
+			      (sqrt (+ (expt gra-rel-x 2)
+				       (expt gra-rel-z 2)))
+			      (cos (+ (atan gra-rel-x gra-rel-z)
+				      (yaw state)))))))
+		     (z0 (round
+			  (+ (/ (height state) 2)
+			     (* (sin (pitch state))
+				(+
+				 (* 500 ; multiplier for y value
+				    (aref (data func) gra-x-coord gra-z-coord))
+				 (* (sqrt (+ (expt gra-rel-x 2)
+					     (expt gra-rel-z 2)))
+				    (sin (+ (atan gra-rel-x gra-rel-z)
+					    (yaw state)))))))))
+
+		     (x1 (round
 			  (+ (/ (width state) 2)
-			     (* (cos (+ zero-yaw1 (yaw state)))
-				unit-multi1)))
-			 
-			 (+ (round (* y-value1 100))
-			  (round
-			   (* (sin (+ zero-yaw1 (yaw state)))
-			      unit-multi1))
-			  )
-			 
-			 func
-			 (surface state))
-	      ))
-	  ))))
+			     (* 
+			      (sqrt (+ (expt gra-rel-x 2)
+				       (expt gra-rel-z-next 2)))
+			      (cos (+ (atan gra-rel-x gra-rel-z-next)
+				      (yaw state)))))))
+		     (z1 (round
+			  (+ (/ (height state) 2)
+			     (* (sin (pitch state))
+				(+ (* 500 ; multiplier for y value
+				      (aref (data func) gra-x-coord
+					    (round (* (1+ z) z-step))))
+				   (* (sqrt (+ (expt gra-rel-x 2)
+					       (expt gra-rel-z-next 2)))
+				      (sin (+ (atan gra-rel-x gra-rel-z-next)
+					      (yaw state))))))))))
+
+		(draw-line x0 z0 x1 z1
+			   func (surface state))
+		
+		)))))
+
+      
+      (let* ((x-length (floor (sqrt (+ (expt (- corner-x1 corner-x2) 2)
+				       (expt (- corner-y1 corner-y2) 2)))))
+	     (x-step (/ (array-dimension (data (car (pfunc-list state))) 0)
+			x-length))
+	     (z-wire-step (round (* wire-density ; 0 1 2 3 
+				    (array-dimension
+				     (data (car (pfunc-list state))) 1)))))
+
+	(dotimes (z-wire (/ 1 wire-density))
+	  (dotimes (x (1- x-length)) ; 0 1 2 3
+	    (dolist (func (pfunc-list state))
+	      (let* ((gra-z-coord (* z-wire z-wire-step))
+		     (gra-x-coord (round (* x x-step)))
+		     (gra-rel-z (* (/ (* (cos (/ pi 4))
+					 gra-render-radius)
+				      (/ (width state) 2))
+				   (- gra-centre-z gra-z-coord)))
+		     (gra-rel-x (* (/ (* (cos (/ pi 4))
+					 gra-render-radius)
+				      (/ (height state) 2))
+				   (- gra-centre-x gra-x-coord)))
+		     (gra-rel-x-next (* (/ (* (cos (/ pi 4))
+					      gra-render-radius)
+					   (/ (height state) 2))
+					(- gra-centre-x
+					   (+ gra-x-coord x-step))))
+
+		     (x0 (round
+			  (+ (/ (width state) 2)
+			     (* 
+			      (sqrt (+ (expt gra-rel-z 2)
+				       (expt gra-rel-x 2)))
+			      (cos (+ (atan gra-rel-x gra-rel-z)
+				      (yaw state)))))))
+		     (z0 (round
+			  (+ (/ (height state) 2)
+			     (* (sin (pitch state))
+				(+
+				 (* 500 ; multiplier for y value
+				    (aref (data func) gra-z-coord
+					  (round gra-x-coord)))
+				 (* (sqrt (+ (expt gra-rel-z 2)
+					     (expt gra-rel-x 2)))
+				    (sin (+ (atan gra-rel-x gra-rel-z)
+					    (yaw state)))))))))
+
+		     (x1 (round
+			  (+ (/ (width state) 2)
+			     (* 
+			      (sqrt (+ (expt gra-rel-z 2)
+				       (expt gra-rel-x-next 2)))
+			      (cos (+ (atan gra-rel-x-next gra-rel-z)
+				      (yaw state)))))))
+		     (z1 (round
+			  (+ (/ (height state) 2)
+			     (* (sin (pitch state))
+				(+ (* 500 ; multiplier for y value
+				      (aref (data func) gra-z-coord
+					    (round (* (1+ x) x-step))))
+				   (* (sqrt (+ (expt gra-rel-z 2)
+					       (expt gra-rel-x-next 2)))
+				      (sin (+ (atan gra-rel-x-next gra-rel-z)
+					      (yaw state))))))))))
+		(draw-line x0 z0 x1 z1
+			   func (surface state))
+		
+		)))))
+      )))
+
   
 (defmethod render-funcs ((state 3d-state))
   (let ((drawns (drawn-list state)))
@@ -949,6 +1093,17 @@ Returns T when binding found and STATE changed."
 	 (:key key)
 	 (setf (label-position state) 0)
 	 (format t "Pressed: ~a~%" key)
+
+
+	 (progn ;;testing
+	   (case key
+	     (:SDL-KEY-RIGHT
+	      (decf (yaw state) (/ pi 36)))
+	     (:SDL-KEY-LEFT
+	      (incf (yaw state) (/ pi 36))))
+	   (format t "~a~%" (yaw state))
+	   (render-state state)
+	   (sdl:update-display))
 
 	 (when (call-binding key binding-hash-table state)
 

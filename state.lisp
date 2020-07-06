@@ -62,13 +62,18 @@
     :accessor min-z)
 
    (yaw
-    :initform (* 1/4 pi)
+    :initform (* 9/8 pi)
     :initarg :yaw
     :accessor yaw)
    (pitch
     :initform (* 1/4 pi)
     :initarg :pitch
-    :accessor pitch)))
+    :accessor pitch)
+
+   (margin ; min pixels at edges for wireframe renders
+    :initform 10
+    :initarg :margin
+    :accessor margin)))
 
 ;;;; Auxiliary attributes:
 
