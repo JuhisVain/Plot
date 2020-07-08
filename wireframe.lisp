@@ -28,7 +28,12 @@
 					 (max-y state))
 				      2)))))
 	(value-scaler (/
-		       (- (/ (height state) 2) (margin state))
+		       ;; TODO: This only guarantees that the
+		       ;; central axis fits into window's height
+		       ;; will need to compute a cube shaped graph at 1/4 pi yaw
+		       ;; at ??? pitch
+		       (- (/ (height state) 2)
+			  (margin state))
 		       (max (abs (min-y state))
 			    (abs (max-y state))))))
 
