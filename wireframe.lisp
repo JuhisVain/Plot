@@ -106,7 +106,7 @@
 	    (dolist (func (pfunc-list state))
 	      
 	      (let* ((array-x-point (* x-wire data-x-step))
-		     (gra-z-coord (round (* z data-z-step)))
+		     (gra-z-coord (* z data-z-step))
 		     (gra-rel-x (* (/ (* (cos (/ pi 4))
 					 gra-render-radius)
 				      (/ (width state) 2))
@@ -122,19 +122,19 @@
 					   (+ data-z-step gra-z-coord))))
 
 		     (x0 (round
-			  (+ (/ (width state) 2)
+			  (+ (/ (width state) 2) ;; shift coord right
 			     (* 
 			      (sqrt (+ (expt gra-rel-x 2)
 				       (expt gra-rel-z 2)))
 			      (cos (+ (atan gra-rel-x gra-rel-z)
 				      (yaw state)))))))
 		     (z0 (round
-			  (+ (/ (height state) 2) ;; shift image up
-			     ;;(* (sin (pitch state))
+			  (+ (/ (height state) 2) ;; shift coord up
 			     (+
 			      (* (cos (pitch state))
 				 (* value-scaler
-				    (aref (data func) array-x-point gra-z-coord))) ; shift by value
+				    (aref (data func)
+					  array-x-point (round gra-z-coord)))) ; shift by value
 			      (* (sin (pitch state))
 				 (* (sqrt (+ (expt gra-rel-x 2)
 					     (expt gra-rel-z 2)))
@@ -150,7 +150,6 @@
 				      (yaw state)))))))
 		     (z1 (round
 			  (+ (/ (height state) 2)
-			     ;;(* (sin (pitch state))
 			     (* (cos (pitch state))
 				(+ (* value-scaler
 				      (aref (data func) array-x-point
@@ -160,15 +159,6 @@
 					    (expt gra-rel-z-next 2)))
 				   (sin (+ (atan gra-rel-x gra-rel-z-next)
 					   (yaw state)))))))))
-
-		(when (and (= x-wire 25)
-			 (= z 165))
-		  (format t "(500 * ~a) + (~a * ~a)~%"
-			  (aref (data func) array-x-point gra-z-coord)
-			  (sqrt (+ (expt gra-rel-x 2)
-				   (expt gra-rel-z 2)))
-			  (sin (+ (atan gra-rel-x gra-rel-z)
-				  (yaw state)))))
 
 		(draw-line x0 z0 x1 z1
 			   func (surface state))
