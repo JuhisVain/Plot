@@ -8,16 +8,16 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
-(defun test-wireframe ()
+(defun test-wireframe (&optional (h 1000) (w 1000))
   (plot
    (list (list #'(lambda (x z) ; 3d gaussian
 		   (exp (- (+ (/ (expt x 2) 1)
 			      (/ (expt z 2) 1)))))))
-   :window-height 1000
-   :window-width 1000
+   :window-height h
+   :window-width w
    :from '(-3 -3) :to '(3 3)))
 
-(defun test-wireframe2 ()
+(defun test-wireframe2 (&optional (h 1000) (w 1000))
   (plot
    (list (list #'(lambda (x z) ; 3d gaussian
 		   (exp (- (+ (/ (expt x 2) 1)
@@ -25,8 +25,8 @@
 	 (list #'(lambda (x z) ; 3d gaussian
 		   (1- (exp (- (+ (/ (expt x 2) 1)
 			      (/ (expt z 2) 1))))))))
-   :window-height 1000
-   :window-width 1000
+   :window-height h
+   :window-width w
    :from '(-3 -3) :to '(3 3)))
 
 ;; TODO: performance testing on 3d-plotting
