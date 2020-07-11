@@ -29,6 +29,16 @@
    :window-width w
    :from '(-3 -3) :to '(3 3)))
 
+(defun test-wireframe3 (&optional (h 1000) (w 1000))
+  (plot
+   (list (list #'(lambda (x z) ; 3d gaussian
+		   (* (exp (- (+ (/ (expt x 2) 1)
+				 (/ (expt z 2) 1))))
+		      -100))))
+   :window-height h
+   :window-width w
+   :from '(-3 -3) :to '(3 3)))
+
 ;; TODO: performance testing on 3d-plotting
 (defun test-3d ()
   (plot '((+ :arg-count 2)) :from '(0 5) :to '(10 15)))

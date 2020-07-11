@@ -21,12 +21,14 @@
 				 (* 2 (margin state)))
 			      2))
 	(value-shift-pixels (+ (/ (height state) 2) ; shift to image center
-			       (* (cos (pitch state))
-				  (/ (height state) 2) ; shift towards logic center
-				  (- 
-				   (/ (+ (min-y state)
-					 (max-y state))
-				      2)))))
+			       (* (cos (pitch state)) ; correct for pitch
+				  (/ (height state) 2) ; scale to window
+				  (- (/ (/ (+ (min-y state) ; median of range
+					      (max-y state))
+					   2)
+					(- (max-y state) ; spread of range
+					   (min-y state)))
+				     ))))
 	(value-scaler (/
 		       ;; TODO: This only guarantees that the
 		       ;; central axis fits into window's height
