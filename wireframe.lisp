@@ -23,7 +23,7 @@
 	(value-shift-pixels (+ (/ (height state) 2) ; shift to image center
 			       (* (cos (pitch state)) ; correct for pitch
 				  (/ (height state) 2) ; scale to window
-				  (- (/ (/ (+ (min-y state) ; median of range
+				  (- (/ (/ (+ (min-y state) ; middle value of range
 					      (max-y state))
 					   2)
 					(- (max-y state) ; spread of range
