@@ -5,7 +5,7 @@
   (declare (3d-state state)
 	   ;(optimize speed)
 	   )
-  (let ((wire-density 1/50)
+  (let* ((wire-density 1/50)
 	(log-centre-x (+ (min-x state)
 			 (/ (- (max-x state)
 			       (min-x state))
@@ -20,24 +20,24 @@
 				      (height state))
 				 (* 2 (margin state)))
 			      2))
-	(value-shift-pixels (+ (/ (height state) 2) ; shift to image center
-			       (* (cos (pitch state)) ; correct for pitch
-				  (/ (height state) 2) ; scale to window
-				  (- (/ (/ (+ (min-y state) ; middle value of range
-					      (max-y state))
-					   2)
-					(- (max-y state) ; spread of range
-					   (min-y state)))
-				     ))))
-	(value-scaler (/
-		       ;; TODO: This only guarantees that the
-		       ;; central axis fits into window's height
-		       ;; will need to compute a cube shaped graph at 1/4 pi yaw
-		       ;; at ??? pitch
-		       (- (/ (height state) 2)
-			  (margin state))
-		       (max (abs (min-y state))
-			    (abs (max-y state))))))
+
+	 (value-scaler (/ (/ (- (height state) ; drawing area
+				(* 2 (margin state))) 
+			     (- (max-y state) (min-y state))) ; spread of range
+			  2))
+	 (value-shift-pixels (+ (/ (height state) 2) ; move to surface center
+				;; correct for centre
+				(* (cos (pitch state))
+				   (-
+				    (* value-scaler
+				       (/ (+ (min-y state)
+					     (max-y state))
+					  2))))))
+	 )
+
+    (format t "value-shift-pixels ~a~%value-scaler ~a~%"
+	    value-shift-pixels
+	    value-scaler)
 
     (let ((corner-x0
 	   (round (+ (/ (width state) 2)

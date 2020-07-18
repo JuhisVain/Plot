@@ -44,11 +44,33 @@
    (list (list #'(lambda (x z) ; 3d gaussian
 		   (- (exp (- (+ (/ (expt x 2) 1)
 				 (/ (expt z 2) 1))))
-		      5)))
+		      1)))
 	 (list #'(lambda (x z) ; 3d gaussian
 		   (- (exp (- (+ (/ (expt x 2) 1)
 				 (/ (expt z 2) 1))))
-		      6))))
+		      2))))
+   :window-height h
+   :window-width w
+   :from '(-3 -3) :to '(3 3)))
+
+(defun test-wf(&optional (h 1000) (w 1000))
+  (plot
+   (list #'(lambda (x z)
+	     (cond ((and (< x -2)
+			 (< z -2))
+		    -6.0)
+		   ((and (< x -2)
+			 (> z 2))
+		    -5.5)
+		   ((and (> x 2)
+			 (< z -2))
+		    -4.5)
+		   ((and (> x 2)
+			 (> z 2))
+		    -4.0)
+		   (t -5)))
+	 #'(lambda (x z) -3.0)
+	 #'(lambda (x z) -3.5))
    :window-height h
    :window-width w
    :from '(-3 -3) :to '(3 3)))
