@@ -53,6 +53,28 @@
    :window-width w
    :from '(-3 -3) :to '(3 3)))
 
+(defun test-wireframe5 (&optional (h 1000) (w 1000))
+  (plot
+   (list (list #'(lambda (x z)
+		   (cond ((and (< x -2.75)
+			       (< z -2.75))
+			  -0.1)
+			 ((and (< x -2.50)
+			       (< z -2.75))
+			  -0.15)
+			 ((and (< x -2.25)
+			       (< z -2.75))
+			  -0.2)
+			 (t
+			  (- (exp (- (+ (/ (expt x 2) 1)
+					(/ (expt z 2) 1)))))))))
+	 (list #'(lambda (x z)
+		   (1- (exp (- (+ (/ (expt x 2) 1)
+				  (/ (expt z 2) 1))))))))
+   :window-height h
+   :window-width w
+   :from '(-3 -3) :to '(3 3)))
+
 (defun test-wf(&optional (h 1000) (w 1000))
   (plot
    (list #'(lambda (x z)

@@ -147,7 +147,8 @@
 			    (* (cos (pitch state))
 			       (* value-scaler
 				  (aref (data func)
-					array-x-point (round gra-z-coord)))) ; shift by value
+					(round gra-z-coord)
+					array-x-point))) ; shift by value
 			    (* (sin (pitch state))
 			       (*
 				(sqrt (+ (expt gra-rel-x 2)
@@ -167,8 +168,9 @@
 			  (+ value-shift-pixels
 			     (* (cos (pitch state))
 				(* value-scaler
-				   (aref (data func) array-x-point
-					 (round (* (1+ z) data-z-step)))))
+				   (aref (data func)
+					 (round (* (1+ z) data-z-step))
+					 array-x-point)))
 			     (* (sin (pitch state))
 				(*
 				 (sqrt (+ (expt gra-rel-x 2)
