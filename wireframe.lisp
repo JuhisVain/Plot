@@ -1,5 +1,22 @@
-(defun render-wireframe-grid ()
-  )
+(defun render-wireframe-grid (state x0 y0 x1 y1 x2 y2 x3 y3)
+  (sdl:draw-line-* x0 (- (height state) y0)
+		   x1 (- (height state) y1)
+		   :color *grid-color*
+		   :surface (surface state))
+  (sdl:draw-line-* x1 (- (height state) y1)
+		   x2 (- (height state) y2)
+		   :color *grid-color*
+		   :surface (surface state))
+  
+  (sdl:draw-line-* x2 (- (height state) y2)
+		   x3 (- (height state) y3)
+		   :color *grid-color*
+		   :surface (surface state))
+
+  (sdl:draw-line-* x3 (- (height state) y3)
+		   x0 (- (height state) y0)
+		   :color *grid-color*
+		   :surface (surface state)))
 
 (defun render-wireframe (state)
   (declare (3d-state state)
@@ -88,7 +105,12 @@
 		     (sin (+ (atan -1 1)
 			     (yaw state)))))))))
 
-      (progn
+      (render-wireframe-grid state
+			     corner-x0 corner-y0
+			     corner-x1 corner-y1
+			     corner-x2 corner-y2
+			     corner-x3 corner-y3)
+      '(progn
 	;; TODO: wireframe grid, make own function, use smart color
 	(draw-line corner-x0 corner-y0 corner-x1 corner-y1
 	 (car (pfunc-list state))
@@ -102,7 +124,7 @@
 	(draw-line corner-x3 corner-y3 corner-x0 corner-y0
 	 (car (pfunc-list state))
 	 (surface state))
-	)	
+	)
 
       (let* (;;the surface X vector length of a continuous line:
 	     (x-vector-pixels (abs (- corner-x0 corner-x1)))
