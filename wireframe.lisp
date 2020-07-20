@@ -16,7 +16,39 @@
   (sdl:draw-line-* x3 (- (height state) y3)
 		   x0 (- (height state) y0)
 		   :color *grid-color*
-		   :surface (surface state)))
+		   :surface (surface state))
+
+  (let ((middle-value (/ (- (max-y state) (min-y state))
+			 2)))
+    (sdl:draw-string-solid-*
+     (format nil "(~a,~a,~a)"
+	     (min-x state) (min-z state) middle-value)
+     x0 (- (height state) y0)
+     :color *grid-color*
+     :surface (surface state))
+
+    (sdl:draw-string-solid-*
+     (format nil "(~a,~a,~a)"
+	     (max-x state) (min-z state) middle-value)
+     x1 (- (height state) y1)
+     :color *grid-color*
+     :surface (surface state))
+
+    (sdl:draw-string-solid-*
+     (format nil "(~a,~a,~a)"
+	     (max-x state) (max-z state) middle-value)
+     x2 (- (height state) y2)
+     :color *grid-color*
+     :surface (surface state))
+
+    (sdl:draw-string-solid-*
+     (format nil "(~a,~a,~a)"
+	     (min-x state) (max-z state) middle-value)
+     x3 (- (height state) y3)
+     :color *grid-color*
+     :surface (surface state))
+    
+    ))
 
 (defun render-wireframe (state)
   (declare (3d-state state)
@@ -110,21 +142,6 @@
 			     corner-x1 corner-y1
 			     corner-x2 corner-y2
 			     corner-x3 corner-y3)
-      '(progn
-	;; TODO: wireframe grid, make own function, use smart color
-	(draw-line corner-x0 corner-y0 corner-x1 corner-y1
-	 (car (pfunc-list state))
-	 (surface state))
-	(draw-line corner-x1 corner-y1 corner-x2 corner-y2
-	 (car (pfunc-list state))
-	 (surface state))
-	(draw-line corner-x2 corner-y2 corner-x3 corner-y3
-	 (car (pfunc-list state))
-	 (surface state))
-	(draw-line corner-x3 corner-y3 corner-x0 corner-y0
-	 (car (pfunc-list state))
-	 (surface state))
-	)
 
       (let* (;;the surface X vector length of a continuous line:
 	     (x-vector-pixels (abs (- corner-x0 corner-x1)))
