@@ -210,30 +210,32 @@
 
 ;;(dataref fd 0.16 0.67) ->
 '(let* ((index0 (* 0.16 (array-dimension (data fd) 0)))
-       (floor0 (floor index0))
-       (ceili0 (ceiling index0))
-       (index1 (* 0.67 (array-dimension (data fd) 1)))
-       (floor1 (floor index1))
-       (ceili1 (ceiling index1))
-       (from-f0-to-c0 (rem index0 1))
-       (from-f1-to-c1 (rem index1 1))
+	(floor0 (floor index0))
+	(ceili0 (ceiling index0))
+	(index1 (* 0.67 (array-dimension (data fd) 1)))
+	(floor1 (floor index1))
+	(ceili1 (ceiling index1))
+	
+	(from-f0-to-c0 (rem index0 1))
+	(from-f1-to-c1 (rem index1 1))
 
-       (ff-x-c (sqrt (+ (expt from-f0-to-c0 2)
-			(expt from-f1-to-c1 2))))
-       (fc-x-c (sqrt (+ (expt from-f0-to-c0 2)
-			(expt (- 1.0 from-f1-to-c1) 2))))
-       (cf-x-c (sqrt (+ (expt (- 1.0 from-f0-to-c0) 2)
-			(expt from-f1-to-c1 2))))
-       (cc-x-c (sqrt (+ (expt (- 1.0 from-f0-to-c0) 2)
-			(expt (- 1.0 from-f1-to-c1) 2))))
-       (total-c (+ ff-x-c
-		   fc-x-c
-		   cf-x-c
-		   cc-x-c))
-       (ff-w (/ (- total-c ff-x-c) total-c))
-       (fc-w (/ (- total-c fc-x-c) total-c))
-       (cf-w (/ (- total-c cf-x-c) total-c))
-       (cc-w (/ (- total-c cc-x-c) total-c)))
+	(ff-x-c (sqrt (+ (expt from-f0-to-c0 2)
+			 (expt from-f1-to-c1 2))))
+	(fc-x-c (sqrt (+ (expt from-f0-to-c0 2)
+			 (expt (- 1.0 from-f1-to-c1) 2))))
+	(cf-x-c (sqrt (+ (expt (- 1.0 from-f0-to-c0) 2)
+			 (expt from-f1-to-c1 2))))
+	(cc-x-c (sqrt (+ (expt (- 1.0 from-f0-to-c0) 2)
+			 (expt (- 1.0 from-f1-to-c1) 2))))
+	
+	(total-c (+ ff-x-c
+		    fc-x-c
+		    cf-x-c
+		    cc-x-c))
+	(ff-w (/ (- total-c ff-x-c) total-c))
+	(fc-w (/ (- total-c fc-x-c) total-c))
+	(cf-w (/ (- total-c cf-x-c) total-c))
+	(cc-w (/ (- total-c cc-x-c) total-c)))
 
   (/
    (+
@@ -250,7 +252,7 @@
 
 
 ;;TODO:
-(defmacro dataref (funcdata &rest subscripts)
+'(defmacro dataref (funcdata &rest subscripts)
   "SUBSCRIPTS should be single-floats between 0 and 1"
   `(aref (data ,funcdata)
 	 @,(mapcar
@@ -261,7 +263,7 @@
 				     array-dim)))
 	    subscripts
 	    (loop for arrd upto (length subscripts)
-		 collect arrd))))
+		 collect arrd)))))
 
 ;;;Testing stuff:
 (defun list-labels (flist)
