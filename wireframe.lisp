@@ -1,22 +1,72 @@
-(defun render-wireframe-grid (state x0 y0 x1 y1 x2 y2 x3 y3)
-  (sdl:draw-line-* x0 (- (height state) y0)
-		   x1 (- (height state) y1)
-		   :color *grid-color*
-		   :surface (surface state))
-  (sdl:draw-line-* x1 (- (height state) y1)
-		   x2 (- (height state) y2)
-		   :color *grid-color*
-		   :surface (surface state))
-  
-  (sdl:draw-line-* x2 (- (height state) y2)
-		   x3 (- (height state) y3)
-		   :color *grid-color*
-		   :surface (surface state))
+(defun render-wireframe-grid (state value-scaler x0 y0 x1 y1 x2 y2 x3 y3)
+  (let ((grid-line-delta (* value-scaler
+			    (mark-lines (- (max-y state)
+					   (min-y state)))))
+        )
+    (loop
+       for y from (- (* value-scaler (min-y state))
+		     (* value-scaler (/ (+ (max-y state)
+					   (min-y state))
+					2)))
+       to (- (* value-scaler (max-y state))
+	     (* value-scaler (/ (+ (max-y state)
+				   (min-y state))
+				2)))
+       by grid-line-delta
+       do
+	 (sdl:draw-line-* x0(- (height state)
+			       (round
+				(+ (* (cos (pitch state)) y) y0)))
+			  x1 (- (height state)
+				(round
+				 (+ (* (cos (pitch state)) y) y1)))
+			  :color *grid-color*
+			  :surface (surface state))
+	 (sdl:draw-line-* x1 (- (height state)
+				(round
+				 (+ (* (cos (pitch state)) y) y1)))
+			  x2 (- (height state)
+				(round
+				 (+ (* (cos (pitch state)) y) y2)))
+			  :color *grid-color*
+			  :surface (surface state))
+	 
+	 (sdl:draw-line-* x2 (- (height state)
+				(round
+				 (+ (* (cos (pitch state)) y) y2)))
+			  x3 (- (height state)
+				(round
+				 (+ (* (cos (pitch state)) y) y3)))
+			  :color *grid-color*
+			  :surface (surface state))
 
-  (sdl:draw-line-* x3 (- (height state) y3)
-		   x0 (- (height state) y0)
-		   :color *grid-color*
-		   :surface (surface state))
+	 (sdl:draw-line-* x3 (- (height state)
+				(round
+				 (+ (* (cos (pitch state)) y) y3)))
+			  x0 (- (height state)
+				(round
+				 (+ (* (cos (pitch state)) y) y0)))
+			  :color *grid-color*
+			  :surface (surface state)))
+
+    (sdl:draw-line-* x0 (- (height state) y0)
+		     x1 (- (height state) y1)
+		     :color *grid-origin-color*
+		     :surface (surface state))
+    (sdl:draw-line-* x1 (- (height state) y1)
+		     x2 (- (height state) y2)
+		     :color *grid-origin-color*
+		     :surface (surface state))
+    
+    (sdl:draw-line-* x2 (- (height state) y2)
+		     x3 (- (height state) y3)
+		     :color *grid-origin-color*
+		     :surface (surface state))
+
+    (sdl:draw-line-* x3 (- (height state) y3)
+		     x0 (- (height state) y0)
+		     :color *grid-origin-color*
+		     :surface (surface state)))
 
   (let ((middle-value (/ (- (max-y state) (min-y state))
 			 2)))
@@ -137,7 +187,7 @@
 		     (sin (+ (atan -1 1)
 			     (yaw state)))))))))
 
-      (render-wireframe-grid state
+      (render-wireframe-grid state value-scaler
 			     corner-x0 corner-y0
 			     corner-x1 corner-y1
 			     corner-x2 corner-y2
