@@ -207,63 +207,63 @@
       (funcdata-generator input-func-list 0))))
 
 
+(defun 2d-dataref (funcdata index)
+  (declare (abstract-funcdata funcdata)
+	   ((float 0.0 1.0) index))
+  
+  (let* ((array-index (* (array-dimension (data funcdata) 0)
+			 index))
+	 (f-index (floor array-index))
+	 (c-index (ceiling array-index)))
+    (/
+     (+ (aref (data funcdata) f-index)
+	(aref (data funcdata) c-index))
+     2)))
 
-;;(dataref fd 0.16 0.67) ->
-'(let* ((index0 (* 0.16 (array-dimension (data fd) 0)))
-	(floor0 (floor index0))
-	(ceili0 (ceiling index0))
-	(index1 (* 0.67 (array-dimension (data fd) 1)))
-	(floor1 (floor index1))
-	(ceili1 (ceiling index1))
-	
-	(from-f0-to-c0 (rem index0 1))
-	(from-f1-to-c1 (rem index1 1))
+(defun 3d-dataref (funcdata x y)
+  (declare (abstract-funcdata funcdata)
+	   ((float 0.0 1.0) x y))
+  (let* ((index0 (* x (array-dimension (data funcdata) 0)))
+	 (floor0 (floor index0))
+	 (ceili0 (ceiling index0))
+	 
+	 (index1 (* y (array-dimension (data funcdata) 1)))
+	 (floor1 (floor index1))
+	 (ceili1 (ceiling index1))
+	 
+	 (from-f0-to-c0 (rem index0 1))
+	 (from-f1-to-c1 (rem index1 1))
 
-	(ff-x-c (sqrt (+ (expt from-f0-to-c0 2)
-			 (expt from-f1-to-c1 2))))
-	(fc-x-c (sqrt (+ (expt from-f0-to-c0 2)
-			 (expt (- 1.0 from-f1-to-c1) 2))))
-	(cf-x-c (sqrt (+ (expt (- 1.0 from-f0-to-c0) 2)
-			 (expt from-f1-to-c1 2))))
-	(cc-x-c (sqrt (+ (expt (- 1.0 from-f0-to-c0) 2)
-			 (expt (- 1.0 from-f1-to-c1) 2))))
-	
-	(total-c (+ ff-x-c
-		    fc-x-c
-		    cf-x-c
-		    cc-x-c))
-	(ff-w (/ (- total-c ff-x-c) total-c))
-	(fc-w (/ (- total-c fc-x-c) total-c))
-	(cf-w (/ (- total-c cf-x-c) total-c))
-	(cc-w (/ (- total-c cc-x-c) total-c)))
+	 (ff-x-c (sqrt (+ (expt from-f0-to-c0 2)
+			  (expt from-f1-to-c1 2))))
+	 (fc-x-c (sqrt (+ (expt from-f0-to-c0 2)
+			  (expt (- 1.0 from-f1-to-c1) 2))))
+	 (cf-x-c (sqrt (+ (expt (- 1.0 from-f0-to-c0) 2)
+			  (expt from-f1-to-c1 2))))
+	 (cc-x-c (sqrt (+ (expt (- 1.0 from-f0-to-c0) 2)
+			  (expt (- 1.0 from-f1-to-c1) 2))))
+	 
+	 (total-c (+ ff-x-c
+		     fc-x-c
+		     cf-x-c
+		     cc-x-c))
+	 (ff-w (/ (- total-c ff-x-c) total-c))
+	 (fc-w (/ (- total-c fc-x-c) total-c))
+	 (cf-w (/ (- total-c cf-x-c) total-c))
+	 (cc-w (/ (- total-c cc-x-c) total-c)))
 
-  (/
-   (+
-    (* (aref (data fd) floor0 floor1)
-       ff-w)
-    (* (aref (data fd) floor0 ceili1)
-       fc-w)
-    (* (aref (data fd) ceili0 floor1)
-       cf-w)
-    (* (aref (data fd) ceili0 ceili1)
-       cc-w))
-
-   (+ ff-w fc-w cf-w cc-w)))
+    (/ (+ (* (aref (data funcdata) floor0 floor1)
+	     ff-w)
+	  (* (aref (data funcdata) floor0 ceili1)
+	     fc-w)
+	  (* (aref (data funcdata) ceili0 floor1)
+	     cf-w)
+	  (* (aref (data funcdata) ceili0 ceili1)
+	     cc-w))
+       
+       (+ ff-w fc-w cf-w cc-w))))
 
 
-;;TODO:
-'(defmacro dataref (funcdata &rest subscripts)
-  "SUBSCRIPTS should be single-floats between 0 and 1"
-  `(aref (data ,funcdata)
-	 @,(mapcar
-	    #'(lambda (index array-dim)
-		(floor 
-		 (* index
-		    (array-dimension `(data ,funcdata)
-				     array-dim)))
-	    subscripts
-	    (loop for arrd upto (length subscripts)
-		 collect arrd)))))
 
 ;;;Testing stuff:
 (defun list-labels (flist)
