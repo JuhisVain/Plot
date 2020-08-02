@@ -225,19 +225,23 @@
 					   (+ data-z-step gra-z-coord))))
 
 		     (x0 (round
-			  (+ (/ (width state) 2) ;; shift coord right
-			     (* 
+			  ;; shift coord right:
+			  (+ (/ (width state) 2) 
+			     (*
+			      ;; unit multiplier:
 			      (sqrt (+ (expt gra-rel-x 2)
 				       (expt gra-rel-z 2)))
+			      ;; unit circle position as determined by state's yaw:
 			      (cos (+ (atan gra-rel-x gra-rel-z)
 				      (yaw state)))))))
 		     (z0 (round
 			  (+ value-shift-pixels
+			     ;; shift by value, modified by state's pitch:
 			     (* (cos (pitch state))
 				(* value-scaler
 				   (aref (data func)
 					 (round gra-z-coord)
-					 array-x-point))) ; shift by value
+					 array-x-point)))
 			     (* (sin (pitch state))
 				(*
 				 (sqrt (+ (expt gra-rel-x 2)
