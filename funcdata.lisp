@@ -222,12 +222,18 @@
 
 (defun 3d-dataref (funcdata x y)
   (declare (abstract-funcdata funcdata)
-	   ((float 0.0 1.0) x y))
-  (let* ((index0 (* x (array-dimension (data funcdata) 0)))
+	   (float x y))
+
+  (when (> x 1.0)
+    (setf x 1.0))
+  (when (> y 1.0)
+    (setf y 1.0))
+  
+  (let* ((index0 (* x (1- (array-dimension (data funcdata) 0))))
 	 (floor0 (floor index0))
 	 (ceili0 (ceiling index0))
 	 
-	 (index1 (* y (array-dimension (data funcdata) 1)))
+	 (index1 (* y (1- (array-dimension (data funcdata) 1))))
 	 (floor1 (floor index1))
 	 (ceili1 (ceiling index1))
 	 
