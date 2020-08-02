@@ -102,23 +102,23 @@
 
 (defun render-wireframe (state)
   (declare (3d-state state)
-	   ;(optimize speed)
+	   ;;(optimize speed)
 	   )
   (let* ((wire-density 1/50)
-	(log-centre-x (+ (min-x state)
-			 (/ (- (max-x state)
-			       (min-x state))
-			    2)))
-	(log-centre-z (+ (min-z state)
-			 (/ (- (max-z state)
-			       (min-z state))
-			    2)))
-	(gra-centre-x (/ (width state) 2))
-	(gra-centre-z (/ (height state) 2))
-	(gra-render-radius (/ (- (min (width state)
-				      (height state))
-				 (* 2 (margin state)))
-			      2))
+	 (log-centre-x (+ (min-x state)
+			  (/ (- (max-x state)
+				(min-x state))
+			     2)))
+	 (log-centre-z (+ (min-z state)
+			  (/ (- (max-z state)
+				(min-z state))
+			     2)))
+	 (gra-centre-x (/ (width state) 2))
+	 (gra-centre-z (/ (height state) 2))
+	 (gra-render-radius (/ (- (min (width state)
+				       (height state))
+				  (* 2 (margin state)))
+			       2))
 
 	 (value-scaler (/ (/ (- (height state) ; drawing area
 				(* 2 (margin state))) 
@@ -232,18 +232,18 @@
 			      (cos (+ (atan gra-rel-x gra-rel-z)
 				      (yaw state)))))))
 		     (z0 (round
-			   (+ value-shift-pixels
-			    (* (cos (pitch state))
-			       (* value-scaler
-				  (aref (data func)
-					(round gra-z-coord)
-					array-x-point))) ; shift by value
-			    (* (sin (pitch state))
-			       (*
-				(sqrt (+ (expt gra-rel-x 2)
-					 (expt gra-rel-z 2)))
-				(sin (+ (atan gra-rel-x gra-rel-z)
-					(yaw state))))))))
+			  (+ value-shift-pixels
+			     (* (cos (pitch state))
+				(* value-scaler
+				   (aref (data func)
+					 (round gra-z-coord)
+					 array-x-point))) ; shift by value
+			     (* (sin (pitch state))
+				(*
+				 (sqrt (+ (expt gra-rel-x 2)
+					  (expt gra-rel-z 2)))
+				 (sin (+ (atan gra-rel-x gra-rel-z)
+					 (yaw state))))))))
 		     
 
 		     (x1 (round
