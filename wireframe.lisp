@@ -229,10 +229,11 @@
 						   gra-render-radius)
 						gra-centre-z)
 					     (- gra-centre-z
-						(+ (/ 1 x-vector-pixels)
-						   (* z (array-dimension
-							 (data (car (pfunc-list state)))
-							 1)))))
+						(* (+ (/ 1 x-vector-pixels)
+						      z)
+						   (array-dimension
+						    (data (car (pfunc-list state)))
+						    1))))
 		     do
 		       (let* ((x0 (round
 				   ;; shift coord right:
