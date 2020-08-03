@@ -135,6 +135,24 @@
       (/ (height state) -2)
       (* (min-y state) (y-scale state))))
 
+(defmethod (setf pitch) :after (new (state 3d-state))
+  (cond ((>= (pitch state)
+	     (* 2 pi))
+	 (decf (pitch state) (* 2 pi)))
+	((< (pitch state)
+	    0.0)
+	 (incf (pitch state) (* 2 pi)))
+	(t (pitch state))))
+
+(defmethod (setf yaw) :after (new (state 3d-state))
+  (cond ((>= (yaw state)
+	     (* 2 pi))
+	 (decf (yaw state) (* 2 pi)))
+	((< (yaw state)
+	    0.0)
+	 (incf (yaw state) (* 2 pi)))
+	(t (yaw state))))
+
 (defun check-y-extremes (state)
   "Controlled max-y and min-y slot assignment function for state STATE.
 Will return T when state changed and NIL if not."
