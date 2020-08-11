@@ -1,8 +1,16 @@
 (defun render-wireframe-grid (state value-scaler x0 y0 x1 y1 x2 y2 x3 y3)
+  (flet ((grid-line (x0 y0 x1 y1 y)
+	   (sdl:draw-line-* x0 (- (height state)
+				  (round
+				   (+ (* (cos (pitch state)) y) y0)))
+			    x1 (- (height state)
+				  (round
+				   (+ (* (cos (pitch state)) y) y1)))
+			    :color *grid-color*
+			    :surface (surface state))))
   (let ((grid-line-delta (* value-scaler
 			    (mark-lines (- (max-y state)
-					   (min-y state)))))
-        )
+					   (min-y state))))))
     (loop
        for y from (- (* value-scaler (min-y state))
 		     (* value-scaler (/ (+ (max-y state)
@@ -14,40 +22,19 @@
 				2)))
        by grid-line-delta
        do
-	 (sdl:draw-line-* x0(- (height state)
-			       (round
-				(+ (* (cos (pitch state)) y) y0)))
-			  x1 (- (height state)
-				(round
-				 (+ (* (cos (pitch state)) y) y1)))
-			  :color *grid-color*
-			  :surface (surface state))
-	 (sdl:draw-line-* x1 (- (height state)
-				(round
-				 (+ (* (cos (pitch state)) y) y1)))
-			  x2 (- (height state)
-				(round
-				 (+ (* (cos (pitch state)) y) y2)))
-			  :color *grid-color*
-			  :surface (surface state))
-	 
-	 (sdl:draw-line-* x2 (- (height state)
-				(round
-				 (+ (* (cos (pitch state)) y) y2)))
-			  x3 (- (height state)
-				(round
-				 (+ (* (cos (pitch state)) y) y3)))
-			  :color *grid-color*
-			  :surface (surface state))
-
-	 (sdl:draw-line-* x3 (- (height state)
-				(round
-				 (+ (* (cos (pitch state)) y) y3)))
-			  x0 (- (height state)
-				(round
-				 (+ (* (cos (pitch state)) y) y0)))
-			  :color *grid-color*
-			  :surface (surface state)))
+	 (case (far-corner state)
+	   (min-min
+	    (grid-line x0 y0 x1 y1 y)
+	    (grid-line x3 y3 x0 y0 y))
+	   (min-max
+	    (grid-line x3 y3 x0 y0 y)
+	    (grid-line x2 y2 x3 y3 y))
+	   (max-max
+	    (grid-line x2 y2 x3 y3 y)
+	    (grid-line x1 y1 x2 y2 y))
+	   (max-min
+	    (grid-line x1 y1 x2 y2 y)
+	    (grid-line x0 y0 x1 y1 y))))
 
     (sdl:draw-line-* x0 (- (height state) y0)
 		     x1 (- (height state) y1)
@@ -98,7 +85,7 @@
      :color *grid-color*
      :surface (surface state))
     
-    ))
+    )))
 
 (defun far-corner (state)
   "Returns wireframe render's horizontal plane's furthest corner."
