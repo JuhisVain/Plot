@@ -100,6 +100,20 @@
     
     ))
 
+(defun far-corner (state)
+  "Returns wireframe render's horizontal plane's furthest corner."
+  (declare (3d-state state))
+  (with-slots (yaw pitch) state
+    (cond ((>= (/ pi 2) yaw 0)
+	   'min-min)
+	  ((>= pi yaw (/ pi 2))
+	   'min-max)
+	  ((>= (* 3/2 pi) yaw pi)
+	   'max-max)
+	  ((>= (* 2 pi) yaw (* 3/2 pi))
+	   'max-min)
+	  (t (error "Invalid YAW = ~a~%" yaw)))))
+
 (defun render-wireframe (state)
   (declare (3d-state state)
 	   ;;(optimize speed)
