@@ -133,6 +133,7 @@
 				       (/ (+ (min-y state)
 					     (max-y state))
 					  2))))))
+	 (far-corner (far-corner state))
 	 )
 
     (let ((corner-x0
@@ -190,13 +191,21 @@
 			     corner-x2 corner-y2
 			     corner-x3 corner-y3)
 
-      (loop; for x from 0.0 below 1.0 by wire-density
-	 for x in (loop for a from 0.0 to (/ 1 wire-density)
-		     collect (* wire-density a))
+      (loop
+	 for x in
+	   (let ((xcrd (loop for a from 0.0 to (/ 1 wire-density)
+			  collect (* wire-density a)))) ;build lists to avoid float addition
+	     (case far-corner
+	       ((max-max min-max) (reverse xcrd))
+	       (otherwise xcrd)))
 	 with x-vector-pixels = (abs (- corner-x0 corner-x1)) ;width in pixels of line
-	 do (loop; for z from 0.0 below 1.0 by (/ 1 x-vector-pixels)
-	       for z in (loop for a from 0.0 to x-vector-pixels
-			   collect (/ a x-vector-pixels))
+	 do (loop
+	       for z in
+		 (let ((zcrd (loop for a from 0.0 to x-vector-pixels
+				collect (/ a x-vector-pixels))))
+		   (case far-corner
+		     ((max-max max-min) (reverse zcrd))
+		     (otherwise zcrd)))
 	       with gra-rel-x = (* (/ (* (cos (/ pi 4))
 					 gra-render-radius)
 				      gra-centre-x)
