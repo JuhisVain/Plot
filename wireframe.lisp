@@ -204,20 +204,7 @@
 				      (* x (array-dimension
 					    (data (car (pfunc-list state)))
 					    0))))
-	       do (loop for func in (sort (pfunc-list state)
-					  ;; NOTE: sort is destructive!!
-					  ;; However with continuous functions this could
-					  ;; be considered to be predictive pre-arranging
-					  ;;TODO: THIS IS WRONG! maybe
-					  ;; should select direction of draw first then check
-					  ;; what's going on.
-					  #'(lambda (f1 f2)
-					      (cond ((>= (pitch state) ; upside down?
-							 (/ pi 2))
-						     (> (3d-dataref f1 z x)
-							(3d-dataref f2 z x)))
-						    (t (<= (3d-dataref f1 z x) ; if not
-							   (3d-dataref f2 z x))))))
+	       do (loop for func in (pfunc-list state)
 		     with gra-rel-z = (* (/ (* (cos (/ pi 4))
 					       gra-render-radius)
 					    gra-centre-z)
