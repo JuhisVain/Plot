@@ -190,11 +190,7 @@
 			     corner-x1 corner-y1
 			     corner-x2 corner-y2
 			     corner-x3 corner-y3)
-
-      (format t "Now do*ing wireframe!~%")
-
-
-      ;;;; TODO: below obsolete loop version looks way better
+      
       (do* ; All 'squares' of whole wireframe, with painter's algorithm
        ((x-dimension (array-dimension ; these should not be in use??
 		      (data (car (pfunc-list state)))
@@ -243,7 +239,7 @@
 		  (- gra-centre-x
 		     (* x-wire x-dimension)))))
 
-	  ;; TODO: iterate through coords between wires and next-wires etc..
+	  ;; TODO: do the other wires
 	  (when (and next-z-wire next-x-wire)
 	    (do*
 	     ((xwire-crds ;; currently features a bunch of hacks: CLEANUP
