@@ -192,12 +192,10 @@
 			     corner-x3 corner-y3)
       
       (do* ; All 'squares' of whole wireframe, with painter's algorithm
-       ((x-dimension (array-dimension ; these should not be in use??
-		      (data (car (pfunc-list state)))
-		      0))
-	(z-dimension (array-dimension
-		      (data (car (pfunc-list state)))
-		      1))
+       ((x-dimension (min (width state)
+			  (height state)))
+	(z-dimension (min (width state)
+			  (height state)))
 	;; Generate list of float indexes and reverse as required for draw order
 	(wire-list (loop for a from 0.0 to (/ 1 wire-density)
 		      collect (* wire-density a)))
