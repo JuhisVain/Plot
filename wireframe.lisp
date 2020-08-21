@@ -240,7 +240,7 @@
 		     (* x-wire x-dimension)))))
 
 	  ;; TODO: do the other wires
-	  (when (and next-z-wire next-x-wire)
+	  (when (and next-z-wire)
 	    (do*
 	     ((xwire-crds ;; currently features a bunch of hacks: CLEANUP
 	       (let ((prel-list
