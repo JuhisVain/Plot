@@ -240,25 +240,9 @@
 	  ;; TODO: do the other wires
 	  (when (and next-z-wire)
 	    (do*
-	     ((xwire-crds ;; currently features a bunch of hacks: CLEANUP
-	       (let ((prel-list
-		      (if (< z-wire next-z-wire)
-			  (loop
-			     for crd from z-wire to next-z-wire
-			     by (/ (abs (- next-z-wire z-wire))
-				   x-xsv-pix)
-			     collect crd)
-			  (loop
-			     for crd from z-wire downto next-z-wire
-			     by (/ (abs (- next-z-wire z-wire))
-				   x-xsv-pix)
-			     collect crd))))
-		 (if (/= (length prel-list) z-xsv-pix) ; should use rationals
-		     (append prel-list (cons next-z-wire nil))
-		     prel-list))
-	       (cdr xwire-crds))
-	      
-	      )
+	     ((xwire-crds
+	       (list-square-wire-coordinates z-wire next-z-wire x-xsv-pix)
+	       (cdr xwire-crds)))
 	     ((null (cdr xwire-crds)))
 	      (let ((gra-rel-z (* (/ (* (cos (/ pi 4))
 					gra-render-radius)
@@ -323,3 +307,28 @@
 		     ))))
 	  ))
       )))
+
+
+(defun list-square-wire-coordinates (current next step-divisor)
+  "Produces list starting at CURRENT and ending at NEXT."
+  (declare ((or (float 0.0 1.0)
+		(rational 0 1))
+	    current next)
+	   ((rational 1 *) step-divisor))
+  (let ((preliminary-list
+	 (if (< current next)
+	     (loop
+		for crd from current to next
+		by (/ (abs (- next current))
+		      step-divisor)
+		collect crd)
+	     (loop
+		for crd from current downto next
+		by (/ (abs (- next current))
+		      step-divisor)
+		collect crd))))
+    ;;; Enforce list ending with NEXT:
+    ;; without this there will be gaps in the wires
+    (if (/= (car (last preliminary-list)) next)
+	(append preliminary-list (cons next nil))
+	preliminary-list)))
