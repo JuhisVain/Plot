@@ -230,7 +230,13 @@
 
 	)
        ((null x-wires)) ; end render
-	(let ((gra-rel-x
+	(draw-wireframe-square x-wire next-x-wire z-xsv-pix
+			       z-wire next-z-wire x-xsv-pix
+			       gra-centre-x x-dimension
+			       gra-centre-z z-dimension
+			       gra-render-radius value-scaler
+			       value-shift-pixels state)
+	'(let ((gra-rel-x
 	       (* (/ (* (cos (/ pi 4))
 			gra-render-radius)
 		     gra-centre-x)
@@ -243,7 +249,7 @@
 	     ((xwire-crds
 	       (list-square-wire-coordinates z-wire next-z-wire x-xsv-pix)
 	       (cdr xwire-crds)))
-	     ((null (cdr xwire-crds)))
+	     ((null (cdr xwire-crds))) ; last coord used manually
 	      (let ((gra-rel-z (* (/ (* (cos (/ pi 4))
 					gra-render-radius)
 				     gra-centre-z)
@@ -305,16 +311,112 @@
 		       (draw-line x0 z0 x1 z1
 				  func (surface state)))
 		     ))))
-	  ))
+	  )
+	)
       )))
 
+(defun draw-wireframe-square-wire (current-wire wire next-wire xvector-pixels
+				   gra-rel-wire gra-centre gra-render-radius
+				   dimension value-scaler value-shift-pixels
+				   state)
+  (when (and next-wire)
+    (do*
+     ((wire-crds
+       (list-square-wire-coordinates wire next-wire xvector-pixels)
+       (cdr wire-crds)))
+     ((null (cdr wire-crds))) ; last coord used manually
+      (let ((gra-rel (* (/ (* (cos (/ pi 4))
+				gra-render-radius)
+			     gra-centre)
+			  (- gra-centre
+			     (* (car wire-crds) dimension))))
+	    (gra-rel-next (* (/ (* (cos (/ pi 4))
+				     gra-render-radius)
+				  gra-centre)
+			       (- gra-centre
+				  (* (cadr wire-crds)
+				     dimension)))))
+
+	(loop for func in (pfunc-list state)
+	   do
+	     (let* ((x0 (round
+			 ;; shift coord right:
+			 (+ (/ (width state) 2) 
+			    (*
+			     ;; unit multiplier:
+			     (sqrt (+ (expt gra-rel-wire 2)
+				      (expt gra-rel 2)))
+			     ;; unit circle position as determined by state's yaw:
+			     (cos (+ (atan gra-rel-wire gra-rel)
+				     (yaw state)))))))
+		    (z0 (round
+			 (+ value-shift-pixels
+			    ;; shift by value, modified by state's pitch:
+			    (* (cos (pitch state))
+			       (* value-scaler
+				  (3d-dataref func
+					      (car wire-crds)
+					      current-wire)))
+			    (* (sin (pitch state))
+			       (*
+				(sqrt (+ (expt gra-rel-wire 2)
+					 (expt gra-rel 2)))
+				(sin (+ (atan gra-rel-wire gra-rel)
+					(yaw state))))))))
+		    
+		    (x1 (round
+			 (+ (/ (width state) 2)
+			    (* 
+			     (sqrt (+ (expt gra-rel-wire 2)
+				      (expt gra-rel-next 2)))
+			     (cos (+ (atan gra-rel-wire gra-rel-next)
+				     (yaw state)))))))
+		    (z1  (round
+			  (+ value-shift-pixels
+			     (* (cos (pitch state))
+				(* value-scaler
+				   (3d-dataref func
+					       (cadr wire-crds)
+					       current-wire)))
+			     (* (sin (pitch state))
+				(*
+				 (sqrt (+ (expt gra-rel-wire 2)
+					  (expt gra-rel-next 2)))
+				 (sin (+ (atan gra-rel-wire gra-rel-next)
+					 (yaw state)))))))))
+	       (draw-line x0 z0 x1 z1
+			  func (surface state)))
+	     )))))
+
+(defun draw-wireframe-square (x-wire next-x-wire z-xsv-pix
+			      z-wire next-z-wire x-xsv-pix
+			      gra-centre-x x-dimension
+			      gra-centre-z z-dimension
+			      gra-render-radius value-scaler value-shift-pixels
+			      state)
+  (let ((gra-rel-x
+	 (* (/ (* (cos (/ pi 4))
+		  gra-render-radius)
+	       gra-centre-x)
+	    (- gra-centre-x
+	       (* x-wire x-dimension))))
+	(gra-rel-z
+	 (* (/ (* (cos (/ pi 4))
+		  gra-render-radius)
+	       gra-centre-z)
+	    (- gra-centre-z
+	       (* z-wire z-dimension)))))
+    (draw-wireframe-square-wire x-wire z-wire next-z-wire x-xsv-pix
+				gra-rel-x gra-centre-z gra-render-radius
+				z-dimension value-scaler value-shift-pixels
+				state)))
 
 (defun list-square-wire-coordinates (current next step-divisor)
   "Produces list starting at CURRENT and ending at NEXT."
   (declare ((or (float 0.0 1.0)
 		(rational 0 1))
 	    current next)
-	   ((rational 1 *) step-divisor))
+	   ((rational 0 *) step-divisor))
   (let ((preliminary-list
 	 (if (< current next)
 	     (loop
