@@ -236,82 +236,7 @@
 			       gra-centre-z z-dimension
 			       gra-render-radius value-scaler
 			       value-shift-pixels state)
-	'(let ((gra-rel-x
-	       (* (/ (* (cos (/ pi 4))
-			gra-render-radius)
-		     gra-centre-x)
-		  (- gra-centre-x
-		     (* x-wire x-dimension)))))
-
-	  ;; TODO: do the other wires
-	  (when (and next-z-wire)
-	    (do*
-	     ((xwire-crds
-	       (list-square-wire-coordinates z-wire next-z-wire x-xsv-pix)
-	       (cdr xwire-crds)))
-	     ((null (cdr xwire-crds))) ; last coord used manually
-	      (let ((gra-rel-z (* (/ (* (cos (/ pi 4))
-					gra-render-radius)
-				     gra-centre-z)
-				  (- gra-centre-z
-				     (* (car xwire-crds) z-dimension))))
-		    (gra-rel-z-next (* (/ (* (cos (/ pi 4))
-					     gra-render-radius)
-					  gra-centre-z)
-				       (- gra-centre-z
-					  (* (cadr xwire-crds)
-					     z-dimension)))))
-		(loop for func in (pfunc-list state)
-		   do
-		     (let* ((x0 (round
-				 ;; shift coord right:
-				 (+ (/ (width state) 2) 
-				    (*
-				     ;; unit multiplier:
-				     (sqrt (+ (expt gra-rel-x 2)
-					      (expt gra-rel-z 2)))
-				     ;; unit circle position as determined by state's yaw:
-				     (cos (+ (atan gra-rel-x gra-rel-z)
-					     (yaw state)))))))
-			    (z0 (round
-				 (+ value-shift-pixels
-				    ;; shift by value, modified by state's pitch:
-				    (* (cos (pitch state))
-				       (* value-scaler
-					  (3d-dataref func
-						      (car xwire-crds)
-						      x-wire)))
-				    (* (sin (pitch state))
-				       (*
-					(sqrt (+ (expt gra-rel-x 2)
-						 (expt gra-rel-z 2)))
-					(sin (+ (atan gra-rel-x gra-rel-z)
-						(yaw state))))))))
-			    
-			    (x1 (round
-				 (+ (/ (width state) 2)
-				    (* 
-				     (sqrt (+ (expt gra-rel-x 2)
-					      (expt gra-rel-z-next 2)))
-				     (cos (+ (atan gra-rel-x gra-rel-z-next)
-					     (yaw state)))))))
-			    (z1  (round
-				  (+ value-shift-pixels
-				     (* (cos (pitch state))
-					(* value-scaler
-					   (3d-dataref func
-						       (cadr xwire-crds)
-						       x-wire)))
-				     (* (sin (pitch state))
-					(*
-					 (sqrt (+ (expt gra-rel-x 2)
-						  (expt gra-rel-z-next 2)))
-					 (sin (+ (atan gra-rel-x gra-rel-z-next)
-						 (yaw state)))))))))
-		       (draw-line x0 z0 x1 z1
-				  func (surface state)))
-		     ))))
-	  )
+	
 	)
       )))
 
@@ -388,6 +313,88 @@
 			  func (surface state)))
 	     )))))
 
+
+;;;; Modified from above:
+;; inverted gra-rel and gra-rel-wire in coordinate ATANs
+;; inverted dataref args
+;;;; TODO: ??? could pass lambdas for both but eh
+(defun xxxdraw-wireframe-square-wire (current-wire wire next-wire xvector-pixels
+				      gra-rel-wire gra-centre gra-render-radius
+				      dimension value-scaler value-shift-pixels
+				      state)
+  (when (and next-wire)
+    (do*
+     ((wire-crds
+       (list-square-wire-coordinates wire next-wire xvector-pixels)
+       (cdr wire-crds)))
+     ((null (cdr wire-crds))) ; last coord used manually
+      (let ((gra-rel (* (/ (* (cos (/ pi 4))
+			      gra-render-radius)
+			   gra-centre)
+			(- gra-centre
+			   (* (car wire-crds) dimension))))
+	    (gra-rel-next (* (/ (* (cos (/ pi 4))
+				   gra-render-radius)
+				gra-centre)
+			     (- gra-centre
+				(* (cadr wire-crds)
+				   dimension)))))
+
+	(loop for func in (pfunc-list state)
+	   do
+	     (let* ((x0 (round
+			 ;; shift coord right:
+			 (+ (/ (width state) 2) 
+			    (*
+			     ;; unit multiplier:
+			     (sqrt (+ (expt gra-rel-wire 2)
+				      (expt gra-rel 2)))
+			     ;; unit circle position as determined by state's yaw:
+			     (cos (+ (atan gra-rel gra-rel-wire)
+				     (yaw state)))))))
+		    (z0 (round
+			 (+ value-shift-pixels
+			    ;; shift by value, modified by state's pitch:
+			    (* (cos (pitch state))
+			       (* value-scaler
+				  (3d-dataref func
+					      current-wire
+					      (car wire-crds)
+					      ;current-wire
+					      )))
+			    (* (sin (pitch state))
+			       (*
+				(sqrt (+ (expt gra-rel-wire 2)
+					 (expt gra-rel 2)))
+				(sin (+ (atan gra-rel gra-rel-wire)
+					(yaw state))))))))
+		    
+		    (x1 (round
+			 (+ (/ (width state) 2)
+			    (* 
+			     (sqrt (+ (expt gra-rel-wire 2)
+				      (expt gra-rel-next 2)))
+			     (cos (+ (atan gra-rel-next gra-rel-wire)
+				     (yaw state)))))))
+		    (z1  (round
+			  (+ value-shift-pixels
+			     (* (cos (pitch state))
+				(* value-scaler
+				   (3d-dataref func
+					       current-wire
+					       (cadr wire-crds)
+					       ;current-wire
+					       )))
+			     (* (sin (pitch state))
+				(*
+				 (sqrt (+ (expt gra-rel-wire 2)
+					  (expt gra-rel-next 2)))
+				 (sin (+ (atan gra-rel-next gra-rel-wire)
+					 (yaw state)))))))))
+	       (draw-line x0 z0 x1 z1
+			  func (surface state)))
+	     )))))
+
 (defun draw-wireframe-square (x-wire next-x-wire z-xsv-pix
 			      z-wire next-z-wire x-xsv-pix
 			      gra-centre-x x-dimension
@@ -409,7 +416,13 @@
     (draw-wireframe-square-wire x-wire z-wire next-z-wire x-xsv-pix
 				gra-rel-x gra-centre-z gra-render-radius
 				z-dimension value-scaler value-shift-pixels
-				state)))
+				state)
+    ;;TODO: rename
+    (xxxdraw-wireframe-square-wire z-wire x-wire next-x-wire z-xsv-pix
+				gra-rel-z gra-centre-x gra-render-radius
+				x-dimension value-scaler value-shift-pixels
+				state)
+    ))
 
 (defun list-square-wire-coordinates (current next step-divisor)
   "Produces list starting at CURRENT and ending at NEXT."
