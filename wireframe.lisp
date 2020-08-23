@@ -106,6 +106,8 @@
 	   ;;(optimize speed)
 	   )
   (let* ((wire-density 1/50)
+	 (effective-diameter (min (width state)
+				  (height state)))
 	 (log-centre-x (+ (min-x state)
 			  (/ (- (max-x state)
 				(min-x state))
@@ -114,8 +116,10 @@
 			  (/ (- (max-z state)
 				(min-z state))
 			     2)))
-	 (gra-centre-x (/ (width state) 2))
-	 (gra-centre-z (/ (height state) 2))
+	 (gra-centre-x (/ effective-diameter
+			  2))
+	 (gra-centre-z (/ effective-diameter
+			  2))
 	 (gra-render-radius (/ (- (min (width state)
 				       (height state))
 				  (* 2 (margin state)))
@@ -291,7 +295,7 @@
 		    
 		    (x1 (round
 			 (+ (/ (width state) 2)
-			    (* 
+			    (*
 			     (sqrt (+ (expt gra-rel-wire 2)
 				      (expt gra-rel-next 2)))
 			     (cos (+ (atan gra-rel-wire gra-rel-next)
@@ -371,7 +375,7 @@
 		    
 		    (x1 (round
 			 (+ (/ (width state) 2)
-			    (* 
+			    (*
 			     (sqrt (+ (expt gra-rel-wire 2)
 				      (expt gra-rel-next 2)))
 			     (cos (+ (atan gra-rel-next gra-rel-wire)
