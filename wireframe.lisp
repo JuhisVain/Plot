@@ -23,16 +23,16 @@
        by grid-line-delta
        do
 	 (case (far-corner state)
-	   (min-min
+	   ((min-min-max min-min-min)
 	    (grid-line x0 y0 x1 y1 y)
 	    (grid-line x3 y3 x0 y0 y))
-	   (min-max
+	   ((min-max-max min-max-min)
 	    (grid-line x3 y3 x0 y0 y)
 	    (grid-line x2 y2 x3 y3 y))
-	   (max-max
+	   ((max-max-max max-max-min)
 	    (grid-line x2 y2 x3 y3 y)
 	    (grid-line x1 y1 x2 y2 y))
-	   (max-min
+	   ((max-min-max max-min-min)
 	    (grid-line x1 y1 x2 y2 y)
 	    (grid-line x0 y0 x1 y1 y))))
 
@@ -87,18 +87,49 @@
     
     )))
 
+;;TODO: may want to consider some kind of FLAT symbols to take car of graphical
+;; issues when pitch or state aligns with pi/2 and multipliers.
 (defun far-corner (state)
-  "Returns wireframe render's horizontal plane's furthest corner."
+  "Returns wireframe rendering area's (which is a cube) furthest corner."
   (declare (3d-state state))
   (with-slots (yaw pitch) state
+    ;; Could be done with some macro or read-eval hack, but it's done like this.
     (cond ((>= (/ pi 2) yaw 0)
-	   'min-min)
+	   (cond ((>= (/ pi 2) pitch 0)
+		  'min-min-min)
+		 ((> (* 2 pi) pitch (* 3/2 pi))
+		  'min-min-max)
+		 ((>= (* 3/2 pi) pitch pi)
+		  'max-max-max)
+		 ((> pi pitch (/ pi 2))
+		  'max-max-min)))
 	  ((>= pi yaw (/ pi 2))
-	   'min-max)
+	   (cond ((>= (/ pi 2) pitch 0)
+		  'min-max-min)
+		 ((> (* 2 pi) pitch (* 3/2 pi))
+		  'min-max-max)
+		 ((>= (* 3/2 pi) pitch pi)
+		  'max-min-max)
+		 ((> pi pitch (/ pi 2))
+		  'max-min-min)))
 	  ((>= (* 3/2 pi) yaw pi)
-	   'max-max)
+	   (cond ((>= (/ pi 2) pitch 0)
+		  'max-max-min)
+		 ((> (* 2 pi) pitch (* 3/2 pi))
+		  'max-max-max)
+		 ((>= (* 3/2 pi) pitch pi)
+		  'min-min-max)
+		 ((> pi pitch (/ pi 2))
+		  'min-min-min)))
 	  ((>= (* 2 pi) yaw (* 3/2 pi))
-	   'max-min)
+	   (cond ((>= (/ pi 2) pitch 0)
+		  'max-min-min)
+		 ((> (* 2 pi) pitch (* 3/2 pi))
+		  'max-min-max)
+		 ((>= (* 3/2 pi) pitch pi)
+		  'min-max-max)
+		 ((> pi pitch (/ pi 2))
+		  'min-max-min)))
 	  (t (error "Invalid YAW = ~a~%" yaw)))))
 
 (defun render-wireframe (state)
@@ -204,10 +235,12 @@
 	(wire-list (loop for a from 0.0 to (/ 1 wire-density)
 		      collect (* wire-density a)))
 	(x-wires-full (case far-corner
-			((max-max min-max) (reverse wire-list))
+			((max-max-max max-max-min min-max-max min-max-min)
+			 (reverse wire-list))
 			(otherwise wire-list)))
 	(z-wires-full (case far-corner
-			((max-max max-min) (reverse wire-list))
+			((max-max-min max-max-max max-min-max max-min-min)
+			 (reverse wire-list))
 			(otherwise wire-list)))
 	(x-wires x-wires-full)
 	(z-wires z-wires-full
