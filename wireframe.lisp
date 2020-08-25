@@ -299,7 +299,7 @@
 				  (* (cadr wire-crds)
 				     dimension)))))
 
-	(loop for func in (pfunc-list state)
+	(loop for func in (collect-drawn (pfunc-list state))
 	   do
 	     (let* ((x0 (round
 			 ;; shift coord right:
@@ -377,7 +377,7 @@
 				(* (cadr wire-crds)
 				   dimension)))))
 
-	(loop for func in (pfunc-list state)
+	(loop for func in (collect-drawn (pfunc-list state))
 	   do
 	     (let* ((x0 (round
 			 ;; shift coord right:
