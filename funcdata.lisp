@@ -258,6 +258,7 @@
 	 (cf-w (/ (- total-c cf-x-c) total-c))
 	 (cc-w (/ (- total-c cc-x-c) total-c)))
 
+    ;; TODO: what if we get a bad value?
     (/ (+ (* (aref (data funcdata) floor0 floor1)
 	     ff-w)
 	  (* (aref (data funcdata) floor0 ceili1)
