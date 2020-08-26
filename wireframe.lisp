@@ -286,17 +286,15 @@
        (cos (+ (atan wire-constant gra-rel)
 	       (yaw state)))))))
 
-(defun Xwire-compute-Z (float-x float-z gra-rel
-			wire-constant func value-shift-pixels
+(defun Xwire-compute-Z (value gra-rel
+			wire-constant value-shift-pixels
 			value-scaler unit-multiplier state)
   (round
    (+ value-shift-pixels
       ;; shift by value, modified by state's pitch:
       (* (cos (pitch state))
 	 (* value-scaler
-	    (3d-dataref func
-			float-x
-		        float-z)))
+	    value))
       (* (sin (pitch state))
 	 (*
 	  unit-multiplier
@@ -357,19 +355,27 @@
 					   (expt gra-rel 2)))
 	   and next-unit-multiplier = (sqrt (+ (expt gra-rel-wire 2)
 					       (expt gra-rel-next 2)))
+	   for value = (3d-dataref func (car wire-crds) current-wire)
+	   and next-value = (3d-dataref func (cadr wire-crds) current-wire)
 	   do
-	     (let* ((x0 (xwire-compute-x gra-rel gra-rel-wire
-					 unit-multiplier state))
-		    (z0 (xwire-compute-z (car wire-crds) current-wire gra-rel
-					 gra-rel-wire func value-shift-pixels
-					 value-scaler unit-multiplier state))
-		    (x1 (xwire-compute-x gra-rel-next gra-rel-wire
-					 next-unit-multiplier state))
-		    (z1 (xwire-compute-z (cadr wire-crds) current-wire gra-rel-next
-					 gra-rel-wire func value-shift-pixels
-					 value-scaler next-unit-multiplier state)))
-	       (draw-line x0 z0 x1 z1
-			  func (surface state)))
+	     (cond ((and (numberp value) (numberp next-value))
+		    (let* ((x0 (xwire-compute-x gra-rel gra-rel-wire
+						unit-multiplier state))
+			   (z0 (xwire-compute-z value gra-rel
+						gra-rel-wire value-shift-pixels
+						value-scaler unit-multiplier state))
+			   (x1 (xwire-compute-x gra-rel-next gra-rel-wire
+						next-unit-multiplier state))
+			   (z1 (xwire-compute-z next-value gra-rel-next
+						gra-rel-wire value-shift-pixels
+						value-scaler next-unit-multiplier state)))
+		      (draw-line x0 z0 x1 z1
+				 func (surface state))))
+		   ((symbolp value)
+		    NIL)
+		   ((symbolp next-value)
+		    NIL))
+		   
 	     )))))
 
 
@@ -403,18 +409,22 @@
 	   for value = (3d-dataref func current-wire (car wire-crds))
 	   and next-value = (3d-dataref func current-wire (cadr wire-crds))
 	   do
-	     (let* ((x0 (zwire-compute-x gra-rel gra-rel-wire
-					 unit-multiplier state))
-		    (z0 (zwire-compute-z value gra-rel
-					 gra-rel-wire value-shift-pixels
-					 value-scaler unit-multiplier state))
-		    (x1 (zwire-compute-x gra-rel-next gra-rel-wire
-					 next-unit-multiplier state))
-		    (z1 (zwire-compute-z next-value gra-rel-next
-					 gra-rel-wire value-shift-pixels
-					 value-scaler next-unit-multiplier state)))
-	       (draw-line x0 z0 x1 z1
-			  func (surface state)))
+	     (cond ((and (numberp value) (numberp next-value))
+		    (let* ((x0 (zwire-compute-x gra-rel gra-rel-wire
+						unit-multiplier state))
+			   (z0 (zwire-compute-z value gra-rel
+						gra-rel-wire value-shift-pixels
+						value-scaler unit-multiplier state))
+			   (x1 (zwire-compute-x gra-rel-next gra-rel-wire
+						next-unit-multiplier state))
+			   (z1 (zwire-compute-z next-value gra-rel-next
+						gra-rel-wire value-shift-pixels
+						value-scaler next-unit-multiplier state)))
+		      (draw-line x0 z0 x1 z1
+				 func (surface state))))
+		   ((symbolp value)
+		    NIL)
+		   ((symbolp next-value) NIL)) ; do nothing
 	     )))))
 
 (defun draw-wireframe-square (x-wire next-x-wire z-xsv-pix

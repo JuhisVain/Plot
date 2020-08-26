@@ -109,6 +109,16 @@
    :window-width w
    :from '(-3 -3) :to '(3 3)))
 
+;; Takes a long time to compute
+;; -> user's fault for blasting 500 000 errors
+(defun test-wf-zero-div (&optional (h 1000) (w 1000))
+  (plot
+   (list #'(lambda (x z)
+	     (/ x (max z 0))))
+   :window-height h
+   :window-width w
+   :from '(-0.1 -0.1) :to '(0.1 0.1)))
+
 ;; TODO: performance testing on 3d-plotting
 (defun test-3d ()
   (plot '((+ :arg-count 2)) :from '(0 5) :to '(10 15)))

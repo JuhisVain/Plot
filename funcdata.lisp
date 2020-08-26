@@ -259,16 +259,19 @@
 	 (cc-w (/ (- total-c cc-x-c) total-c)))
 
     ;; TODO: what if we get a bad value?
-    (/ (+ (* (aref (data funcdata) floor0 floor1)
-	     ff-w)
-	  (* (aref (data funcdata) floor0 ceili1)
-	     fc-w)
-	  (* (aref (data funcdata) ceili0 floor1)
-	     cf-w)
-	  (* (aref (data funcdata) ceili0 ceili1)
-	     cc-w))
-       
-       (+ ff-w fc-w cf-w cc-w))))
+    (handler-case
+	(/ (+ (* (aref (data funcdata) floor0 floor1)
+		 ff-w)
+	      (* (aref (data funcdata) floor0 ceili1)
+		 fc-w)
+	      (* (aref (data funcdata) ceili0 floor1)
+		 cf-w)
+	      (* (aref (data funcdata) ceili0 ceili1)
+		 cc-w))
+	   (+ ff-w fc-w cf-w cc-w))
+      (division-by-zero () 'ZERO-DIVISION)
+      (type-error () 'TYPE-ERROR))
+    ))
 
 
 
