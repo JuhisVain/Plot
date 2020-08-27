@@ -163,13 +163,14 @@
 		 -10)))
 	:from '(0 0) :to '(10 10)))
 
-(defun test-3d-res ()
+(defun test-3d-res (&optional (h 1000) (w 1000))
   (plot
    (list (list #'(lambda (x z) ; 3d gaussian
 		   (exp (- (+ (/ (expt x 2) 1)
 			      (/ (expt z 2) 1)))))
 	       :data-per-pixel 1/10)) ; not working
-   :from '(-3 -3) :to '(3 3)))
+   :from '(-3 -3) :to '(3 3)
+   :window-height h :window-width w))
 
 (defun test-flat-line ()
   (let ((constnum 5))
