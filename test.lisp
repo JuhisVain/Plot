@@ -163,12 +163,14 @@
 		 -10)))
 	:from '(0 0) :to '(10 10)))
 
-(defun test-3d-res (&optional (h 1000) (w 1000))
+;; TODO: "Works" with wireframe, initial dataset computation gets faster,
+;; but render is blocky.
+(defun test-3d-res (&optional (data-per-pixel 1/50) (h 1000) (w 1000))
   (plot
    (list (list #'(lambda (x z) ; 3d gaussian
 		   (exp (- (+ (/ (expt x 2) 1)
 			      (/ (expt z 2) 1)))))
-	       :data-per-pixel 1/10)) ; not working
+	       :data-per-pixel data-per-pixel)) ; should rename data-per-pixel
    :from '(-3 -3) :to '(3 3)
    :window-height h :window-width w))
 
