@@ -229,46 +229,41 @@
   (when (> y 1.0)
     (setf y 1.0))
   
-  (let* ((index0 (* x (1- (array-dimension (data funcdata) 0))))
-	 (floor0 (floor index0))
-	 (ceili0 (ceiling index0))
+  (let* ((x-index (* x (1- (array-dimension (data funcdata) 0))))
+	 (x-floor (floor x-index))
+	 (x-ceili (ceiling x-index))
 	 
-	 (index1 (* y (1- (array-dimension (data funcdata) 1))))
-	 (floor1 (floor index1))
-	 (ceili1 (ceiling index1))
+	 (y-index (* y (1- (array-dimension (data funcdata) 1))))
+	 (y-floor (floor y-index))
+	 (y-ceili (ceiling y-index))
 	 
-	 (from-f0-to-c0 (rem index0 1))
-	 (from-f1-to-c1 (rem index1 1))
+	 (point-x (rem x-index 1))
+	 (point-y (rem y-index 1))
+	 (ip-x (- 1.0 point-x)) ; inverted point-x
+	 (ip-y (- 1.0 point-y)) ; inverted point-y
 
-	 (ff-x-c (sqrt (+ (expt from-f0-to-c0 2)
-			  (expt from-f1-to-c1 2))))
-	 (fc-x-c (sqrt (+ (expt from-f0-to-c0 2)
-			  (expt (- 1.0 from-f1-to-c1) 2))))
-	 (cf-x-c (sqrt (+ (expt (- 1.0 from-f0-to-c0) 2)
-			  (expt from-f1-to-c1 2))))
-	 (cc-x-c (sqrt (+ (expt (- 1.0 from-f0-to-c0) 2)
-			  (expt (- 1.0 from-f1-to-c1) 2))))
-	 
-	 (total-c (+ ff-x-c
-		     fc-x-c
-		     cf-x-c
-		     cc-x-c))
-	 (ff-w (/ (- total-c ff-x-c) total-c))
-	 (fc-w (/ (- total-c fc-x-c) total-c))
-	 (cf-w (/ (- total-c cf-x-c) total-c))
-	 (cc-w (/ (- total-c cc-x-c) total-c)))
+	 (weight-ff (* ip-x 
+		       ip-y)) 
+	 (weight-cf (* point-x ; inverted inverted point-x
+		       ip-y))
+	 (weight-fc (* ip-x
+		       point-y))
+	 (weight-cc (* point-x
+		       point-y)))
 
-    ;; TODO: what if we get a bad value?
     (handler-case
-	(/ (+ (* (aref (data funcdata) floor0 floor1)
-		 ff-w)
-	      (* (aref (data funcdata) floor0 ceili1)
-		 fc-w)
-	      (* (aref (data funcdata) ceili0 floor1)
-		 cf-w)
-	      (* (aref (data funcdata) ceili0 ceili1)
-		 cc-w))
-	   (+ ff-w fc-w cf-w cc-w))
+	(/ (+ (* (aref (data funcdata) x-floor y-floor)
+		 weight-ff)
+	      (* (aref (data funcdata) x-floor y-ceili)
+		 weight-fc)
+	      (* (aref (data funcdata) x-ceili y-floor)
+		 weight-cf)
+	      (* (aref (data funcdata) x-ceili y-ceili)
+		 weight-cc))
+	   (+ weight-ff
+	      weight-fc
+	      weight-cf
+	      weight-cc))
       (division-by-zero () 'ZERO-DIVISION)
       (type-error () 'TYPE-ERROR))
     ))
