@@ -226,7 +226,7 @@ but indexes X and Y should be floats between 0 and 1.
 
 Returns some kind of weighted average of the 4 array elements forming
 square within which indexes X and Y point to."
-  (declare ((array number 2) 2d-array)
+  (declare ((array * 2) 2d-array) ; array might hold symbols
 	   ((float 0.0 1.0) x y))
   (let* ((x-index (* x (1- (array-dimension 2d-array 0))))
 	 (x-floor (floor x-index))
