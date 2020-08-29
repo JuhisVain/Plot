@@ -220,20 +220,14 @@
 	(aref (data funcdata) c-index))
      2)))
 
-(defun 3d-dataref (funcdata x y)
-  (declare (abstract-funcdata funcdata)
-	   (float x y))
-
-  (when (> x 1.0)
-    (setf x 1.0))
-  (when (> y 1.0)
-    (setf y 1.0))
-  
-  (let* ((x-index (* x (1- (array-dimension (data funcdata) 0))))
+(defun 2faref (2d-array x y)
+  (declare ((array number 2) 2d-array)
+	   ((float 0.0 1.0) x y))
+  (let* ((x-index (* x (1- (array-dimension 2d-array 0))))
 	 (x-floor (floor x-index))
 	 (x-ceili (ceiling x-index))
 	 
-	 (y-index (* y (1- (array-dimension (data funcdata) 1))))
+	 (y-index (* y (1- (array-dimension 2d-array 1))))
 	 (y-floor (floor y-index))
 	 (y-ceili (ceiling y-index))
 	 
@@ -251,22 +245,30 @@
 	 (weight-cc (* point-x
 		       point-y)))
 
-    (handler-case
-	(/ (+ (* (aref (data funcdata) x-floor y-floor)
-		 weight-ff)
-	      (* (aref (data funcdata) x-floor y-ceili)
-		 weight-fc)
-	      (* (aref (data funcdata) x-ceili y-floor)
-		 weight-cf)
-	      (* (aref (data funcdata) x-ceili y-ceili)
-		 weight-cc))
-	   (+ weight-ff
-	      weight-fc
-	      weight-cf
-	      weight-cc))
-      (division-by-zero () 'ZERO-DIVISION)
-      (type-error () 'TYPE-ERROR))
-    ))
+    (/ (+ (* (aref 2d-array x-floor y-floor)
+	     weight-ff)
+	  (* (aref 2d-array x-floor y-ceili)
+	     weight-fc)
+	  (* (aref 2d-array x-ceili y-floor)
+	     weight-cf)
+	  (* (aref 2d-array x-ceili y-ceili)
+	     weight-cc))
+       (+ weight-ff
+	  weight-fc
+	  weight-cf
+	  weight-cc))))
+
+(defun 3d-dataref (funcdata x y)
+  (declare (abstract-funcdata funcdata)
+	   (float x y))
+  (handler-case
+      (2faref (data funcdata)
+	      (min (max x 0.0)
+		   1.0)
+	      (min (max y 0.0)
+		   1.0))
+    (division-by-zero () 'ZERO-DIVISION)
+    (type-error () 'TYPE-ERROR)))
 
 
 
