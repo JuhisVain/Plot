@@ -163,8 +163,6 @@
 		 -10)))
 	:from '(0 0) :to '(10 10)))
 
-;; TODO: "Works" with wireframe, initial dataset computation gets faster,
-;; but render is blocky.
 (defun test-3d-res (&optional (data-per-pixel 1/50) (h 1000) (w 1000))
   (plot
    (list (list #'(lambda (x z) ; 3d gaussian
