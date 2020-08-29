@@ -8,6 +8,30 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
+(defun test-2faref (&optional (h 1000) (w 1000))
+  (let ((arr (make-array '(3 3))))
+    (dotimes (x 3)
+      (dotimes (y 3)
+	(setf (aref arr x y) (* x y))))
+    (plot (list (list #'(lambda (x)
+			  (2faref arr 0.0 x))
+		      :arg-count 1)
+		(list #'(lambda (x)
+			  (2faref arr 0.25 x))
+		      :arg-count 1)
+		(list #'(lambda (x)
+			  (2faref arr 0.5 x))
+		      :arg-count 1)
+		(list #'(lambda (x)
+			  (2faref arr 0.75 x))
+		      :arg-count 1)
+		(list #'(lambda (x)
+			  (2faref arr 1.0 x))
+		      :arg-count 1))
+	  :from 0.0 :to 1.0
+	  :window-width w
+	  :window-height h)))
+
 (defun test-wireframe (&optional (h 1000) (w 1000))
   (plot
    (list (list #'(lambda (x z) ; 3d gaussian
