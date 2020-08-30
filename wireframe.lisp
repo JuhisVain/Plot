@@ -274,6 +274,11 @@
 	)
       )))
 
+(defun round-complex (number)
+  "Round with complex number support."
+  (declare (number number))
+  (complex (round (realpart number))
+	   (round (imagpart number))))
 
 (defun Xwire-compute-X (gra-rel wire-constant unit-multiplier state)
   (round
