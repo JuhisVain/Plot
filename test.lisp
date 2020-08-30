@@ -196,6 +196,12 @@
    :from '(-3 -3) :to '(3 3)
    :window-height h :window-width w))
 
+(defun test-3d-complex (&optional (h 1000) (w 1000))
+  (plot (list #'(lambda (x z)
+		  (sqrt (* x z))))
+	:window-width w :window-height h
+	:from '(-1 -1) :to '(1 1)))
+
 (defun test-flat-line ()
   (let ((constnum 5))
     (declare (special constnum))
