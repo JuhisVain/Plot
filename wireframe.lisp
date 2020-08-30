@@ -274,7 +274,7 @@
 	)
       )))
 
-(defun round-complex (number)
+(defun round-complex (number) ; obsolete?
   "Round with complex number support."
   (declare (number number))
   (complex (round (realpart number))
@@ -294,18 +294,22 @@
 (defun Xwire-compute-Z (value gra-rel
 			wire-constant value-shift-pixels
 			value-scaler unit-multiplier state)
-  (round
-   (+ value-shift-pixels
-      ;; shift by value, modified by state's pitch:
-      (* (cos (pitch state))
-	 (* value-scaler
-	    value))
-      (* (sin (pitch state))
-	 (*
-	  unit-multiplier
-	  (sin (+ (atan wire-constant gra-rel)
-		  (yaw state))))))))
-
+  (flet ((internal-compute (value)
+	   (declare (real value))
+	   (round
+	    (+ value-shift-pixels
+	       (* (cos (pitch state))
+		  (* value-scaler
+		     value))
+	       (* (sin (pitch state))
+		  (*
+		   unit-multiplier
+		   (sin (+ (atan wire-constant gra-rel)
+			   (yaw state)))))))))
+    (if (complexp value)
+	(complex (internal-compute (realpart value))
+		 (internal-compute (imagpart value)))
+	(internal-compute value))))
 
 (defun Zwire-compute-X (gra-rel wire-constant unit-multiplier state)
   (round
@@ -321,17 +325,22 @@
 (defun Zwire-compute-Z (value gra-rel
 			wire-constant value-shift-pixels
 			value-scaler unit-multiplier state)
-  (round
-   (+ value-shift-pixels
-      ;; shift by value, modified by state's pitch:
-      (* (cos (pitch state))
-	 (* value-scaler
-	    value))
-      (* (sin (pitch state))
-	 (*
-	  unit-multiplier
-	  (sin (+ (atan gra-rel wire-constant)
-		  (yaw state))))))))
+  (flet ((internal-compute (value)
+	   (declare (real value))
+	   (round
+	    (+ value-shift-pixels
+	       (* (cos (pitch state))
+		  (* value-scaler
+		     value))
+	       (* (sin (pitch state))
+		  (*
+		   unit-multiplier
+		   (sin (+ (atan gra-rel wire-constant)
+			   (yaw state)))))))))
+    (if (complexp value)
+	(complex (internal-compute (realpart value))
+		 (internal-compute (imagpart value)))
+	(internal-compute value))))
 
 (defun draw-wireframe-square-xwire (current-wire wire next-wire xvector-pixels
 				    gra-rel-wire gra-centre gra-render-radius
