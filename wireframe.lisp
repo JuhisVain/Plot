@@ -12,7 +12,8 @@
 			      :surface (surface state))))
       (let ((grid-line-delta (* value-scaler
 				(mark-lines (- (max-y state)
-					       (min-y state))))))
+					       (min-y state)))))
+	    (far-corner (far-corner state)))
 	(loop
 	   for y from (- (* value-scaler (min-y state))
 			 (* value-scaler (/ (+ (max-y state)
@@ -24,7 +25,7 @@
 				    2)))
 	   by grid-line-delta
 	   do
-	     (case (far-corner state)
+	     (case far-corner
 	       ((min-min-max min-min-min)
 		(grid-line x0 y0 x1 y1 y)
 		(grid-line x3 y3 x0 y0 y))
@@ -38,7 +39,7 @@
 		(grid-line x1 y1 x2 y2 y)
 		(grid-line x0 y0 x1 y1 y))))
 	
-	(case (far-corner state)
+	(case far-corner
 	  ((min-min-max min-min-min)
 	   (sdl:draw-line-* x0 (- (height state) y0)
 			    x1 (- (height state) y1)
