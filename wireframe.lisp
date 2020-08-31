@@ -1,91 +1,135 @@
-(defun render-wireframe-grid (state value-scaler x0 y0 x1 y1 x2 y2 x3 y3)
-  (flet ((grid-line (x0 y0 x1 y1 y)
-	   (sdl:draw-line-* x0 (- (height state)
-				  (round
-				   (+ (* (cos (pitch state)) y) y0)))
-			    x1 (- (height state)
-				  (round
-				   (+ (* (cos (pitch state)) y) y1)))
-			    :color *grid-color*
-			    :surface (surface state))))
-  (let ((grid-line-delta (* value-scaler
-			    (mark-lines (- (max-y state)
-					   (min-y state))))))
-    (loop
-       for y from (- (* value-scaler (min-y state))
-		     (* value-scaler (/ (+ (max-y state)
-					   (min-y state))
-					2)))
-       to (- (* value-scaler (max-y state))
-	     (* value-scaler (/ (+ (max-y state)
-				   (min-y state))
-				2)))
-       by grid-line-delta
-       do
-	 (case (far-corner state)
-	   ((min-min-max min-min-min)
-	    (grid-line x0 y0 x1 y1 y)
-	    (grid-line x3 y3 x0 y0 y))
-	   ((min-max-max min-max-min)
-	    (grid-line x3 y3 x0 y0 y)
-	    (grid-line x2 y2 x3 y3 y))
-	   ((max-max-max max-max-min)
-	    (grid-line x2 y2 x3 y3 y)
-	    (grid-line x1 y1 x2 y2 y))
-	   ((max-min-max max-min-min)
-	    (grid-line x1 y1 x2 y2 y)
-	    (grid-line x0 y0 x1 y1 y))))
+(let (f-x0 f-y0 f-x1 f-y1 f-x2 f-y2) ;wireframe front base crds
 
-    (sdl:draw-line-* x0 (- (height state) y0)
-		     x1 (- (height state) y1)
+  (defun render-wireframe-grid (state value-scaler x0 y0 x1 y1 x2 y2 x3 y3)
+    (flet ((grid-line (x0 y0 x1 y1 y)
+	     (sdl:draw-line-* x0 (- (height state)
+				    (round
+				     (+ (* (cos (pitch state)) y) y0)))
+			      x1 (- (height state)
+				    (round
+				     (+ (* (cos (pitch state)) y) y1)))
+			      :color *grid-color*
+			      :surface (surface state))))
+      (let ((grid-line-delta (* value-scaler
+				(mark-lines (- (max-y state)
+					       (min-y state))))))
+	(loop
+	   for y from (- (* value-scaler (min-y state))
+			 (* value-scaler (/ (+ (max-y state)
+					       (min-y state))
+					    2)))
+	   to (- (* value-scaler (max-y state))
+		 (* value-scaler (/ (+ (max-y state)
+				       (min-y state))
+				    2)))
+	   by grid-line-delta
+	   do
+	     (case (far-corner state)
+	       ((min-min-max min-min-min)
+		(grid-line x0 y0 x1 y1 y)
+		(grid-line x3 y3 x0 y0 y))
+	       ((min-max-max min-max-min)
+		(grid-line x3 y3 x0 y0 y)
+		(grid-line x2 y2 x3 y3 y))
+	       ((max-max-max max-max-min)
+		(grid-line x2 y2 x3 y3 y)
+		(grid-line x1 y1 x2 y2 y))
+	       ((max-min-max max-min-min)
+		(grid-line x1 y1 x2 y2 y)
+		(grid-line x0 y0 x1 y1 y))))
+	
+	(case (far-corner state)
+	  ((min-min-max min-min-min)
+	   (sdl:draw-line-* x0 (- (height state) y0)
+			    x1 (- (height state) y1)
+			    :color *grid-origin-color*
+			    :surface (surface state))
+	   (sdl:draw-line-* x3 (- (height state) y3)
+			    x0 (- (height state) y0)
+			    :color *grid-origin-color*
+			    :surface (surface state))
+	   (setf f-x0 x1 f-y0 y1
+		 f-x1 x2 f-y1 y2
+		 f-x2 x3 f-y2 y3))
+	  ((min-max-max min-max-min)
+	   (sdl:draw-line-* x2 (- (height state) y2)
+			    x3 (- (height state) y3)
+			    :color *grid-origin-color*
+			    :surface (surface state))
+	   (sdl:draw-line-* x3 (- (height state) y3)
+			    x0 (- (height state) y0)
+			    :color *grid-origin-color*
+			    :surface (surface state))
+	   (setf f-x0 x0 f-y0 y0
+		 f-x1 x1 f-y1 y1
+		 f-x2 x2 f-y2 y2))
+	  ((max-max-max max-max-min)
+	   (sdl:draw-line-* x1 (- (height state) y1)
+			    x2 (- (height state) y2)
+			    :color *grid-origin-color*
+			    :surface (surface state))
+	   (sdl:draw-line-* x2 (- (height state) y2)
+			    x3 (- (height state) y3)
+			    :color *grid-origin-color*
+			    :surface (surface state))
+	   (setf f-x0 x3 f-y0 y3
+		 f-x1 x0 f-y1 y0
+		 f-x2 x1 f-y2 y1))
+	  ((max-min-max max-min-min)
+	   (sdl:draw-line-* x0 (- (height state) y0)
+			    x1 (- (height state) y1)
+			    :color *grid-origin-color*
+			    :surface (surface state))
+	   (sdl:draw-line-* x1 (- (height state) y1)
+			    x2 (- (height state) y2)
+			    :color *grid-origin-color*
+			    :surface (surface state))
+	   (setf f-x0 x2 f-y0 y2
+		 f-x1 x3 f-y1 y3
+		 f-x2 x0 f-y2 y0))))
+
+      ;; TODO: move to front function
+      (let ((middle-value (/ (- (max-y state) (min-y state))
+			     2)))
+	(sdl:draw-string-solid-*
+	 (format nil "(~a,~a,~a)"
+		 (min-x state) (min-z state) middle-value)
+	 x0 (- (height state) y0)
+	 :color *grid-color*
+	 :surface (surface state))
+
+	(sdl:draw-string-solid-*
+	 (format nil "(~a,~a,~a)"
+		 (max-x state) (min-z state) middle-value)
+	 x1 (- (height state) y1)
+	 :color *grid-color*
+	 :surface (surface state))
+
+	(sdl:draw-string-solid-*
+	 (format nil "(~a,~a,~a)"
+		 (max-x state) (max-z state) middle-value)
+	 x2 (- (height state) y2)
+	 :color *grid-color*
+	 :surface (surface state))
+
+	(sdl:draw-string-solid-*
+	 (format nil "(~a,~a,~a)"
+		 (min-x state) (max-z state) middle-value)
+	 x3 (- (height state) y3)
+	 :color *grid-color*
+	 :surface (surface state))
+	
+	)))
+
+  (defun render-wireframe-grid-front (state)
+    (sdl:draw-line-* f-x0 (- (height state) f-y0)
+		     f-x1 (- (height state) f-y1)
 		     :color *grid-origin-color*
 		     :surface (surface state))
-    (sdl:draw-line-* x1 (- (height state) y1)
-		     x2 (- (height state) y2)
+    (sdl:draw-line-* f-x1 (- (height state) f-y1)
+		     f-x2 (- (height state) f-y2)
 		     :color *grid-origin-color*
-		     :surface (surface state))
-    
-    (sdl:draw-line-* x2 (- (height state) y2)
-		     x3 (- (height state) y3)
-		     :color *grid-origin-color*
-		     :surface (surface state))
-
-    (sdl:draw-line-* x3 (- (height state) y3)
-		     x0 (- (height state) y0)
-		     :color *grid-origin-color*
-		     :surface (surface state)))
-
-  (let ((middle-value (/ (- (max-y state) (min-y state))
-			 2)))
-    (sdl:draw-string-solid-*
-     (format nil "(~a,~a,~a)"
-	     (min-x state) (min-z state) middle-value)
-     x0 (- (height state) y0)
-     :color *grid-color*
-     :surface (surface state))
-
-    (sdl:draw-string-solid-*
-     (format nil "(~a,~a,~a)"
-	     (max-x state) (min-z state) middle-value)
-     x1 (- (height state) y1)
-     :color *grid-color*
-     :surface (surface state))
-
-    (sdl:draw-string-solid-*
-     (format nil "(~a,~a,~a)"
-	     (max-x state) (max-z state) middle-value)
-     x2 (- (height state) y2)
-     :color *grid-color*
-     :surface (surface state))
-
-    (sdl:draw-string-solid-*
-     (format nil "(~a,~a,~a)"
-	     (min-x state) (max-z state) middle-value)
-     x3 (- (height state) y3)
-     :color *grid-color*
-     :surface (surface state))
-    
-    )))
+		     :surface (surface state))))
 
 ;;TODO: may want to consider some kind of FLAT symbols to take car of graphical
 ;; issues when pitch or state aligns with pi/2 and multipliers.
@@ -272,6 +316,7 @@
 			       value-shift-pixels state)
 	
 	)
+      (render-wireframe-grid-front state)
       )))
 
 (defun round-complex (number) ; obsolete?
