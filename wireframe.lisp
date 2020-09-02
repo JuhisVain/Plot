@@ -9,11 +9,19 @@
 				    (round
 				     (+ (* (cos (pitch state)) y) y1)))
 			      :color *grid-color*
-			      :surface (surface state))))
-      (let ((grid-line-delta (* value-scaler
-				(mark-lines (- (max-y state)
-					       (min-y state)))))
-	    (far-corner (far-corner state)))
+			      :surface (surface state)))
+	   (grid-label (x y shift value)
+	     (sdl:draw-string-solid-* (format nil "~a" value)
+				      (round x)
+				      (- (height state)
+					 (round
+					  (+ (* (cos (pitch state)) shift) y)))
+				      :color *grid-color*
+				      :surface (surface state))))
+      (let* ((mark-lines (mark-lines (- (max-y state)
+					(min-y state))))
+	     (grid-line-delta (* value-scaler mark-lines))
+	     (far-corner (far-corner state)))
 	(loop
 	   for y from (- (* value-scaler (min-y state))
 			 (* value-scaler (/ (+ (max-y state)
@@ -24,20 +32,25 @@
 				       (min-y state))
 				    2)))
 	   by grid-line-delta
+	   for value from (min-y state) by mark-lines
 	   do
 	     (case far-corner
 	       ((min-min-max min-min-min)
 		(grid-line x0 y0 x1 y1 y)
-		(grid-line x3 y3 x0 y0 y))
+		(grid-line x3 y3 x0 y0 y)
+		(grid-label x0 y0 y value))
 	       ((min-max-max min-max-min)
 		(grid-line x3 y3 x0 y0 y)
-		(grid-line x2 y2 x3 y3 y))
+		(grid-line x2 y2 x3 y3 y)
+		(grid-label x3 y3 y value))
 	       ((max-max-max max-max-min)
 		(grid-line x2 y2 x3 y3 y)
-		(grid-line x1 y1 x2 y2 y))
+		(grid-line x1 y1 x2 y2 y)
+		(grid-label x2 y2 y value))
 	       ((max-min-max max-min-min)
 		(grid-line x1 y1 x2 y2 y)
-		(grid-line x0 y0 x1 y1 y))))
+		(grid-line x0 y0 x1 y1 y)
+		(grid-label x1 y1 y value))))
 	
 	(case far-corner
 	  ((min-min-max min-min-min)
@@ -89,7 +102,8 @@
 		 f-x1 x3 f-y1 y3
 		 f-x2 x0 f-y2 y0))))
 
-      ;; TODO: move to front function
+      ;; TODO: move to front function, or not
+      ;; remove fvalue and make it so it goes flush with value axis labels above
       (let ((middle-value (/ (- (max-y state) (min-y state))
 			     2)))
 	(sdl:draw-string-solid-*
