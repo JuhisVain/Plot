@@ -41,6 +41,29 @@
    :window-width w
    :from '(-3 -3) :to '(3 3)))
 
+;;;TODO: might want to align bounding box to order of magnitude values
+;; instead of actual value maxima & minima
+;; Also come up with some scheme to get pretty numbers for labels when they're ugly
+(defun test-wf-bounds (&optional (h 1000) (w 1000))
+  (let ((low 0.1)
+	(high 0.9))
+    (declare (special low high))
+    (plot
+     (list (list #'(lambda (x z)
+		     (exp (- (+ (/ (expt x 2) 1)
+				(/ (expt z 2) 1))))))
+	   #'(lambda (x z)
+	       (declare (ignore x z))
+	       low)
+	   #'(lambda (x z)
+	       (declare (ignore x z))
+	       high))
+     :window-height h
+     :window-width w
+     :bindings `((q a low ,#'(lambda () 0.1))
+		 (w s high ,#'(lambda () 0.1)))
+     :from '(-3 -3) :to '(3 3))))
+
 (defun test-wireframe2 (&optional (h 1000) (w 1000))
   (plot
    (list (list #'(lambda (x z) ; 3d gaussian
