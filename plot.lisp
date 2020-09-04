@@ -759,9 +759,29 @@ whose function is eql to FUNCTION."
   (action nil :type function)
   (functions nil :type list)) ; list of function containers to recompute
 
+(defgeneric state-controls (state)
+  (:documentation
+   "Lists state dependent controller button bindings to be added to the
+bindings hash table."))
+
+(defmethod state-controls ((state 2d-state))
+  NIL)
+
+(defmethod state-controls ((state 3d-state))
+  (macrolet ((key-action (key &rest actions)
+	       `(cons (button-to-sdlkey ',key)
+		      (make-binding
+		       :action #'(lambda () ,@actions)))))
+    (list (key-action left (incf (yaw state) (/ pi 36)))
+	  (key-action right (decf (yaw state) (/ pi 36)))
+	  (key-action up (decf (pitch state) (/ pi 36)))
+	  (key-action down (incf (pitch state) (/ pi 36))))))
+
 (defun make-binding-hash-table (bindings state)
-  (let ((hash-table
-	 (make-hash-table :size (* 2 (length bindings)))))
+  (let* ((controls (state-controls state))
+	 (hash-table
+	  (make-hash-table :size (+ (* 2 (length bindings))
+				    (length controls)))))
     (dolist (binding bindings)
       (destructuring-bind
 	    (inc-button dec-button dyn-var delta &optional func-list)
@@ -807,6 +827,10 @@ whose function is eql to FUNCTION."
 			     (number delta)
 			     (function (funcall delta)))))
 		 :functions to-update)))))
+
+    (loop for (key . action) in controls
+       do (setf (gethash key hash-table) action))
+    
     hash-table))
 
 (defun call-binding (button bindings-table state)
@@ -872,22 +896,7 @@ Returns T when binding found and STATE changed."
 	 (:key key)
 	 (setf (label-position state) 0)
 	 (format t "Pressed: ~a~%" key)
-
-
-	 (progn ;;TODO: use binding-hash-table for these
-	   (case key
-	     (:SDL-KEY-RIGHT
-	      (decf (yaw state) (/ pi 36)))
-	     (:SDL-KEY-LEFT
-	      (incf (yaw state) (/ pi 36)))
-	     (:SDL-KEY-UP
-	      (decf (pitch state) (/ pi 36)))
-	     (:SDL-KEY-DOWN
-	      (incf (pitch state) (/ pi 36))))
-	   (format t "yaw:~a pitch:~a~%" (yaw state) (pitch state))
-	   (render-state state)
-	   (sdl:update-display))
-
+	 
 	 (when (call-binding key binding-hash-table state)
 
 	   (check-y-extremes state)
