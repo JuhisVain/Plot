@@ -17,11 +17,11 @@
     :accessor max-x)
 
    (max-y
-    :initform nil
+    :initform 1
     :initarg :max-y
     :reader max-y)
    (min-y
-    :initform nil
+    :initform 0
     :initarg :min-y
     :reader min-y)
 
@@ -153,25 +153,40 @@
 	 (incf (yaw state) (* 2 pi)))
 	(t (yaw state))))
 
-(defun check-y-extremes (state)
-  "Controlled max-y and min-y slot assignment function for state STATE.
-Will return T when state changed and NIL if not."
+(defgeneric check-y-extremes (state)
+  )
+
+(defmethod check-y-extremes :around ((state state))
+  "Returns T when state changed, NIL if not."
   (let ((old-max (max-y state))
 	(old-min (min-y state)))
-    (setf (slot-value state 'max-y) (functree-max (pfunc-list state))
-	  (slot-value state 'min-y) (functree-min (pfunc-list state)))
-
-    ;; min-y and max-y should not be equal:
-    (when (= (slot-value state 'min-y)
-	     (slot-value state 'max-y))
-      (decf (slot-value state 'min-y) 0.1)
-      (incf (slot-value state 'max-y) 0.1))
-    
-    (when (and old-max old-min
-	       (or (/= old-max (max-y state))
-		   (/= old-min (min-y state))))
-      ;(render-tree state (pfunc-list state))
+    (call-next-method)
+    (when (or (/= old-max (max-y state))
+	      (/= old-min (min-y state)))
       t)))
+
+(defmethod check-y-extremes ((state state))
+  "Find functree dataset limits."
+  (setf (slot-value state 'max-y) (functree-max (pfunc-list state))
+	(slot-value state 'min-y) (functree-min (pfunc-list state)))
+  
+  ;; min-y and max-y should not be equal:
+  (when (= (slot-value state 'min-y)
+	   (slot-value state 'max-y))
+    (decf (slot-value state 'min-y) 0.1)
+    (incf (slot-value state 'max-y) 0.1)))
+
+(defmethod check-y-extremes :after ((state 3d-state))
+  "Align maxima and minima with order of magnitude."
+  (let* ((old-max (max-y state))
+	 (old-min (min-y state))
+	 (alignment (mark-lines (- old-max old-min))))
+    (setf (slot-value state 'max-y)
+	  (* alignment
+	     (ceiling old-max alignment)))
+    (setf (slot-value state 'min-y)
+	  (* alignment
+	     (floor old-min alignment)))))
 
 (defmethod render-state ((state 2d-state))
   (sdl:clear-display sdl:*black*)

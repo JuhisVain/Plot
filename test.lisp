@@ -41,9 +41,8 @@
    :window-width w
    :from '(-3 -3) :to '(3 3)))
 
-;;;TODO: might want to align bounding box to order of magnitude values
-;; instead of actual value maxima & minima
-;; Also come up with some scheme to get pretty numbers for labels when they're ugly
+;;;TODO: come up with some scheme to get pretty numbers for labels when they're ugly
+;; ps. might be solved. test with lesser and greater values
 (defun test-wf-bounds (&optional (delta 0.1) (h 1000) (w 1000))
   (let ((low 0.1)
 	(high 0.9))
