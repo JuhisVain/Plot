@@ -19,11 +19,11 @@
    (max-y
     :initform nil
     :initarg :max-y
-    :accessor max-y)
+    :reader max-y)
    (min-y
     :initform nil
     :initarg :min-y
-    :accessor min-y)
+    :reader min-y)
 
    (draw-labels
     :initarg :draw-labels
