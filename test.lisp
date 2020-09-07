@@ -207,8 +207,10 @@
 
 (defun test-3d-res (&optional (data-per-pixel 1/50) (h 1000) (w 1000))
   (plot
-   (list (list #'gauss2
-	       :data-per-pixel data-per-pixel)) ; should rename data-per-pixel
+   (list
+    #'gauss2
+    (list #'gauss2
+	  :data-per-pixel data-per-pixel)) ; should rename data-per-pixel
    :from '(-3 -3) :to '(3 3)
    :window-height h :window-width w))
 
