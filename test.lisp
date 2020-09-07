@@ -8,6 +8,10 @@
 (defun gauss (x)
   (gaussian x 1 0 150))
 
+(defun gauss2 (x y)
+  (exp (- (+ (/ (expt x 2) 1)
+	     (/ (expt y 2) 1)))))
+
 (defun test-2faref (&optional (h 1000) (w 1000))
   (let ((arr (make-array '(3 3))))
     (dotimes (x 3)
@@ -34,9 +38,7 @@
 
 (defun test-wireframe (&optional (h 1000) (w 1000))
   (plot
-   (list (list #'(lambda (x z) ; 3d gaussian
-		   (exp (- (+ (/ (expt x 2) 1)
-			      (/ (expt z 2) 1)))))))
+   (list (list #'gauss2))
    :window-height h
    :window-width w
    :from '(-3 -3) :to '(3 3)))
@@ -48,9 +50,7 @@
 	(high 0.9))
     (declare (special low high))
     (plot
-     (list (list #'(lambda (x z)
-		     (exp (- (+ (/ (expt x 2) 1)
-				(/ (expt z 2) 1))))))
+     (list (list #'gauss2)
 	   #'(lambda (x z)
 	       (declare (ignore x z))
 	       low)
@@ -65,9 +65,7 @@
 
 (defun test-wireframe2 (&optional (h 1000) (w 1000))
   (plot
-   (list (list #'(lambda (x z) ; 3d gaussian
-		   (exp (- (+ (/ (expt x 2) 1)
-			      (/ (expt z 2) 1))))))
+   (list (list #'gauss2)
 	 (list #'(lambda (x z) ; 3d gaussian
 		   (1- (exp (- (+ (/ (expt x 2) 1)
 			      (/ (expt z 2) 1))))))))
@@ -145,9 +143,7 @@
 
 (defun test-wf-render-order (&optional (h 1000) (w 1000))
   (plot
-   (list #'(lambda (x z) ; 3d gaussian
-	     (exp (- (+ (/ (expt x 2) 1)
-			(/ (expt z 2) 1)))))
+   (list #'gauss2
 	 #'(lambda (x z)
 	     (declare (ignore x z))
 	     0.1))
@@ -211,9 +207,7 @@
 
 (defun test-3d-res (&optional (data-per-pixel 1/50) (h 1000) (w 1000))
   (plot
-   (list (list #'(lambda (x z) ; 3d gaussian
-		   (exp (- (+ (/ (expt x 2) 1)
-			      (/ (expt z 2) 1)))))
+   (list (list #'gauss2
 	       :data-per-pixel data-per-pixel)) ; should rename data-per-pixel
    :from '(-3 -3) :to '(3 3)
    :window-height h :window-width w))
