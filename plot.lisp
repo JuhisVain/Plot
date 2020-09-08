@@ -387,61 +387,57 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
       (render-2d-label func state))
     (dolist (func drawns)
       (render-2d-lineplot func state (surface state)))))
-  
-(defmethod render-funcs ((state 3d-state))
+
+(defmethod render-funcs ((state wireframe))
+  (render-wireframe state))
+
+(defmethod render-funcs ((state sequential-heatmap))
   (let ((drawns (drawn-list state)))
-    (case (style state)
-      (wireframe
-       (render-wireframe state))
-      
-      (sequential-heatmap
-       ;; Functions rendered sequentially using their respective colors,
-       ;; low values = low alpha
-       (dolist (function drawns)
-	 (multiple-value-bind
-	       (red green blue)
-	     (sdl:color-* (color-real function))
-	   (let ((color (sdl:color :a 0)))
-	     (dotimes (x (array-dimension (data function) 0))
-	       (dotimes (z (array-dimension (data function) 1))
+    (dolist (function drawns)
+      (multiple-value-bind
+	    (red green blue)
+	  (sdl:color-* (color-real function))
+	(let ((color (sdl:color :a 0)))
+	  (dotimes (x (array-dimension (data function) 0))
+	    (dotimes (z (array-dimension (data function) 1))
 
-		 ;; Handle zero div:
-		 (if (realp (aref (data function) x z))
-		     (let ((value (/ (- (aref (data function) x z) (min-y state))
-				     (- (max-y state) (min-y state)))))
-		       
-		       (sdl:set-color-* color
-					:r red
-					:g green
-					:b blue
-					:a (* 255 value)))
-		     ;;if not real:
-		     (sdl:set-color color *bad-color*))
-		 
-		 
-		 (draw-pixel x z (surface state) color)))
-	     (sdl:free color)))))
+	      ;; Handle zero div:
+	      (if (realp (aref (data function) x z))
+		  (let ((value (/ (- (aref (data function) x z) (min-y state))
+				  (- (max-y state) (min-y state)))))
+		    
+		    (sdl:set-color-* color
+				     :r red
+				     :g green
+				     :b blue
+				     :a (* 255 value)))
+		  ;;if not real:
+		  (sdl:set-color color *bad-color*))
+	      
+	      
+	      (draw-pixel x z (surface state) color)))
+	  (sdl:free color))))))
 
-      (heatmap
-       ;; A single function rendered using a bunch of colors
-       (dolist (function drawns)
-	 (let ((color (sdl:color)))
-	   (dotimes (x (array-dimension (data function) 0))
-	     (dotimes (z (array-dimension (data function) 1))
-	       (if (realp (aref (data function) x z))
-		   (let* ((value (/ (- (aref (data function) x z) (min-y state))
-				    (- (max-y state) (min-y state))))
-			  ;; magic number modifies color for highest value:
-			  (rgb (hue-to-rgb (* value 1.8 pi)))
-			  (r (cadr rgb)) ; fuck it
-			  (g (cadddr rgb))
-			  (b (cadr (cddddr rgb))))
-		     
-		     (sdl:set-color-* color :r r :g g :b b))
-		   ;;if not real:
-		   (sdl:set-color color *bad-color*))
-	       (draw-pixel x z (surface state) color)))
-	   (sdl:free color)))))))
+(defmethod render-funcs ((state heatmap))
+  (let ((drawns (drawn-list state)))
+    (dolist (function drawns)
+      (let ((color (sdl:color)))
+	(dotimes (x (array-dimension (data function) 0))
+	  (dotimes (z (array-dimension (data function) 1))
+	    (if (realp (aref (data function) x z))
+		(let* ((value (/ (- (aref (data function) x z) (min-y state))
+				 (- (max-y state) (min-y state))))
+		       ;; magic number modifies color for highest value:
+		       (rgb (hue-to-rgb (* value 1.8 pi)))
+		       (r (cadr rgb)) ; fuck it
+		       (g (cadddr rgb))
+		       (b (cadr (cddddr rgb))))
+		  
+		  (sdl:set-color-* color :r r :g g :b b))
+		;;if not real:
+		(sdl:set-color color *bad-color*))
+	    (draw-pixel x z (surface state) color)))
+	(sdl:free color)))))
 
 (defun draw-grid (min-y max-y y-range y-scale screen-y0
 		  min-x max-x x-range x-scale screen-x0
@@ -854,11 +850,10 @@ Returns T when binding found and STATE changed."
     t))
 
 (defun plot (func-list
-	     &key (from 0) (to 100) (slack 1/20)
+	     &key (from 0) (to 100) wire-density plot-type slack
 	       (window-width 500) (window-height 500)
 	       (draw-labels *draw-labels*)
 	       bindings)
-  (declare ((rational 0 1) slack))
   (let ((processed-func-list
 	 (read-input-list func-list (list window-width window-height)))
 	(binding-hash-table nil)
@@ -873,7 +868,10 @@ Returns T when binding found and STATE changed."
       (setf state
 	    (make-state
 	     processed-func-list
-	     from to slack))
+	     from to
+	     (or wire-density 1/50)
+	     plot-type
+	     (or slack 1/20)))
 
       (setf binding-hash-table (make-binding-hash-table bindings state))
       ;; produce renders for all drawn funcs:

@@ -195,7 +195,7 @@
   (declare (3d-state state)
 	   ;;(optimize speed)
 	   )
-  (let* ((wire-density 1/50)
+  (let* ((wire-density (wire-density state))
 	 (effective-diameter (min (width state)
 				  (height state)))
 	 (log-centre-x (+ (min-x state)

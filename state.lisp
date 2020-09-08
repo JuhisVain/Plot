@@ -37,10 +37,10 @@
    ;; 'heatmap :: for a solitary function
    ;; 'sequential-heatmap :: somewhat unusable multi-func heatmap
    ;; TODO: investigate use of RGB colorspaces for 2 and 3 func version of above
-   (style 
+   #|(style 
     :initarg :style
     :reader style
-    :initform 'heatmap)
+    :initform 'heatmap)|#
 
    (surface
     :initarg :surface
@@ -74,6 +74,18 @@
     :initform 10
     :initarg :margin
     :accessor margin)))
+
+(defclass heatmap (3d-state)
+  ())
+
+(defclass sequential-heatmap (3d-state)
+  ())
+
+(defclass wireframe (3d-state)
+  ((wire-density
+    :initform 1/50
+    :initarg :wire-density
+    :accessor wire-density)))
 
 ;;;; Auxiliary attributes:
 
@@ -223,11 +235,13 @@
 
 (defun make-state (pfunc-list
 		   min max
+		   wire-density
+		   plot-type
 		   slack
 		   &key
 		     (surface sdl:*default-display*))
-  "Graphs functions in FUNC-LIST from MIN-X to MAX-X, y-scaling is
-dynamic based on extreme values on X's range."
+  "Initialize plotting state for functions in FUNC-LIST from MIN-X to MAX-X,
+y-scaling is dynamic based on extreme values on X's range."
   (let* ((state-type (ecase (highest-arg-count pfunc-list)
 		       (1 '2d-state)
 		       (2 '3d-state)))
@@ -236,27 +250,17 @@ dynamic based on extreme values on X's range."
 	 (min-z (if (listp min) (cadr min) nil))
 	 (max-z (if (listp max) (cadr max) nil))
 	 (state
-	  (make-instance state-type
-			 :style
-			 ;; Seemed like a good idea
-			 ;;TODO: make function after more styles implemented
-			 (if (eql state-type '3d-state)
-			     (progn
-			       '(block big-count
-				 (function-count
-				  pfunc-list
-				  #'(lambda (f sum)
-				   (when (>= sum 2)
-				     (return-from big-count 'sequential-heatmap))
-				   (when (typep f 'drawn)
-				     t)))
-				 'heatmap)
-			       'wireframe)
-			     'i-am-missing)
+	  (make-instance (if (and plot-type
+				  (subtypep plot-type state-type))
+			     plot-type
+			     (case state-type
+			       (2d-state '2d-state)
+			       (3d-state 'wireframe)))
 			 :pfunc-list pfunc-list
 			 :drawn-list (collect-drawn pfunc-list)
-			 :min-x min-x :max-x max-x
-			 :min-z min-z :max-z max-z
+			 :min-x (or min-x 0) :max-x (or max-x 100)
+			 :min-z (or min-z 0) :max-z (or max-z 100)
+			 :wire-density wire-density
 			 :slack slack
 			 :surface surface
 			 :allow-other-keys t)))
