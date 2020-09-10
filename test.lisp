@@ -43,6 +43,16 @@
    :window-width w
    :from '(-3 -3) :to '(3 3)))
 
+(defun test-vertgrid (&optional (h 1000) (w 1000))
+  (plot
+   (list (list #'(lambda (x y)
+		   (+ (gauss2 x y)
+		      (/ (+ x y) 21)))))
+   :window-height h
+   :window-width w
+   :wire-density 1/10
+   :from '(-3 -4) :to '(3 4)))
+
 ;;;TODO: come up with some scheme to get pretty numbers for labels when they're ugly
 ;; ps. might be solved. test with lesser and greater values
 (defun test-wf-bounds (&optional (delta 0.1) (h 1000) (w 1000))
