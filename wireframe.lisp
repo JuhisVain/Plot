@@ -1,23 +1,57 @@
 (let (f-x0 f-y0 f-x1 f-y1 f-x2 f-y2) ;wireframe front base crds
 
   (defun render-wireframe-grid (state value-scaler x0 y0 x1 y1 x2 y2 x3 y3)
-    (flet ((grid-line (x0 y0 x1 y1 y)
-	     (sdl:draw-line-* x0 (- (height state)
-				    (round
-				     (+ (* (cos (pitch state)) y) y0)))
-			      x1 (- (height state)
-				    (round
-				     (+ (* (cos (pitch state)) y) y1)))
-			      :color *grid-color*
-			      :surface (surface state)))
-	   (grid-label (x y shift value)
-	     (sdl:draw-string-solid-* (format nil "~a" value)
-				      (round x)
-				      (- (height state)
-					 (round
-					  (+ (* (cos (pitch state)) shift) y)))
-				      :color *grid-color*
-				      :surface (surface state))))
+    (labels ((grid-line (x0 y0 x1 y1 y) ; horizontal
+	       (sdl:draw-line-* x0 (- (height state)
+				      (round
+				       (+ (* (cos (pitch state)) y) y0)))
+				x1 (- (height state)
+				      (round
+				       (+ (* (cos (pitch state)) y) y1)))
+				:color *grid-color*
+				:surface (surface state)))
+	     (vertical-grid-line (x cen-y)
+	       (sdl:draw-line-* x (- (height state)
+				     (round
+				      (+ (* (cos (pitch state))
+					    (- (* value-scaler (min-y state))
+					       (* value-scaler (/ (+ (max-y state)
+								     (min-y state))
+								  2))))
+					 cen-y)))
+				x (- (height state)
+				     (round
+				      (+ (* (cos (pitch state))
+					    (- (* value-scaler (max-y state))
+					       (* value-scaler (/ (+ (max-y state)
+								     (min-y state))
+								  2))))
+					 cen-y)))
+				:color *grid-color*
+				:surface (surface state)))
+	     ;; TODO: Still missing back corner line
+	     (draw-verticals (x0 y0 x1 y1 range)
+	       (let* ((logic-delta (mark-lines range))
+		      (vert-lines (/ range
+				     logic-delta))
+		      (line-x-delta (/ (- x0 x1)
+				      vert-lines))
+		      (line-y-delta (/ (- y0 y1)
+				       vert-lines)))
+		 (dotimes (i vert-lines)
+		   (vertical-grid-line (+ (round (* i line-x-delta))
+					  x1)
+				       (+ (round (* i line-y-delta))
+					  y1)))))
+	     
+	     (grid-label (x y shift value)
+	       (sdl:draw-string-solid-* (format nil "~a" value)
+					(round x)
+					(- (height state)
+					   (round
+					    (+ (* (cos (pitch state)) shift) y)))
+					:color *grid-color*
+					:surface (surface state))))
       (let* ((mark-lines (mark-lines (- (max-y state)
 					(min-y state))))
 	     (grid-line-delta (* value-scaler mark-lines))
@@ -54,6 +88,8 @@
 	
 	(case far-corner
 	  ((min-min-max min-min-min)
+	   (draw-verticals x0 y0 x1 y1 (x-range state))
+	   (draw-verticals x0 y0 x3 y3 (z-range state))
 	   (sdl:draw-line-* x0 (- (height state) y0)
 			    x1 (- (height state) y1)
 			    :color *grid-origin-color*
@@ -66,6 +102,8 @@
 		 f-x1 x2 f-y1 y2
 		 f-x2 x3 f-y2 y3))
 	  ((min-max-max min-max-min)
+	   (draw-verticals x3 y3 x2 y2 (x-range state))
+	   (draw-verticals x3 y3 x0 y0 (z-range state))
 	   (sdl:draw-line-* x2 (- (height state) y2)
 			    x3 (- (height state) y3)
 			    :color *grid-origin-color*
@@ -78,6 +116,8 @@
 		 f-x1 x1 f-y1 y1
 		 f-x2 x2 f-y2 y2))
 	  ((max-max-max max-max-min)
+	   (draw-verticals x2 y2 x3 y3 (x-range state))
+	   (draw-verticals x2 y2 x1 y1 (z-range state))
 	   (sdl:draw-line-* x1 (- (height state) y1)
 			    x2 (- (height state) y2)
 			    :color *grid-origin-color*
@@ -90,6 +130,8 @@
 		 f-x1 x0 f-y1 y0
 		 f-x2 x1 f-y2 y1))
 	  ((max-min-max max-min-min)
+	   (draw-verticals x1 y1 x0 y0 (x-range state))
+	   (draw-verticals x1 y1 x2 y2 (z-range state))
 	   (sdl:draw-line-* x0 (- (height state) y0)
 			    x1 (- (height state) y1)
 			    :color *grid-origin-color*
