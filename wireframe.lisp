@@ -234,7 +234,7 @@
 	  (t (error "Invalid YAW = ~a~%" yaw)))))
 
 (defun render-wireframe (state)
-  (declare (3d-state state)
+  (declare (wireframe state)
 	   ;;(optimize speed)
 	   )
   (let* ((wire-density (wire-density state))
@@ -257,22 +257,12 @@
 				  (* 2 (margin state)))
 			       2))
 
-	 (value-scaler (/ (/ (- (height state) ; drawing area
-				(* 2 (margin state))) 
-			     (- (max-y state) (min-y state))) ; spread of range
-			  2))
+	 (value-scaler (y-scale state))
 	 ;;; How far the logic center of the screen is from where the center of
 	 ;; the zero value plane would be in pixels from the bottom of surface:
 	 ;; f.ex: when plot values range from -1 to 1, this will always be
 	 ;; half of surface height.
-	 (value-shift-pixels (+ (/ (height state) 2) ; move to surface center
-				;; correct for centre
-				(* (cos (pitch state))
-				   (-
-				    (* value-scaler
-				       (/ (+ (min-y state)
-					     (max-y state))
-					  2))))))
+	 (value-shift-pixels (screen-y0 state))
 	 (far-corner (far-corner state))
 	 )
 
