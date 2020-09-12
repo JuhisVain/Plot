@@ -141,7 +141,7 @@
 (defmethod y-scale ((state wireframe))
   (/ (- (height state)
 	(* 2 (margin state)))
-     (- (y-range state))
+     (y-range state)
      2))
 
 (defmethod slack-pixels ((state 2d-state))
