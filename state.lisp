@@ -69,11 +69,7 @@
     :initform (* 1/4 pi)
     :initarg :pitch
     :accessor pitch)
-
-   (margin ; min pixels at edges for wireframe renders
-    :initform 10
-    :initarg :margin
-    :accessor margin)))
+   ))
 
 (defclass heatmap (3d-state)
   ())
@@ -82,7 +78,11 @@
   ())
 
 (defclass wireframe (3d-state)
-  ((wire-density
+  ((margin
+    :initform 10
+    :initarg :margin
+    :accessor margin)
+   (wire-density
     :initform 1/50
     :initarg :wire-density
     :accessor wire-density)))
@@ -126,6 +126,10 @@
 	(min-y state))
      (1+ (slack state))))
 
+(defmethod y-range ((state 3d-state))
+  (- (max-y state)
+     (min-y state)))
+
 (defgeneric y-scale (state)
   (:documentation "Returns pixel/value scale."))
 
@@ -133,6 +137,12 @@
   (if (zerop (y-range state))
       100
       (/ (height state) (y-range state))))
+
+(defmethod y-scale ((state wireframe))
+  (/ (- (height state)
+	(* 2 (margin state)))
+     (- (y-range state))
+     2))
 
 (defmethod slack-pixels ((state 2d-state))
   "Pixels from top or bottom of screen to nearest drawn value."
@@ -142,10 +152,23 @@
 	(min-y state))
      (y-scale state)))
 
+(defgeneric screen-y0 (state)
+  (:documentation
+   "Distance in pixels from screen bottom to zero value line/plane."))
+
 (defmethod screen-y0 ((state 2d-state))
   (if (zerop (y-range state))
       (/ (height state) -2)
       (* (min-y state) (y-scale state))))
+
+(defmethod screen-y0 ((state wireframe))
+  (+ (/ (height state) 2)
+     (* (cos (pitch state))
+	(-
+	 (* (y-scale state)
+	    (/ (+ (min-y state)
+		  (max-y state))
+	       2))))))
 
 (defmethod (setf pitch) :after (new (state 3d-state))
   (cond ((>= (pitch state)
