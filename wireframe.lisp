@@ -1,3 +1,45 @@
+(defun crd-scr (x z state &optional
+			    (scaler (y-scale state))
+			    (shift (screen-y0 state)))
+
+;;;WIP
+  (let ((gra-x (* (/ (* (cos (/ pi 4))
+			(render-radius state))
+		     (/ (width state)
+			2))
+		  (- (/ (width state)
+			2)
+		     x)))
+	(gra-z (* (/ (* (cos (/ pi 4))
+			(render-radius state))
+		     (/ (height state)
+			2))
+		  (- (/ (height state)
+			2)
+		     z))))
+  (let ((ret
+	  (cons (round (+ (/ (width state) 2)
+			  (* (sqrt (+ (expt gra-x 2)
+				      (expt gra-z 2)))
+			     (cos (+ (atan gra-z gra-x)
+				     (yaw state))))))
+		
+		(round
+		 (+ shift
+		    (* (cos (pitch state))
+		       (* (3d-dataref (car (pfunc-list state))
+				      (/ x 1000.0) (/ z 1000.0)) ; dataset dims
+			  scaler))
+		    (* (sin (pitch state))
+		       (* (sqrt (+ (expt gra-x 2)
+				   (expt gra-z 2)))
+			  (sin (+ (atan gra-z gra-x)
+				  (yaw state))))))))))
+    ;(format t "~a ~a~%" (/ x tot-x) (/ z tot-x))
+    ret
+    
+    )))
+
 (let (f-x0 f-y0 f-x1 f-y1 f-x2 f-y2) ;wireframe front base crds
 
   (defun render-wireframe-grid (state value-scaler x0 y0 x1 y1 x2 y2 x3 y3)
@@ -320,7 +362,19 @@
 			     corner-x1 corner-y1
 			     corner-x2 corner-y2
 			     corner-x3 corner-y3)
-      
+
+      #|
+      ;;;THIS IS A TEST: todo
+      (dotimes (x (/ (width state) 10))
+	(dotimes (y (/ (height state) 10))
+	  (let* ((crds (crd-scr (* 10 x) (* 10 y) state))
+		 (x (car crds))
+		 (z (cdr crds)))
+	    (sdl:draw-pixel-* x (- (sdl:height (surface state)) z) :surface (surface state)))))
+      (return-from render-wireframe)
+      ;;; IT WORKS
+      |#      
+
       (do* ; All 'squares' of whole wireframe, with painter's algorithm
        ((x-dimension (min (width state)
 			  (height state)))
