@@ -170,6 +170,12 @@
 		  (max-y state))
 	       2))))))
 
+(defmethod render-radius ((state wireframe))
+  (/ (- (min (width state)
+	     (height state))
+	(* 2 (margin state)))
+     2))
+
 (defmethod (setf pitch) :after (new (state 3d-state))
   (cond ((>= (pitch state)
 	     (* 2 pi))
