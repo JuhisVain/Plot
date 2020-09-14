@@ -1,44 +1,50 @@
-(defun crd-scr (x z state &optional
-			    (scaler (y-scale state))
-			    (shift (screen-y0 state)))
-
+(defun crd-scr (x z func state &optional
+				 (scaler (y-scale state))
+				 (shift (screen-y0 state)))
+  (declare ((float 0.0 1.0) x z)
+	   (drawn func)
+	   (wireframe state))
 ;;;WIP
   (let ((gra-x (* (/ (* (cos (/ pi 4))
 			(render-radius state))
-		     (/ (width state)
+		     (/ (width state) ; center of screen
 			2))
 		  (- (/ (width state)
 			2)
-		     x)))
+		     (* (1- (array-dimension (data func) 0))
+			(/ (data-per-pixel func))
+			x))))
 	(gra-z (* (/ (* (cos (/ pi 4))
 			(render-radius state))
 		     (/ (height state)
 			2))
 		  (- (/ (height state)
 			2)
-		     z))))
-  (let ((ret
-	  (cons (round (+ (/ (width state) 2)
-			  (* (sqrt (+ (expt gra-x 2)
-				      (expt gra-z 2)))
-			     (cos (+ (atan gra-z gra-x)
-				     (yaw state))))))
-		
-		(round
-		 (+ shift
-		    (* (cos (pitch state))
-		       (* (3d-dataref (car (pfunc-list state))
-				      (/ x 1000.0) (/ z 1000.0)) ; dataset dims
-			  scaler))
-		    (* (sin (pitch state))
-		       (* (sqrt (+ (expt gra-x 2)
-				   (expt gra-z 2)))
-			  (sin (+ (atan gra-z gra-x)
-				  (yaw state))))))))))
-    ;(format t "~a ~a~%" (/ x tot-x) (/ z tot-x))
-    ret
-    
-    )))
+		     (* (1- (array-dimension (data func) 1))
+			(/ (data-per-pixel func))
+			z)))))
+    (let ((ret (cons (round (+ (/ (width state) 2)
+			       (* (sqrt (+ (expt gra-x 2)
+					   (expt gra-z 2)))
+				  (cos (+ (atan gra-z gra-x)
+					  (yaw state))))))
+		     
+		     (round
+		      (+ shift
+			 (* (cos (pitch state))
+			    (* (3d-dataref func x z)
+			       scaler))
+			 (* (sin (pitch state))
+			    (* (sqrt (+ (expt gra-x 2)
+					(expt gra-z 2)))
+			       (sin (+ (atan gra-z gra-x)
+				       (yaw state))))))))))
+
+      ret
+      
+      )))
+
+
 
 (let (f-x0 f-y0 f-x1 f-y1 f-x2 f-y2) ;wireframe front base crds
 
@@ -363,18 +369,6 @@
 			     corner-x2 corner-y2
 			     corner-x3 corner-y3)
 
-      #|
-      ;;;THIS IS A TEST: todo
-      (dotimes (x (/ (width state) 10))
-	(dotimes (y (/ (height state) 10))
-	  (let* ((crds (crd-scr (* 10 x) (* 10 y) state))
-		 (x (car crds))
-		 (z (cdr crds)))
-	    (sdl:draw-pixel-* x (- (sdl:height (surface state)) z) :surface (surface state)))))
-      (return-from render-wireframe)
-      ;;; IT WORKS
-      |#      
-
       (do* ; All 'squares' of whole wireframe, with painter's algorithm
        ((x-dimension (min (width state)
 			  (height state)))
@@ -522,7 +516,9 @@
 	     and next-value = (3d-dataref func (cadr wire-crds) current-wire)
 	     do
 	       (cond ((and (numberp value) (numberp next-value))
-		      (let* ((x0 (xwire-compute-x gra-rel gra-rel-wire
+		      (let* (
+			     #|
+			     (x0 (xwire-compute-x gra-rel gra-rel-wire
 						  unit-multiplier state))
 			     (z0 (xwire-compute-z value gra-rel
 						  gra-rel-wire value-shift-pixels
@@ -531,7 +527,17 @@
 						  next-unit-multiplier state))
 			     (z1 (xwire-compute-z next-value gra-rel-next
 						  gra-rel-wire value-shift-pixels
-						  value-scaler next-unit-multiplier state)))
+						  value-scaler next-unit-multiplier state))
+			     |#
+			     (xz0 (crd-scr (car wire-crds) current-wire
+					   func state value-scaler value-shift-pixels))
+			     (xz1 (crd-scr (cadr wire-crds) current-wire
+					   func state value-scaler value-shift-pixels))
+			     (x0 (car xz0))
+			     (z0 (cdr xz0))
+			     (x1 (car xz1))
+			     (z1 (cdr xz1))
+			     )
 			(draw-line x0 z0 x1 z1
 				   func (surface state))))
 		     ((symbolp value)
@@ -569,7 +575,9 @@
 	     and next-value = (3d-dataref func current-wire (cadr wire-crds))
 	     do
 	       (cond ((and (numberp value) (numberp next-value))
-		      (let* ((x0 (zwire-compute-x gra-rel gra-rel-wire
+		      (let* (
+			     #|
+			     (x0 (zwire-compute-x gra-rel gra-rel-wire
 						  unit-multiplier state))
 			     (z0 (zwire-compute-z value gra-rel
 						  gra-rel-wire value-shift-pixels
@@ -578,7 +586,17 @@
 						  next-unit-multiplier state))
 			     (z1 (zwire-compute-z next-value gra-rel-next
 						  gra-rel-wire value-shift-pixels
-						  value-scaler next-unit-multiplier state)))
+						  value-scaler next-unit-multiplier state))
+			     |#
+			     (xz0 (crd-scr current-wire (car wire-crds)
+					   func state value-scaler value-shift-pixels))
+			     (xz1 (crd-scr current-wire (cadr wire-crds)
+					   func state value-scaler value-shift-pixels))
+			     (x0 (car xz0))
+			     (z0 (cdr xz0))
+			     (x1 (car xz1))
+			     (z1 (cdr xz1))
+			     )
 			(draw-line x0 z0 x1 z1
 				   func (surface state))))
 		     ((symbolp value)
