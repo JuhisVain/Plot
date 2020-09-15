@@ -1,48 +1,56 @@
-(defun crd-scr (x z func state &optional
+(defun 3d-crd-scr (x z y state &optional
+				 (shift (screen-y0 state)))
+  "Translate 3 dimensional coordinates to wireframe screen surface
+((0,0) being upper left) coordinates.
+Floating indexes X and Z refer to array dimension 0 1 respectively
+and Y to value times value scaler."
+  (declare ((float 0.0 *) x z)
+	   (wireframe state))
+  (let ((radvec-length (* (cos (/ pi 4)) ; aka. (sin (/ pi 4))
+			  (render-radius state)))
+	(half-width (/ (width state) 2))
+	(half-height (/ (height state) 2)))
+    (let ((gra-x (* (/ radvec-length
+		       half-width)
+		    (- half-width
+		       x)))
+	  (gra-z (* (/ radvec-length
+		       half-height)
+		    (- half-height
+		       z))))
+      (let((hypotenuse (sqrt (+ (expt gra-x 2)
+				(expt gra-z 2))))
+	   (angle (atan gra-z gra-x)))
+	
+	(cons (round (+ half-width
+			(* hypotenuse
+			   (cos (+ (yaw state)
+				   angle)))))
+	      (round
+	       (+ shift
+		  (* (cos (pitch state))
+		     y)
+		  (* (sin (pitch state))
+		     (* hypotenuse
+			(sin (+ (yaw state)
+				angle)))))))))))
+
+(defun fun-crd-scr (x z func state &optional
 				 (scaler (y-scale state))
 				 (shift (screen-y0 state)))
   (declare ((float 0.0 1.0) x z)
 	   (drawn func)
 	   (wireframe state))
-;;;WIP
-  (let ((gra-x (* (/ (* (cos (/ pi 4))
-			(render-radius state))
-		     (/ (width state) ; center of screen
-			2))
-		  (- (/ (width state)
-			2)
-		     (* (1- (array-dimension (data func) 0))
-			(/ (data-per-pixel func))
-			x))))
-	(gra-z (* (/ (* (cos (/ pi 4))
-			(render-radius state))
-		     (/ (height state)
-			2))
-		  (- (/ (height state)
-			2)
-		     (* (1- (array-dimension (data func) 1))
-			(/ (data-per-pixel func))
-			z)))))
-    (let ((ret (cons (round (+ (/ (width state) 2)
-			       (* (sqrt (+ (expt gra-x 2)
-					   (expt gra-z 2)))
-				  (cos (+ (atan gra-z gra-x)
-					  (yaw state))))))
-		     
-		     (round
-		      (+ shift
-			 (* (cos (pitch state))
-			    (* (3d-dataref func x z)
-			       scaler))
-			 (* (sin (pitch state))
-			    (* (sqrt (+ (expt gra-x 2)
-					(expt gra-z 2)))
-			       (sin (+ (atan gra-z gra-x)
-				       (yaw state))))))))))
 
-      ret
-      
-      )))
+  (3d-crd-scr (* (1- (array-dimension (data func) 0))
+		 (/ (data-per-pixel func))
+		 x)
+	      (* (1- (array-dimension (data func) 1))
+		 (/ (data-per-pixel func))
+		 z)
+	      (* (3d-dataref func x z) ;; TODO: bad values, once more
+		 scaler)
+	      shift))
 
 
 
