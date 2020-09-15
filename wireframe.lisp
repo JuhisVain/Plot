@@ -50,6 +50,7 @@ and Y to value times value scaler."
 		 z)
 	      (* (3d-dataref func x z) ;; TODO: bad values, once more
 		 scaler)
+	      state
 	      shift))
 
 
@@ -524,23 +525,10 @@ and Y to value times value scaler."
 	     and next-value = (3d-dataref func (cadr wire-crds) current-wire)
 	     do
 	       (cond ((and (numberp value) (numberp next-value))
-		      (let* (
-			     #|
-			     (x0 (xwire-compute-x gra-rel gra-rel-wire
-						  unit-multiplier state))
-			     (z0 (xwire-compute-z value gra-rel
-						  gra-rel-wire value-shift-pixels
-						  value-scaler unit-multiplier state))
-			     (x1 (xwire-compute-x gra-rel-next gra-rel-wire
-						  next-unit-multiplier state))
-			     (z1 (xwire-compute-z next-value gra-rel-next
-						  gra-rel-wire value-shift-pixels
-						  value-scaler next-unit-multiplier state))
-			     |#
-			     (xz0 (crd-scr (car wire-crds) current-wire
-					   func state value-scaler value-shift-pixels))
-			     (xz1 (crd-scr (cadr wire-crds) current-wire
-					   func state value-scaler value-shift-pixels))
+		      (let* ((xz0 (fun-crd-scr (car wire-crds) current-wire
+					       func state value-scaler value-shift-pixels))
+			     (xz1 (fun-crd-scr (cadr wire-crds) current-wire
+					       func state value-scaler value-shift-pixels))
 			     (x0 (car xz0))
 			     (z0 (cdr xz0))
 			     (x1 (car xz1))
@@ -583,23 +571,10 @@ and Y to value times value scaler."
 	     and next-value = (3d-dataref func current-wire (cadr wire-crds))
 	     do
 	       (cond ((and (numberp value) (numberp next-value))
-		      (let* (
-			     #|
-			     (x0 (zwire-compute-x gra-rel gra-rel-wire
-						  unit-multiplier state))
-			     (z0 (zwire-compute-z value gra-rel
-						  gra-rel-wire value-shift-pixels
-						  value-scaler unit-multiplier state))
-			     (x1 (zwire-compute-x gra-rel-next gra-rel-wire
-						  next-unit-multiplier state))
-			     (z1 (zwire-compute-z next-value gra-rel-next
-						  gra-rel-wire value-shift-pixels
-						  value-scaler next-unit-multiplier state))
-			     |#
-			     (xz0 (crd-scr current-wire (car wire-crds)
-					   func state value-scaler value-shift-pixels))
-			     (xz1 (crd-scr current-wire (cadr wire-crds)
-					   func state value-scaler value-shift-pixels))
+		      (let* ((xz0 (fun-crd-scr current-wire (car wire-crds)
+					       func state value-scaler value-shift-pixels))
+			     (xz1 (fun-crd-scr current-wire (cadr wire-crds)
+					       func state value-scaler value-shift-pixels))
 			     (x0 (car xz0))
 			     (z0 (cdr xz0))
 			     (x1 (car xz1))
