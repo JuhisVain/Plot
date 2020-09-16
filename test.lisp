@@ -36,6 +36,13 @@
 	  :window-width w
 	  :window-height h)))
 
+(defun fast-test ()
+  (plot '((gauss2 :data-per-pixel 1/10))
+	:from '(-3.5 -3.65)
+	:to '(3 3)
+	:window-width 1000 :window-height 1000
+	:wire-density 1/20))
+
 (defun test-wireframe (&optional (h 1000) (w 1000))
   (plot
    (list (list #'gauss2))
