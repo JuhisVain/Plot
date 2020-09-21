@@ -143,7 +143,6 @@ and Y to value times value scaler."
 	(draw-vertical right-x right-y (min-y state) (max-y state)
 		       *grid-origin-color*)
 
-	;;; TODO: z wire verticals
 	(let* ((x-range-align (mark-lines (x-range state)))
 	       (x-align-min (+ x-range-align ; don't draw corners here
 			       (* x-range-align
@@ -161,9 +160,28 @@ and Y to value times value scaler."
 		       (width state))
 		    center-y ; why does this work
 		    (min-y state) (max-y state) *grid-color*
-		    'low x))
-	
-	  )))))
+		    'low x)))
+
+	(let* ((z-range-align (mark-lines (z-range state)))
+	       (z-align-min (+ z-range-align
+			       (* z-range-align
+				  (floor (min-z state)
+					 z-range-align))))
+	       (z-align-max (- (* z-range-align
+				  (ceiling (max-z state)
+					   z-range-align))
+			       z-range-align)))
+
+	  (loop for z from z-align-min to z-align-max by z-range-align
+		do (draw-vertical
+		    left-y ; ooga booga
+		    (* (/ (- z (min-z state))
+			  (z-range state))
+		       (width state))
+		    (min-y state) (max-y state) *grid-color*
+		    'low z)))
+
+	))))
 
 ;;TODO: may want to consider some kind of FLAT symbols to take car of graphical
 ;; issues when pitch or state aligns with pi/2 and multipliers.
