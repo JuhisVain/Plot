@@ -162,6 +162,7 @@ and Y to value times value scaler."
 		do (draw-vertical
 		    (* (/ (- x (min-x state))
 			  (x-range state))
+		       1.0 ; coerce float
 		       (width state))
 		    center-y ; why does this work
 		    (min-y state) (max-y state) *grid-color*
@@ -182,6 +183,7 @@ and Y to value times value scaler."
 		    left-y ; ooga booga
 		    (* (/ (- z (min-z state))
 			  (z-range state))
+		       1.0 ; coerce float
 		       (width state))
 		    (min-y state) (max-y state) *grid-color*
 		    'low z)))
