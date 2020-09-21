@@ -143,6 +143,11 @@ and Y to value times value scaler."
 	(draw-vertical right-x right-y (min-y state) (max-y state)
 		       *grid-origin-color*)
 
+	;; In min and max alignments below:
+	;; Flooring/ceilinging might produce values outside bounding square's
+	;; limits (state min-x to max-x, min-z to max-z).
+	;; Adding/removing a single mark-lines unit will force grid lines
+	;; within range.
 	(let* ((x-range-align (mark-lines (x-range state)))
 	       (x-align-min (+ x-range-align ; don't draw corners here
 			       (* x-range-align
