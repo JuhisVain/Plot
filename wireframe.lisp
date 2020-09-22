@@ -268,19 +268,6 @@ and Y to value times value scaler."
 	 (far-corner (far-corner state))
 	 )
 
-    (let ((ccc (3d-crd-scr
-		(* (width state)
-		   1
-		   0.0)
-		(* (height state)
-		   1
-		   1.0)
-		(* (min-y state)
-		   value-scaler)
-		state value-shift-pixels)))
-      (sdl:draw-string-solid-* "xxx" (round (car ccc)) (- (height state) (round (cdr ccc)))
-			       :surface (surface state)))
-
     (let* ((scaled-mid-value (* value-scaler
 				(/ (+ (min-y state)
 				      (max-y state))
