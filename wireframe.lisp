@@ -2,9 +2,9 @@
 				 (shift (screen-y0 state)))
   "Translate 3 dimensional coordinates to wireframe screen surface
 ((0,0) being upper left) coordinates.
-Floating indexes X and Z refer to array dimension 0 1 respectively
-and Y to value times value scaler."
-  (declare ((float 0.0 *) x z)
+Floating indexes X and Z should be floats between 0.0 and 1.0
+Y refers to value times value scaler."
+  (declare ((float 0.0 1.0) x z)
 	   (wireframe state))
   (let ((radvec-length (* (cos (/ pi 4)) ; aka. (sin (/ pi 4))
 			  (render-radius state)))
@@ -13,11 +13,11 @@ and Y to value times value scaler."
     (let ((gra-x (* (/ radvec-length
 		       half-width)
 		    (- half-width
-		       x)))
+		       (* x (width state)))))
 	  (gra-z (* (/ radvec-length
 		       half-height)
 		    (- half-height
-		       z))))
+		       (* z (height state))))))
       (let((hypotenuse (sqrt (+ (expt gra-x 2)
 				(expt gra-z 2))))
 	   (angle (atan gra-z gra-x)))
@@ -42,12 +42,7 @@ and Y to value times value scaler."
 	   (drawn func)
 	   (wireframe state))
 
-  (3d-crd-scr (* (1- (array-dimension (data func) 0))
-		 (/ (data-per-pixel func))
-		 x)
-	      (* (1- (array-dimension (data func) 1))
-		 (/ (data-per-pixel func))
-		 z)
+  (3d-crd-scr x z
 	      (* (3d-dataref func x z) ;; TODO: bad values, once more
 		 scaler)
 	      state
@@ -69,8 +64,8 @@ and Y to value times value scaler."
 			    :surface (surface state)
 			    :color color))
 	 (backwall-coordinates (corner)
-	   (let ((max-width (* (width state) 1.0))
-		 (max-height (* (height state) 1.0)))
+	   (let ((max-width 1.0)
+		 (max-height 1.0))
 	     (ecase corner
 	       ((min-min-min min-min-max)
 		(list (list max-width 0.0)
@@ -162,8 +157,7 @@ and Y to value times value scaler."
 		do (3d-draw-vertical
 		    (* (/ (- x (min-x state))
 			  (x-range state))
-		       1.0 ; coerce float
-		       (width state))
+		       1.0) ; coerce float
 		    center-y ; why does this work
 		    (min-y state) (max-y state) *grid-color*
 		    'low x)))
@@ -183,8 +177,7 @@ and Y to value times value scaler."
 		    center-x ; ooga booga
 		    (* (/ (- z (min-z state))
 			  (z-range state))
-		       1.0 ; coerce float
-		       (height state))
+		       1.0) ; coerce float
 		    (min-y state) (max-y state) *grid-color*
 		    'low z)))
 
@@ -275,13 +268,16 @@ and Y to value times value scaler."
 	   (x0z0 (3d-crd-scr 0.0 0.0
 			     scaled-mid-value
 			     state value-shift-pixels))
-	   (x1z0 (3d-crd-scr (* 1.0 (width state)) 0.0
+	   (x1z0 (3d-crd-scr 1.0;(* 1.0 (width state))
+			     0.0
 			     scaled-mid-value
 			     state value-shift-pixels))
-	   (x0z1 (3d-crd-scr 0.0 (* 1.0 (height state))
+	   (x0z1 (3d-crd-scr 0.0
+			     1.0;(* 1.0 (height state))
 			     scaled-mid-value
 			     state value-shift-pixels))
-	   (x1z1 (3d-crd-scr (* 1.0 (width state)) (* 1.0 (height state))
+	   (x1z1 (3d-crd-scr 1.0;(* 1.0 (width state))
+			     1.0;(* 1.0 (height state))
 			     scaled-mid-value
 			     state value-shift-pixels))
 	   (corner-x0 (car x0z0))
