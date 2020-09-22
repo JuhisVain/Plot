@@ -180,11 +180,11 @@ and Y to value times value scaler."
 
 	  (loop for z from z-align-min to z-align-max by z-range-align
 		do (3d-draw-vertical
-		    left-y ; ooga booga
+		    center-x ; ooga booga
 		    (* (/ (- z (min-z state))
 			  (z-range state))
 		       1.0 ; coerce float
-		       (width state))
+		       (height state))
 		    (min-y state) (max-y state) *grid-color*
 		    'low z)))
 
