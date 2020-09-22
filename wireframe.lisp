@@ -63,7 +63,7 @@ Y refers to value times value scaler."
 			    (car xy1) (- (height state) (cdr xy1))
 			    :surface (surface state)
 			    :color color))
-	 (backwall-coordinates (corner)
+	 (backwall-indexes (corner)
 	   (let ((max-width 1.0)
 		 (max-height 1.0))
 	     (ecase corner
@@ -82,13 +82,31 @@ Y refers to value times value scaler."
 	       ((max-max-min max-max-max)
 		(list (list 0.0 max-height)
 		      (list max-width max-height)
-		      (list max-width 0.0)))))))
+		      (list max-width 0.0))))))
+	 (backwall-corners (corner)
+	   (ecase corner
+	     ((min-min-min min-min-max)
+	      (list (list (max-x state) (min-z state))
+		    (list (min-x state) (min-z state))
+		    (list (min-x state) (max-z state))))
+	     ((min-max-min min-max-max)
+	      (list (list (min-x state) (min-z state))
+		    (list (min-x state) (max-z state))
+		    (list (max-x state) (max-z state))))
+	     ((max-min-min max-min-max)
+	      (list (list (max-x state) (max-z state))
+		    (list (max-x state) (min-z state))
+		    (list (min-x state) (min-z state))))
+	     ((max-max-min max-max-max)
+	      (list (list (min-x state) (max-z state))
+		    (list (max-x state) (max-z state))
+		    (list (max-x state) (min-z state)))))))
 	 
     (destructuring-bind
 	((left-x left-y) ; these and below are actually x and z...
 	 (center-x center-y)
 	 (right-x right-y))
-	(backwall-coordinates (far-corner state))
+	(backwall-indexes (far-corner state))
       (loop for height from (min-y state) to (max-y state) 
 	    by (mark-lines (y-range state)); min and max y are prealigned
 	    do (draw-grid-line (3d-crd-scr left-x left-y
@@ -115,28 +133,36 @@ Y refers to value times value scaler."
 		   (high (sdl:draw-string-solid-*
 			  (format nil "~a" mark-value)
 			  (car high-val) (- (height state) (cdr high-val))
-			  :color *grid-color*
+			  :color color
 			  :surface (surface state)))
 		   (low (sdl:draw-string-solid-*
 			  (format nil "~a" mark-value)
 			  (car low-val) (- (height state) (cdr low-val))
-			  :color *grid-color*
+			  :color color
 			  :surface (surface state)))
 		   (mid (sdl:draw-string-solid-*
 			  (format nil "~a" mark-value)
 			  (round (+ (car high-val) (car low-val)) 2)
 			  (- (height state) (round (+ (car high-val) (car low-val)) 2))
-			  :color *grid-color*
+			  :color color
 			  :surface (surface state)))))))
 		 
 	
 	;; Draw 3 furthest corner lines:
-	(3d-draw-vertical left-x left-y (min-y state) (max-y state)
-		       *grid-origin-color*)
-	(3d-draw-vertical center-x center-y (min-y state) (max-y state)
-		       *grid-origin-color*)
-	(3d-draw-vertical right-x right-y (min-y state) (max-y state)
-		       *grid-origin-color*)
+	(destructuring-bind
+	    ((crd-left-x crd-left-z) ; these and below are actually x and z...
+	     (crd-center-x crd-center-z)
+	     (crd-right-x crd-right-z))
+	    (backwall-corners (far-corner state))
+	  (3d-draw-vertical left-x left-y (min-y state) (max-y state)
+			    *grid-origin-color*
+			    'low (format nil "(~a,~a)" crd-left-x crd-left-z))
+	  (3d-draw-vertical center-x center-y (min-y state) (max-y state)
+			    *grid-origin-color*
+			    'low (format nil "(~a,~a)" crd-center-x crd-center-z))
+	  (3d-draw-vertical right-x right-y (min-y state) (max-y state)
+			    *grid-origin-color*
+			    'low (format nil "(~a,~a)" crd-right-x crd-right-z)))
 
 	;; In min and max alignments below:
 	;; Flooring/ceilinging might produce values outside bounding square's
