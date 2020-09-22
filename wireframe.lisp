@@ -111,7 +111,7 @@ and Y to value times value scaler."
 					   state)
 			       *grid-color*))
 
-      (flet ((draw-vertical (x z value0 value1 color &optional mark mark-value)
+      (flet ((3d-draw-vertical (x z value0 value1 color &optional mark mark-value)
 	       (declare ((member low high mid NIL) mark))
 	       (let ((low-val (3d-crd-scr x z (* scaler value0) state))
 		     (high-val (3d-crd-scr x z (* scaler value1) state)))
@@ -136,11 +136,11 @@ and Y to value times value scaler."
 		 
 	
 	;; Draw 3 furthest corner lines:
-	(draw-vertical left-x left-y (min-y state) (max-y state)
+	(3d-draw-vertical left-x left-y (min-y state) (max-y state)
 		       *grid-origin-color*)
-	(draw-vertical center-x center-y (min-y state) (max-y state)
+	(3d-draw-vertical center-x center-y (min-y state) (max-y state)
 		       *grid-origin-color*)
-	(draw-vertical right-x right-y (min-y state) (max-y state)
+	(3d-draw-vertical right-x right-y (min-y state) (max-y state)
 		       *grid-origin-color*)
 
 	;; In min and max alignments below:
@@ -159,7 +159,7 @@ and Y to value times value scaler."
 			       x-range-align)))
 
 	  (loop for x from x-align-min to x-align-max by x-range-align
-		do (draw-vertical
+		do (3d-draw-vertical
 		    (* (/ (- x (min-x state))
 			  (x-range state))
 		       1.0 ; coerce float
@@ -179,7 +179,7 @@ and Y to value times value scaler."
 			       z-range-align)))
 
 	  (loop for z from z-align-min to z-align-max by z-range-align
-		do (draw-vertical
+		do (3d-draw-vertical
 		    left-y ; ooga booga
 		    (* (/ (- z (min-z state))
 			  (z-range state))
