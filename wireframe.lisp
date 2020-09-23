@@ -48,13 +48,6 @@ Y refers to value times value scaler."
 	      state
 	      shift))
 
-(defun render-wireframe-grid-front (state)
-  ;; TODO
-  ;; note: is it of any value to draw stuff in front of the plot?
-  ;; maybe make generic so user can do what he likes..
-  ;; that can be done with a function too though
-  (format t "Quack!~%"))
-
 (defun render-wireframe-grid (state &optional (scaler (y-scale state)))
   (declare (wireframe state)
 	   (real scaler))
@@ -362,9 +355,7 @@ Y refers to value times value scaler."
 			       gra-render-radius value-scaler
 			       value-shift-pixels state)
 	
-	)
-      (render-wireframe-grid-front state)
-      )))
+	))))
 
 (defun round-complex (number) ; obsolete?
   "Round with complex number support."
