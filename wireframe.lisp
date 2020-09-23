@@ -26,14 +26,27 @@ Y refers to value times value scaler."
 			(* hypotenuse
 			   (cos (+ (yaw state)
 				   angle)))))
-	      (round
-	       (+ shift
-		  (* (cos (pitch state))
-		     y)
-		  (* (sin (pitch state))
-		     (* hypotenuse
-			(sin (+ (yaw state)
-				angle)))))))))))
+	      (if (realp y)
+		  (round
+		   (+ shift
+		      (* (cos (pitch state))
+			 y)
+		      (* (sin (pitch state))
+			 (* hypotenuse
+			    (sin (+ (yaw state)
+				    angle))))))
+		  ;; if complex:
+		  (let ((adder (+ shift (* (sin (pitch state))
+					   (* hypotenuse
+					      (sin (+ (yaw state)
+						      angle)))))))
+		    (complex (round (+ adder
+				       (* (cos (pitch state))
+					  (realpart y))))
+			     (round (+ adder
+				       (* (cos (pitch state))
+					  (imagpart y)))))
+		    )))))))
 
 (defun fun-crd-scr (x z func state &optional
 				 (scaler (y-scale state))
@@ -41,12 +54,14 @@ Y refers to value times value scaler."
   (declare ((float 0.0 1.0) x z)
 	   (drawn func)
 	   (wireframe state))
-
-  (3d-crd-scr x z
-	      (* (3d-dataref func x z) ;; TODO: bad values, once more
-		 scaler)
-	      state
-	      shift))
+  (let ((value (3d-dataref func x z)))
+    (typecase value
+      (symbol nil)
+      (number
+       (3d-crd-scr x z
+		   (* value scaler)
+		   state
+		   shift)))))
 
 (defun render-wireframe-grid (state &optional (scaler (y-scale state)))
   (declare (wireframe state)
