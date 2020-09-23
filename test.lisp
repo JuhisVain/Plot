@@ -58,7 +58,7 @@
    :window-height h
    :window-width w
    :wire-density 1/10
-   :from '(-3 -4) :to '(3 4)))
+   :from '(-3.12 -4.2765453) :to '(-3.1 -4)))
 
 ;;;TODO: come up with some scheme to get pretty numbers for labels when they're ugly
 ;; ps. might be solved. test with lesser and greater values
