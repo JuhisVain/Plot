@@ -363,11 +363,9 @@ Y refers to value times value scaler."
 
 	)
        ((null x-wires)) ; end render
-	(draw-wireframe-square x-wire next-x-wire z-xsv-pix
+        (draw-wireframe-square x-wire next-x-wire z-xsv-pix
 			       z-wire next-z-wire x-xsv-pix
-			       gra-centre-x x-dimension
-			       gra-centre-z z-dimension
-			       gra-render-radius value-scaler
+			       value-scaler
 			       value-shift-pixels state)
 	
 	))))
@@ -441,124 +439,65 @@ Y refers to value times value scaler."
 	(internal-compute value))))
 
 (defun draw-wireframe-square-xwire (current-wire wire next-wire xvector-pixels
-				    gra-rel-wire gra-centre gra-render-radius
-				    dimension value-scaler value-shift-pixels
-				    state)
+				    value-scaler value-shift-pixels state)
 
   (when (and next-wire)
     (loop for func in (collect-drawn (pfunc-list state))
-       do (loop for wire-crds on
-	       (list-square-wire-coordinates
-		wire next-wire xvector-pixels (data-per-pixel func))
-	     until (null (rest wire-crds))
-	     for gra-rel = (* (/ (* (cos (/ pi 4))
-				    gra-render-radius)
-				 gra-centre)
-			      (- gra-centre
-				 (* (car wire-crds) dimension)))
-	     and gra-rel-next = (* (/ (* (cos (/ pi 4))
-					 gra-render-radius)
-				      gra-centre)
-				   (- gra-centre
-				      (* (cadr wire-crds)
-					 dimension)))
-	     for unit-multiplier = (sqrt (+ (expt gra-rel-wire 2)
-					    (expt gra-rel 2)))
-	     and next-unit-multiplier = (sqrt (+ (expt gra-rel-wire 2)
-						 (expt gra-rel-next 2)))
-	     and value = (3d-dataref func (car wire-crds) current-wire)
-	     and next-value = (3d-dataref func (cadr wire-crds) current-wire)
-	     do
-	       (cond ((and (numberp value) (numberp next-value))
-		      (let* ((xz0 (fun-crd-scr (car wire-crds) current-wire
-					       func state value-scaler value-shift-pixels))
-			     (xz1 (fun-crd-scr (cadr wire-crds) current-wire
-					       func state value-scaler value-shift-pixels))
-			     (x0 (car xz0))
-			     (z0 (cdr xz0))
-			     (x1 (car xz1))
-			     (z1 (cdr xz1))
-			     )
-			(draw-line x0 z0 x1 z1
-				   func (surface state))))
-		     ((symbolp value)
-		      NIL)
-		     ((symbolp next-value) NIL)))))
+	  do (loop for wire-crds
+		     on (list-square-wire-coordinates
+			 wire next-wire xvector-pixels (data-per-pixel func))
+		   until (null (rest wire-crds))
+		   for value = (3d-dataref func (car wire-crds) current-wire)
+		   and next-value = (3d-dataref func (cadr wire-crds) current-wire)
+		   do (cond ((and (numberp value) (numberp next-value))
+			     (let ((xz0 (fun-crd-scr (car wire-crds) current-wire
+						     func state value-scaler
+						     value-shift-pixels))
+				   (xz1 (fun-crd-scr (cadr wire-crds) current-wire
+						    func state value-scaler
+						    value-shift-pixels)))
+			       (draw-line (car xz0) (cdr xz0)
+					  (car xz1) (cdr xz1)
+					  func (surface state))))
+			    ((symbolp value)
+			     NIL)
+			    ((symbolp next-value) NIL)))))
   nil)
 
 
 (defun draw-wireframe-square-zwire (current-wire wire next-wire xvector-pixels
-				    gra-rel-wire gra-centre gra-render-radius
-				    dimension value-scaler value-shift-pixels
-				    state)
+				    value-scaler value-shift-pixels state)
   (when (and next-wire)
     (loop for func in (collect-drawn (pfunc-list state))
-       do (loop for wire-crds on
-	       (list-square-wire-coordinates
-		wire next-wire xvector-pixels (data-per-pixel func))
-	     until (null (rest wire-crds))
-	     for gra-rel = (* (/ (* (cos (/ pi 4))
-				    gra-render-radius)
-				 gra-centre)
-			      (- gra-centre
-				 (* (car wire-crds) dimension)))
-	     and gra-rel-next = (* (/ (* (cos (/ pi 4))
-					 gra-render-radius)
-				      gra-centre)
-				   (- gra-centre
-				      (* (cadr wire-crds)
-					 dimension)))
-	     for unit-multiplier = (sqrt (+ (expt gra-rel-wire 2)
-					    (expt gra-rel 2)))
-	     and next-unit-multiplier = (sqrt (+ (expt gra-rel-wire 2)
-						 (expt gra-rel-next 2)))
-	     and value = (3d-dataref func current-wire (car wire-crds))
-	     and next-value = (3d-dataref func current-wire (cadr wire-crds))
-	     do
-	       (cond ((and (numberp value) (numberp next-value))
-		      (let* ((xz0 (fun-crd-scr current-wire (car wire-crds)
-					       func state value-scaler value-shift-pixels))
-			     (xz1 (fun-crd-scr current-wire (cadr wire-crds)
-					       func state value-scaler value-shift-pixels))
-			     (x0 (car xz0))
-			     (z0 (cdr xz0))
-			     (x1 (car xz1))
-			     (z1 (cdr xz1))
-			     )
-			(draw-line x0 z0 x1 z1
-				   func (surface state))))
-		     ((symbolp value)
-		      NIL)
-		     ((symbolp next-value) NIL)))))
+	  do (loop for wire-crds on
+				 (list-square-wire-coordinates
+				  wire next-wire xvector-pixels (data-per-pixel func))
+		   until (null (rest wire-crds))
+		   with value = (3d-dataref func current-wire (car wire-crds))
+		   and next-value = (3d-dataref func current-wire (cadr wire-crds))
+		   do (cond ((and (numberp value) (numberp next-value))
+			     (let ((xz0 (fun-crd-scr current-wire (car wire-crds)
+						     func state value-scaler value-shift-pixels))
+				   (xz1 (fun-crd-scr current-wire (cadr wire-crds)
+						     func state value-scaler value-shift-pixels)))
+			       (draw-line (car xz0) (cdr xz0)
+					  (car xz1) (cdr xz1)
+					  func (surface state))))
+			    ((symbolp value)
+			     NIL)
+			    ((symbolp next-value) NIL)))))
   nil)
 
 (defun draw-wireframe-square (x-wire next-x-wire z-xsv-pix
 			      z-wire next-z-wire x-xsv-pix
-			      gra-centre-x x-dimension
-			      gra-centre-z z-dimension
-			      gra-render-radius value-scaler value-shift-pixels
+			      value-scaler value-shift-pixels
 			      state)
-  (let ((gra-rel-x
-	 (* (/ (* (cos (/ pi 4))
-		  gra-render-radius)
-	       gra-centre-x)
-	    (- gra-centre-x
-	       (* x-wire x-dimension))))
-	(gra-rel-z
-	 (* (/ (* (cos (/ pi 4))
-		  gra-render-radius)
-	       gra-centre-z)
-	    (- gra-centre-z
-	       (* z-wire z-dimension)))))
-    (draw-wireframe-square-xwire x-wire z-wire next-z-wire x-xsv-pix
-				 gra-rel-x gra-centre-z gra-render-radius
-				 z-dimension value-scaler value-shift-pixels
-				 state)
-    (draw-wireframe-square-zwire z-wire x-wire next-x-wire z-xsv-pix
-				 gra-rel-z gra-centre-x gra-render-radius
-				 x-dimension value-scaler value-shift-pixels
-				 state)
-    ))
+  (draw-wireframe-square-xwire x-wire z-wire next-z-wire x-xsv-pix
+			       value-scaler value-shift-pixels
+			       state)
+  (draw-wireframe-square-zwire z-wire x-wire next-x-wire z-xsv-pix
+			       value-scaler value-shift-pixels
+			       state))
 
 (defun list-square-wire-coordinates (current next step-divisor resolution)
   "Produces list starting at CURRENT and ending at NEXT."
