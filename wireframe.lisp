@@ -21,7 +21,6 @@ Y refers to value times value scaler."
       (let((hypotenuse (sqrt (+ (expt gra-x 2)
 				(expt gra-z 2))))
 	   (angle (atan gra-z gra-x)))
-	
 	(cons (round (+ half-width
 			(* hypotenuse
 			   (cos (+ (yaw state)
@@ -45,8 +44,7 @@ Y refers to value times value scaler."
 					  (realpart y))))
 			     (round (+ adder
 				       (* (cos (pitch state))
-					  (imagpart y)))))
-		    )))))))
+					  (imagpart y))))))))))))
 
 (defun fun-crd-scr (x z func state &optional
 				 (scaler (y-scale state))
@@ -268,29 +266,8 @@ Y refers to value times value scaler."
 	  (t (error "Invalid YAW = ~a~%" yaw)))))
 
 (defun render-wireframe (state)
-  (declare (wireframe state)
-	   ;;(optimize speed)
-	   )
+  (declare (wireframe state))
   (let* ((wire-density (wire-density state))
-	 (effective-diameter (min (width state)
-				  (height state)))
-	 (log-centre-x (+ (min-x state)
-			  (/ (- (max-x state)
-				(min-x state))
-			     2)))
-	 (log-centre-z (+ (min-z state)
-			  (/ (- (max-z state)
-				(min-z state))
-			     2)))
-	 (gra-centre-x (/ effective-diameter
-			  2))
-	 (gra-centre-z (/ effective-diameter
-			  2))
-	 (gra-render-radius (/ (- (min (width state)
-				       (height state))
-				  (* 2 (margin state)))
-			       2))
-
 	 (value-scaler (y-scale state))
 	 ;;; How far the logic center of the screen is from where the center of
 	 ;; the zero value plane would be in pixels from the bottom of surface:
@@ -307,35 +284,20 @@ Y refers to value times value scaler."
 	   (x0z0 (3d-crd-scr 0.0 0.0
 			     scaled-mid-value
 			     state value-shift-pixels))
-	   (x1z0 (3d-crd-scr 1.0;(* 1.0 (width state))
-			     0.0
+	   (x1z0 (3d-crd-scr 1.0 0.0
 			     scaled-mid-value
 			     state value-shift-pixels))
-	   (x0z1 (3d-crd-scr 0.0
-			     1.0;(* 1.0 (height state))
-			     scaled-mid-value
-			     state value-shift-pixels))
-	   (x1z1 (3d-crd-scr 1.0;(* 1.0 (width state))
-			     1.0;(* 1.0 (height state))
+	   (x1z1 (3d-crd-scr 1.0 1.0
 			     scaled-mid-value
 			     state value-shift-pixels))
 	   (corner-x0 (car x0z0))
-	   (corner-y0 (cdr x0z0))
 	   (corner-x1 (car x1z0))
-	   (corner-y1 (cdr x1z0))
-	   (corner-x3 (car x0z1))
-	   (corner-y3 (cdr x0z1))
-	   (corner-x2 (car x1z1))
-	   (corner-y2 (cdr x1z1)))
+	   (corner-x2 (car x1z1)))
 
       (render-wireframe-grid state value-scaler)
 
       (do* ; All 'squares' of whole wireframe, with painter's algorithm
-       ((x-dimension (min (width state)
-			  (height state)))
-	(z-dimension (min (width state)
-			  (height state)))
-	;; Generate list of float indexes and reverse as required for draw order
+       (;; Generate list of float indexes and reverse as required for draw order
 	(wire-list (loop for a from 0.0 to (/ 1 wire-density)
 		      collect (* wire-density a)))
 	(x-wires-full (case far-corner
@@ -362,86 +324,13 @@ Y refers to value times value scaler."
 	(x-wire (car x-wires) (car x-wires))
 	(next-x-wire (cadr x-wires) (cadr x-wires))
 	(z-wire (car z-wires) (car z-wires))
-	(next-z-wire (cadr z-wires) (cadr z-wires))
-
-	
-
-	)
+	(next-z-wire (cadr z-wires) (cadr z-wires)))
+       
        ((null x-wires)) ; end render
         (draw-wireframe-square x-wire next-x-wire z-xsv-pix
 			       z-wire next-z-wire x-xsv-pix
 			       value-scaler
-			       value-shift-pixels state)
-	
-	))))
-
-(defun round-complex (number) ; obsolete?
-  "Round with complex number support."
-  (declare (number number))
-  (complex (round (realpart number))
-	   (round (imagpart number))))
-
-(defun Xwire-compute-X (gra-rel wire-constant unit-multiplier state)
-  (round
-   ;; shift coord right:
-   (+ (/ (width state) 2) 
-      (*
-       ;; unit multiplier:
-       unit-multiplier
-       ;; unit circle position as determined by state's yaw:
-       (cos (+ (atan wire-constant gra-rel)
-	       (yaw state)))))))
-
-(defun Xwire-compute-Z (value gra-rel
-			wire-constant value-shift-pixels
-			value-scaler unit-multiplier state)
-  (flet ((internal-compute (value)
-	   (declare (real value))
-	   (round
-	    (+ value-shift-pixels
-	       (* (cos (pitch state))
-		  (* value-scaler
-		     value))
-	       (* (sin (pitch state))
-		  (*
-		   unit-multiplier
-		   (sin (+ (atan wire-constant gra-rel)
-			   (yaw state)))))))))
-    (if (complexp value)
-	(complex (internal-compute (realpart value))
-		 (internal-compute (imagpart value)))
-	(internal-compute value))))
-
-(defun Zwire-compute-X (gra-rel wire-constant unit-multiplier state)
-  (round
-   ;; shift coord right:
-   (+ (/ (width state) 2) 
-      (*
-       ;; unit multiplier:
-       unit-multiplier
-       ;; unit circle position as determined by state's yaw:
-       (cos (+ (atan gra-rel wire-constant)
-	       (yaw state)))))))
-
-(defun Zwire-compute-Z (value gra-rel
-			wire-constant value-shift-pixels
-			value-scaler unit-multiplier state)
-  (flet ((internal-compute (value)
-	   (declare (real value))
-	   (round
-	    (+ value-shift-pixels
-	       (* (cos (pitch state))
-		  (* value-scaler
-		     value))
-	       (* (sin (pitch state))
-		  (*
-		   unit-multiplier
-		   (sin (+ (atan gra-rel wire-constant)
-			   (yaw state)))))))))
-    (if (complexp value)
-	(complex (internal-compute (realpart value))
-		 (internal-compute (imagpart value)))
-	(internal-compute value))))
+			       value-shift-pixels state)))))
 
 (defun draw-wireframe-square-xwire (current-wire wire next-wire xvector-pixels
 				    value-scaler value-shift-pixels state)
