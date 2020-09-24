@@ -117,20 +117,25 @@ Y refers to value times value scaler."
 	(backwall-indexes (far-corner state))
       (loop for height from (min-y state) to (max-y state) 
 	    by (mark-lines (y-range state)); min and max y are prealigned
-	    do (draw-grid-line (3d-crd-scr left-x left-y
-					   (* scaler height)
-					   state)
-			       (3d-crd-scr center-x center-y
-					   (* scaler height)
-					   state)
-			       *grid-color*)
-	       (draw-grid-line (3d-crd-scr center-x center-y
-					   (* scaler height)
-					   state)
-			       (3d-crd-scr right-x right-y
-					   (* scaler height)
-					   state)
-			       *grid-color*))
+	    do (let ((center (3d-crd-scr center-x center-y
+					 (* scaler height)
+					 state)))
+		 (draw-grid-line (3d-crd-scr left-x left-y
+					     (* scaler height)
+					     state)
+				 center
+				 *grid-color*)
+		 (draw-grid-line center
+				 (3d-crd-scr right-x right-y
+					     (* scaler height)
+					     state)
+				 *grid-color*)
+		 (sdl:draw-string-solid-* (format nil "~a" height)
+					  ;; center might not always be best
+					  (car center)
+					  (- (height state) (cdr center))
+					  :color *grid-color*
+					  :surface (surface state))))
 
       (flet ((3d-draw-vertical (x z value0 value1 color &optional mark mark-value)
 	       (declare ((member low high mid NIL) mark))
