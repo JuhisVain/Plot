@@ -43,6 +43,19 @@
 	:window-width 1000 :window-height 1000
 	:wire-density 1/20))
 
+;;The plot will appear to change when state rotated:
+(defun test-non-continuous ()
+  (plot
+   (list (list #'(lambda (x z)
+		   (if (and (< -2.5 x 2.4)
+			    (< 0.4 z 0.5))
+		       0 (gauss2 x z)))
+	       :data-per-pixel 1/10))
+   :from '(-3.5 -3.65)
+   :to '(3 3)
+   :window-width 1000 :window-height 1000
+   :wire-density 1/20))
+
 (defun test-wireframe (&optional (h 1000) (w 1000))
   (plot
    (list (list #'gauss2))
