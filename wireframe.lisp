@@ -341,21 +341,15 @@ Y refers to value times value scaler."
 		     on (list-square-wire-coordinates
 			 wire next-wire xvector-pixels (data-per-pixel func))
 		   until (null (rest wire-crds))
-		   for value = (3d-dataref func (car wire-crds) current-wire)
-		   and next-value = (3d-dataref func (cadr wire-crds) current-wire)
-		   do (cond ((and (numberp value) (numberp next-value))
-			     (let ((xz0 (fun-crd-scr (car wire-crds) current-wire
-						     func state value-scaler
-						     value-shift-pixels))
-				   (xz1 (fun-crd-scr (cadr wire-crds) current-wire
-						    func state value-scaler
-						    value-shift-pixels)))
-			       (draw-line (car xz0) (cdr xz0)
-					  (car xz1) (cdr xz1)
-					  func (surface state))))
-			    ((symbolp value)
-			     NIL)
-			    ((symbolp next-value) NIL)))))
+		   do (let ((xz0 (fun-crd-scr (car wire-crds) current-wire
+					      func state value-scaler
+					      value-shift-pixels))
+			    (xz1 (fun-crd-scr (cadr wire-crds) current-wire
+					      func state value-scaler
+					      value-shift-pixels)))
+			(draw-line (car xz0) (cdr xz0)
+				   (car xz1) (cdr xz1)
+				   func (surface state))))))
   nil)
 
 
@@ -367,19 +361,13 @@ Y refers to value times value scaler."
 				 (list-square-wire-coordinates
 				  wire next-wire xvector-pixels (data-per-pixel func))
 		   until (null (rest wire-crds))
-		   with value = (3d-dataref func current-wire (car wire-crds))
-		   and next-value = (3d-dataref func current-wire (cadr wire-crds))
-		   do (cond ((and (numberp value) (numberp next-value))
-			     (let ((xz0 (fun-crd-scr current-wire (car wire-crds)
-						     func state value-scaler value-shift-pixels))
-				   (xz1 (fun-crd-scr current-wire (cadr wire-crds)
-						     func state value-scaler value-shift-pixels)))
-			       (draw-line (car xz0) (cdr xz0)
-					  (car xz1) (cdr xz1)
-					  func (surface state))))
-			    ((symbolp value)
-			     NIL)
-			    ((symbolp next-value) NIL)))))
+		   do (let ((xz0 (fun-crd-scr current-wire (car wire-crds)
+					      func state value-scaler value-shift-pixels))
+			    (xz1 (fun-crd-scr current-wire (cadr wire-crds)
+					      func state value-scaler value-shift-pixels)))
+			(draw-line (car xz0) (cdr xz0)
+				   (car xz1) (cdr xz1)
+				   func (surface state))))))
   nil)
 
 (defun draw-wireframe-square (x-wire next-x-wire z-xsv-pix
