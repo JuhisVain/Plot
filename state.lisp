@@ -229,6 +229,13 @@
 	  (* alignment
 	     (floor old-min alignment)))))
 
+(defmethod render-state :around (state)
+  (let ((before (get-internal-real-time))
+	(result (call-next-method))
+	(after (get-internal-real-time)))
+    (format t "Rendering time: ~a~%" (- after before))
+    result))
+
 (defmethod render-state ((state 2d-state))
   (sdl:clear-display sdl:*black*)
   (draw-grid (min-y state) (max-y state) (y-range state)
