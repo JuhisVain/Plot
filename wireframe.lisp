@@ -161,7 +161,7 @@ Y refers to value times value scaler."
 	
 	;; Draw 3 furthest corner lines:
 	(destructuring-bind
-	    ((crd-left-x crd-left-z) ; these and below are actually x and z...
+	    ((crd-left-x crd-left-z)
 	     (crd-center-x crd-center-z)
 	     (crd-right-x crd-right-z))
 	    (backwall-corners (far-corner state))
