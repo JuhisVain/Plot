@@ -127,8 +127,10 @@
      (1+ (slack state))))
 
 (defmethod y-range ((state 3d-state))
-  (- (max-y state)
-     (min-y state)))
+  (coerce 
+   (- (max-y state)
+      (min-y state))
+   'FLOAT))
 
 (defgeneric y-scale (state)
   (:documentation "Returns pixel/value scale."))
