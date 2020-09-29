@@ -1,50 +1,74 @@
+(deftype screen-limits (type)
+  `(,type ,(coerce -10000 type) ,(coerce 10000 type))) ; that's a lot of pixels
+
 (defun 3d-crd-scr (x z y state &optional
 				 (shift (screen-y0 state)))
   "Translate 3 dimensional coordinates to wireframe screen surface
 ((0,0) being upper left) coordinates.
 Floating indexes X and Z should be floats between 0.0 and 1.0
 Y refers to value times value scaler."
-  (declare ((float 0.0 1.0) x z)
-	   (wireframe state))
-  (let ((radvec-length (* (cos (/ pi 4)) ; aka. (sin (/ pi 4))
-			  (render-radius state)))
-	(half-width (/ (width state) 2))
-	(half-height (/ (height state) 2)))
-    (let ((gra-x (* (/ radvec-length
-		       half-width)
-		    (- half-width
-		       (* x (width state)))))
-	  (gra-z (* (/ radvec-length
-		       half-height)
-		    (- half-height
-		       (* z (height state))))))
-      (let((hypotenuse (sqrt (+ (expt gra-x 2)
-				(expt gra-z 2))))
-	   (angle (atan gra-z gra-x)))
-	(cons (round (+ half-width
-			(* hypotenuse
-			   (cos (+ (yaw state)
-				   angle)))))
-	      (if (realp y)
-		  (round
-		   (+ shift
-		      (* (cos (pitch state))
-			 y)
-		      (* (sin (pitch state))
+  (declare (optimize (speed 3))
+	   ((single-float 0.0 1.0) x z)
+	   ;; DANGER ZONE! Only fun-crd-scr guards this from the ZERODIV symbol:
+	   ((or single-float (complex single-float)) y)
+	   (type wireframe state)
+	   (single-float shift))
+  (let ((width (width state))
+	(height (height state))
+	(yaw (yaw state))
+	(pitch (pitch state)))
+    (declare (fixnum width height)
+	     (single-float yaw pitch))
+    (let ((radvec-length (* (cos (/ pi 4)) ; aka. (sin (/ pi 4))
+			    (the single-float (render-radius state))))
+	  (half-width (/ width 2.0))
+	  (half-height (/ height 2.0)))
+      (let ((gra-x (* (/ radvec-length
+			 half-width)
+		      (- half-width
+			 (* x width))))
+	    (gra-z (* (/ radvec-length
+			 half-height)
+		      (- half-height
+			 (* z height)))))
+	(let ((hypotenuse (float
+			   (sqrt (+ (expt gra-x 2)
+				    (expt gra-z 2)))
+			   1.0))
+	      (angle (float
+		      (atan gra-z gra-x)
+		      1.0)))
+	  (declare (single-float angle hypotenuse))
+	  (cons (round
+		 (the (screen-limits single-float)
+		      (+ half-width
 			 (* hypotenuse
-			    (sin (+ (yaw state)
+			    (cos (+ yaw
 				    angle))))))
-		  ;; if complex:
-		  (let ((adder (+ shift (* (sin (pitch state))
-					   (* hypotenuse
-					      (sin (+ (yaw state)
-						      angle)))))))
-		    (complex (round (+ adder
-				       (* (cos (pitch state))
-					  (realpart y))))
-			     (round (+ adder
-				       (* (cos (pitch state))
-					  (imagpart y))))))))))))
+
+		(if (floatp y)
+		    (round
+		     (the (screen-limits single-float)
+			  (+ shift
+			     (* (cos pitch)
+				y)
+			     (* (sin pitch)
+				(* hypotenuse
+				   (sin (+ yaw
+					   angle)))))))
+		    ;; if complex:
+		    (let ((adder (+ shift (* (sin pitch)
+					     (* hypotenuse
+						(sin (+ yaw
+							angle)))))))
+		      (complex (round (the (screen-limits single-float)
+					   (+ adder
+					      (* (cos pitch)
+						 (realpart y)))))
+			       (round (the (screen-limits single-float)
+					   (+ adder
+					      (* (cos pitch)
+						 (imagpart y))))))))))))))
 
 (defun fun-crd-scr (x z func state &optional
 				 (scaler (y-scale state))
@@ -55,9 +79,15 @@ Y refers to value times value scaler."
   (let ((value (3d-dataref func x z)))
     (typecase value
       (symbol nil)
-      (number
+      (real
        (3d-crd-scr x z
-		   (* value scaler)
+		   (float (* value scaler) 1.0)
+		   state
+		   shift))
+      (complex
+       (3d-crd-scr x z
+		   (complex (float (* (realpart value) scaler) 1.0)
+			    (float (* (imagpart value) scaler) 1.0))
 		   state
 		   shift)))))
 
@@ -330,7 +360,11 @@ Y refers to value times value scaler."
         (draw-wireframe-square x-wire next-x-wire z-xsv-pix
 			       z-wire next-z-wire x-xsv-pix
 			       value-scaler
-			       value-shift-pixels state)))))
+			       value-shift-pixels state)
+	;;This is fun:
+	;(sdl:update-display)
+	;(sleep 0.5)
+	))))
 
 (defun draw-wireframe-square-xwire (current-wire wire next-wire xvector-pixels
 				    value-scaler value-shift-pixels state)
