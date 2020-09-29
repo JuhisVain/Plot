@@ -62,11 +62,12 @@
     :accessor min-z)
 
    (yaw
-    :initform (* 9/8 pi)
+    :initform (* 9/8 +sf-pi+)
     :initarg :yaw
-    :accessor yaw)
+    :accessor yaw
+    :type single-float)
    (pitch
-    :initform (* 1/4 pi)
+    :initform (* 1/4 +sf-pi+)
     :initarg :pitch
     :accessor pitch)
    ))
@@ -164,36 +165,40 @@
       (* (min-y state) (y-scale state))))
 
 (defmethod screen-y0 ((state wireframe))
-  (+ (/ (height state) 2)
-     (* (cos (pitch state))
-	(-
-	 (* (y-scale state)
-	    (/ (+ (min-y state)
-		  (max-y state))
-	       2))))))
+  (coerce
+   (+ (/ (height state) 2)
+      (* (cos (pitch state))
+	 (-
+	  (* (y-scale state)
+	     (/ (+ (min-y state)
+		   (max-y state))
+		2)))))
+   'SINGLE-FLOAT))
 
 (defmethod render-radius ((state wireframe))
-  (/ (- (min (width state)
-	     (height state))
+  (coerce
+   (/ (- (min (width state)
+	      (height state))
 	(* 2 (margin state)))
-     2))
+      2)
+   'SINGLE-FLOAT))
 
 (defmethod (setf pitch) :after (new (state 3d-state))
   (cond ((>= (pitch state)
-	     (* 2 pi))
-	 (decf (pitch state) (* 2 pi)))
+	     (* 2 +sf-pi+))
+	 (decf (pitch state) (* 2 +sf-pi+)))
 	((< (pitch state)
 	    0.0)
-	 (incf (pitch state) (* 2 pi)))
+	 (incf (pitch state) (* 2 +sf-pi+)))
 	(t (pitch state))))
 
 (defmethod (setf yaw) :after (new (state 3d-state))
   (cond ((>= (yaw state)
-	     (* 2 pi))
-	 (decf (yaw state) (* 2 pi)))
+	     (* 2 +sf-pi+))
+	 (decf (yaw state) (* 2 +sf-pi+)))
 	((< (yaw state)
 	    0.0)
-	 (incf (yaw state) (* 2 pi)))
+	 (incf (yaw state) (* 2 +sf-pi+)))
 	(t (yaw state))))
 
 (defgeneric check-y-extremes (state)

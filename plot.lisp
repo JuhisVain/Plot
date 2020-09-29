@@ -15,6 +15,8 @@
 (defvar *grid-color* (sdl:color :r 50 :g 50 :b 50))
 (defvar *grid-origin-color* (sdl:color :r 150 :g 150 :b 150))
 
+(defconstant +sf-pi+ (float pi 1.0)) ;; PI in single float precision
+
 (defvar *transparent* (sdl:color :r 0 :g 0 :b 0 :a 0)) ; alpha 0 is transparent
 
 (defparameter *draw-functions* nil
@@ -768,10 +770,10 @@ bindings hash table."))
 	       `(cons (button-to-sdlkey ',key)
 		      (make-binding
 		       :action #'(lambda () ,@actions)))))
-    (list (key-action left (incf (yaw state) (/ pi 36)))
-	  (key-action right (decf (yaw state) (/ pi 36)))
-	  (key-action up (decf (pitch state) (/ pi 36)))
-	  (key-action down (incf (pitch state) (/ pi 36))))))
+    (list (key-action left (incf (yaw state) (/ +sf-pi+ 36)))
+	  (key-action right (decf (yaw state) (/ +sf-pi+ 36)))
+	  (key-action up (decf (pitch state) (/ +sf-pi+ 36)))
+	  (key-action down (incf (pitch state) (/ +sf-pi+ 36))))))
 
 (defun make-binding-hash-table (bindings state)
   (let* ((controls (state-controls state))
