@@ -19,7 +19,7 @@ Y refers to value times value scaler."
 	(pitch (pitch state)))
     (declare (fixnum width height)
 	     (single-float yaw pitch))
-    (let ((radvec-length (* (cos (/ pi 4)) ; aka. (sin (/ pi 4))
+    (let ((radvec-length (* (cos (/ +sf-pi+ 4)) ; aka. (sin (/ pi 4))
 			    (the single-float (render-radius state))))
 	  (half-width (/ width 2.0))
 	  (half-height (/ height 2.0)))
@@ -31,44 +31,41 @@ Y refers to value times value scaler."
 			 half-height)
 		      (- half-height
 			 (* z height)))))
-	(let ((hypotenuse (float
-			   (sqrt (+ (expt gra-x 2)
-				    (expt gra-z 2)))
-			   1.0))
-	      (angle (float
-		      (atan gra-z gra-x)
-		      1.0)))
-	  (declare (single-float angle hypotenuse))
-	  (cons (round
-		 (the (screen-limits single-float)
-		      (+ half-width
-			 (* hypotenuse
-			    (cos (+ yaw
-				    angle))))))
+	(let ((hypotenuse (sqrt (+ (expt gra-x 2)
+				   (expt gra-z 2))))
+	      (angle (atan gra-z gra-x)))
+	  (let* ((gra-yaw (+ yaw angle))
+		 (cos-yaw (cos gra-yaw))
+		 (sin-yaw (sin gra-yaw))
+		 (cos-pitch (cos pitch))
+		 (sin-pitch (sin pitch)))
+	    (cons (round
+		   (the (screen-limits single-float)
+			(+ half-width
+			   (* hypotenuse
+			      cos-yaw))))
 
-		(if (floatp y)
-		    (round
-		     (the (screen-limits single-float)
-			  (+ shift
-			     (* (cos pitch)
-				y)
-			     (* (sin pitch)
-				(* hypotenuse
-				   (sin (+ yaw
-					   angle)))))))
-		    ;; if complex:
-		    (let ((adder (+ shift (* (sin pitch)
-					     (* hypotenuse
-						(sin (+ yaw
-							angle)))))))
-		      (complex (round (the (screen-limits single-float)
-					   (+ adder
-					      (* (cos pitch)
-						 (realpart y)))))
-			       (round (the (screen-limits single-float)
-					   (+ adder
-					      (* (cos pitch)
-						 (imagpart y))))))))))))))
+		  (if (floatp y)
+		      (round
+		       (the (screen-limits single-float)
+			    (+ shift
+			       (* cos-pitch
+				  y)
+			       (* sin-pitch
+				  (* hypotenuse
+				     sin-yaw)))))
+		      ;; if complex:
+		      (let ((adder (+ shift (* sin-pitch
+					       (* hypotenuse
+						  sin-yaw)))))
+			(complex (round (the (screen-limits single-float)
+					     (+ adder
+						(* cos-pitch
+						   (realpart y)))))
+				 (round (the (screen-limits single-float)
+					     (+ adder
+						(* cos-pitch
+						   (imagpart y)))))))))))))))
 
 (defun fun-crd-scr (x z func state &optional
 				 (scaler (y-scale state))
