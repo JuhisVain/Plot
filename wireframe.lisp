@@ -75,7 +75,7 @@ Y refers to value times value scaler."
 	   (wireframe state))
   (let ((value (3d-dataref func x z)))
     (typecase value
-      (symbol nil)
+      (symbol '(0 . zero-division)) ; Hack to get a do nothing draw-line method
       (real
        (3d-crd-scr x z
 		   (float (* value scaler) 1.0)
