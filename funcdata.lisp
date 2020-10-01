@@ -226,8 +226,9 @@ but indexes X and Y should be floats between 0 and 1.
 
 Returns some kind of weighted average of the 4 array elements forming
 square within which indexes X and Y point to."
-  (declare ((array * 2) 2d-array) ; array might hold symbols
-	   ((float 0.0 1.0) x y))
+  (declare ((simple-array * 2) 2d-array) ; array might hold symbols
+	   ((single-float 0.0 1.0) x y)
+	   (optimize (speed 3)))
   (let* ((x-index (* x (1- (array-dimension 2d-array 0))))
 	 (x-floor (floor x-index))
 	 (x-ceili (ceiling x-index))
@@ -265,15 +266,15 @@ square within which indexes X and Y point to."
 
 (defun 3d-dataref (funcdata x y)
   (declare (abstract-funcdata funcdata)
-	   (float x y))
+	   (single-float x y)
+	   (optimize (speed 3)))
   (handler-case
       (2faref (data funcdata)
 	      (min (max x 0.0)
 		   1.0)
 	      (min (max y 0.0)
 		   1.0))
-    (division-by-zero () 'ZERO-DIVISION)
-    (type-error () 'TYPE-ERROR)))
+    (type-error () 'TYPE-ERROR)));Value stored in dataset was an error sym
 
 
 
