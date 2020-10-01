@@ -1,7 +1,4 @@
 (ql:quickload :lispbuilder-sdl)
-(load "state.lisp")
-(load "funcdata.lisp")
-(load "wireframe.lisp")
 
 (defvar *auto-quit* nil)
 (defvar *draw-labels* t
@@ -22,6 +19,13 @@
 (defparameter *draw-functions* nil
   "Storage for funcdatas currently being drawn.")
 
+(load "graphics.lisp")
+(load "colors.lisp")
+(load "funcdata.lisp")
+(load "state.lisp")
+(load "2d.lisp")
+(load "wireframe.lisp")
+
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
 one of (1 2 NIL)"
@@ -37,118 +41,6 @@ one of (1 2 NIL)"
 	    2)
 	(simple-condition () NIL)))))
 
-(defun draw-pixel (x y surface color)
-  (sdl:draw-pixel-* x (- (sdl:height surface) y)
-		    :surface surface
-		    :color color))
-
-(defun draw-vertical (x color surface &key (mark nil))
-  
-  (unless (< -1 x (sdl:width surface))
-    (return-from draw-vertical))
-  
-  (sdl:draw-line-* x 0
-		   x (sdl:height surface)
-		   :surface surface
-		   :color color)
-  (typecase mark
-    (string (sdl:draw-string-solid-* mark (+ x 2) (- (sdl:height surface) 8)
-				     :surface surface
-				     :color color))))
-
-(defgeneric draw-line (x0 y0 x1 y1 function surface))
-
-(defmethod draw-line (x0 (y0 (eql 'zero-division))
-		      x1 y1
-		      function surface)
-  (draw-vertical x0 *bad-color* surface))
-
-;;; Drawing *bad-color* line for last value when 'zero-division or nil should
-;; have been taken care of by increasing array size by one in funcdata init.
-;; Could be investigated further but this doesn't seem too important.
-(defmethod draw-line (x0 y0
-		      x1 (y1 (eql 'zero-division))
-		      function
-		      surface)
-  ;; don't do nuthin
-  NIL)
-
-(defmethod draw-line (x0 (y0 (eql nil))
-		      x1 y1
-		      function surface)
-  (draw-vertical x0 *bad-color* surface))
-
-(defmethod draw-line (x0 y0
-		      x1 (y1 (eql nil))
-		      function surface)
-  ;; don't do nuthin
-  NIL)
-
-(defmethod draw-line (x0 (y0 real)
-		      x1 (y1 real)
-		      function surface)
-  (sdl:draw-line-* x0 (- (sdl:height surface) y0)
-		   x1 (- (sdl:height surface) y1)
-		   :surface surface
-		   :color (color-real function)))
-
-(defmethod draw-line (x0 (y0 complex)
-		      x1 (y1 complex)
-		      function surface)
-  (sdl:draw-line-* x0 (- (sdl:height surface) (realpart y0))
-		   x1 (- (sdl:height surface) (realpart y1))
-		   :surface surface
-		   :color (color-realpart function))
-  (sdl:draw-line-* x0 (- (sdl:height surface) (imagpart y0))
-		   x1 (- (sdl:height surface) (imagpart y1))
-		   :surface surface
-		   :color (color-imagpart function)))
-
-(defmethod draw-line (x0 (y0 complex)
-		      x1 (y1 real)
-		      function surface)
-  (sdl:draw-line-* x0 (- (sdl:height surface) (realpart y0))
-		   x1 (- (sdl:height surface) y1)
-		   :surface surface
-		   :color (color-realpart function))
-  (sdl:draw-line-* x0 (- (sdl:height surface) (imagpart y0))
-		   x1 (- (sdl:height surface) y1)
-		   :surface surface
-		   :color (color-imagpart function)))
-
-(defmethod draw-line (x0 (y0 real)
-		      x1 (y1 complex)
-		      function surface)
-  (sdl:draw-line-* x0 (- (sdl:height surface) y0)
-		   x1 (- (sdl:height surface) (realpart y1))
-		   :surface surface
-		   :color (color-realpart function))
-  (sdl:draw-line-* x0 (- (sdl:height surface) y0)
-		   x1 (- (sdl:height surface) (imagpart y1))
-		   :surface surface
-		   :color (color-imagpart function)))
-
-(defun draw-circle (x y radius surface color)
-  (sdl:draw-circle-* x (- (sdl:height surface) y) radius
-		     :surface surface
-		     :color color))
-
-(defun draw-horizontal (y color surface &key (mark nil))
-  (let ((translated-y (- (sdl:height surface) y)))
-    
-    ;; If zero axis too for away sdl:draw-line might crap out:
-    (unless (< -1 translated-y (sdl:height surface))
-      (return-from draw-horizontal))
-    
-    (sdl:draw-line-* 0 translated-y
-		     (sdl:width surface) translated-y
-		     :surface surface
-		     :color color)
-    (typecase mark
-      (string (sdl:draw-string-solid-* mark 1 (+ translated-y 2)
-				       :surface surface
-				       :color color)))))
-
 (defun mark-lines (range)
   "Returns something by gut feeling to be used as multiplier of grid lines."
   (if (zerop range)
@@ -156,60 +48,6 @@ one of (1 2 NIL)"
       ;; decrement rounded order of magnitude and get its value:
       (expt 10 (1- (round (log range 10))))))
 
-(defun rgb-to-hue (red green blue)
-  "Extracts hue from RGB values.
-In hue circle red is at 0 and going clockwise next is green and then blue."
-  (declare ((integer 0 255) red green blue))
-  (atan (* (sqrt 3)
-	   (- green blue))
-	(- (* 2 red)
-	   green
-	   blue)))
-
-;; Looks like this works on negative values too
-(defun hue-to-rgb (hue)
-  "Returns RGB plist based on HUE in radians when saturation
-and value are both at max."
-  (declare (float hue))
-  (flet ((voodoo (n)
-	   (let ((k (mod (+ n (/ hue (/ pi 3)))
-			 6)))
-	     (round
-	      (* 255
-		 (- 1 (max 0 (min k
-				  (- 4 k)
-				  1))))))))
-    (list :r (voodoo 5)
-	  :g (voodoo 3)
-	  :b (voodoo 1)
-	  :a 255)))
-
-(defun generate-colors (red green blue count)
-  (let ((start-hue (rgb-to-hue red green blue))
-	(hue-step (/ (* 2 pi)
-		     count))
-	(colors nil))
-    (dotimes (iter count)
-      (push (hue-to-rgb
-	     (+ start-hue (* iter hue-step)))
-	    colors))
-    (reverse colors)))
-
-(defun aux-colors (rgb-plist)
-  "Returns sdl:colors to be used to draw reals, realparts and imagparts.
-RGB-PLIST should be a property list like (:r x :g x :b x),
-where the Xs are (integer 0 255)."
-  (values (apply #'sdl:color rgb-plist)
-	  (apply #'sdl:color
-		 (mapcar #'(lambda (x) (typecase x
-					 (number (round (+ x 255) 2))
-					 (t x)))
-			 rgb-plist))
-	  (apply #'sdl:color
-		 (mapcar #'(lambda (x) (typecase x
-					 (number (round x 2))
-					 (t x)))
-			 rgb-plist))))
 
 (defun identify-input-token (input)
   "Reads input and partitions it into elements of propertylist
@@ -359,28 +197,6 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 			 num))
 		 numbers)))
 
-(defun draw-value (x-coord value y-scale slack screen-y0 surface pfunc)
-  (typecase value
-    (real (draw-pixel (round x-coord)
-		      (round (- (+ (* value y-scale)
-				   slack)
-				screen-y0))
-		      surface
-		      (color-real pfunc)))
-    ;;the components of a complex must be real:
-    (complex (draw-value x-coord
-			 (realpart value)
-			 y-scale slack screen-y0 surface
-			 (color-realpart pfunc))
-	     (draw-value x-coord
-			 (imagpart value)
-			 y-scale slack screen-y0 surface
-			 (color-imagpart pfunc)))
-    (t (draw-vertical x-coord ; bad value, most likely zero div
-		      *bad-color*
-		      surface)))
-  NIL)
-
 (defgeneric render-funcs (state))
 
 (defmethod render-funcs ((state 2d-state))
@@ -441,47 +257,6 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 	    (draw-pixel x z (surface state) color)))
 	(sdl:free color)))))
 
-(defun draw-grid (min-y max-y y-range y-scale screen-y0
-		  min-x max-x x-range x-scale screen-x0
-		  slack-pixels surface)
-  (let ((y-grid-step (mark-lines y-range))
-	(x-grid-step (mark-lines x-range)))
-    
-;;; Draw horizontal grid:
-    (loop for y from (- min-y (rem min-y y-grid-step)
-			y-grid-step) ; add one line to bottom
-       ;; range increased by one line so grid
-       ;; extends to all values even with slack:
-       to (+ max-y y-grid-step) by y-grid-step
-       do (draw-horizontal (round (+ (* y y-scale)
-				     (- screen-y0)
-				     slack-pixels))
-			   *grid-color*
-			   surface
-			   :mark (format nil "~a" y)))
-
-;;; Draw vertical grid:
-    (loop for x from (- min-x (rem min-x x-grid-step))
-       to max-x by x-grid-step
-       do (draw-vertical (round (- (* x x-scale)
-				   screen-x0))
-			 *grid-color*
-			 surface
-			 :mark (format nil "~a" x)))
-
-;;; Draw zeroes
-    (draw-horizontal (round (+ (- screen-y0)
-			       slack-pixels
-			       ))
-		     *grid-origin-color*
-		     surface
-		     :mark "0")
-
-    (draw-vertical (round (- screen-x0))
-		   *grid-origin-color*
-		   surface
-		   :mark "0")))
-
 (defmethod compute-data (function (state 2d-state))
   "Populates funcdata FUNCTION's (and FUNCTION's subs) data slot's array with
 results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
@@ -522,110 +297,6 @@ using COLOR for text."
 		       :color-key color-key
 		       :type :hw)
    :color color))
-
-(defun render-2d-dots (function state
-		       &optional (surface (surface state)))
-  (loop for x from 0 below (sdl:width surface)
-     by (/ 1 (data-per-pixel function))
-     for y across (data function)
-     do (draw-value (floor x) y (y-scale state) (slack-pixels state)
-		    (screen-y0 state) surface function)))
-
-(defun scale-y (y y-scale slack screen-y0)
-  "Transforms value Y into plot's scale.
-Result will still need to be inverted before drawing."
-  (typecase y
-    (real
-     (round (- (+ (* y y-scale)
-		  slack)
-	       screen-y0)))
-    (complex
-     (complex (round (- (+ (* (realpart y) y-scale)
-			   slack)
-			screen-y0))
-	      (round (- (+ (* (imagpart y) y-scale)
-			   slack)
-			screen-y0))))
-    (t y))); come again! Pass through for non number values
-
-(defun render-2d-lineplot (function state
-			   &optional (surface (surface state)))
-  (let ((x-pixel 0))
-    (map
-     NIL
-     #'(lambda (from to)
-	 (draw-line (floor x-pixel (data-per-pixel function))
-		    (scale-y from (y-scale state)
-			     (slack-pixels state) (screen-y0 state))
-		    (floor (incf x-pixel) (data-per-pixel function))
-		    (scale-y to (y-scale state)
-			     (slack-pixels state) (screen-y0 state))
-		    function
-		    surface
-		    ))
-     (data function)
-     (subseq (data function) 1))))
-
-(defun render-2d-label (function state)
-  (when (and (draw-labels state)
-	     (< (label-position state)
-		(/ (length (data function))
-		   (data-per-pixel function))))
-    (let ((string-render
-	   (render-string
-	    (label function)
-	    (color-real function))))
-      (unwind-protect
-	   (progn
-	     (sdl:draw-surface-at-*
-	      string-render
-	      (label-position state)
-	      (+
-	       ;; move label downwards:
-	       (sdl:char-height sdl:*default-font*)
-	       (- (height state)
-		  (round
-		   (realpart
-		    (- (+ (slack-pixels state)
-			  
-			  (handler-case
-			      (let* ((pre-x0 (floor ;index of low bound
-					      (* (data-per-pixel function)
-						 (label-position state))))
-				     (pre-x1 (ceiling ;index of high bound
-					      (* (data-per-pixel function)
-						 (label-position state))))
-				     (x0 (/ ;pixel of low bound
-					  pre-x0
-					  (data-per-pixel function)))
-				     (x1 (/ ;pixel of high bound
-					  pre-x1
-					  (data-per-pixel function)))
-				     (y0 (* (y-scale state) ; pixel value
-					    (aref (data function)
-						  pre-x0)))
-				     (y1 (* (y-scale state)
-					    (aref (data function)
-						  pre-x1)))
-				     (x (label-position state)))
-
-				(if (= x0 x1) ; comparing floats
-				    y0
-				    ;; y-value of X:
-				    (+ y0
-				       (* (/ (- y1 y0)
-					     (- x1 x0))
-					  (- x x0)))))
-				
-			    (type-error () 0)))
-		       
-		       (screen-y0 state))))))
-	      :surface (surface state))
-	     (incf (label-position state)
-		   (* (sdl:char-width sdl:*default-font*)
-		      (length (label function)))))
-	;; unwind-protect cleanup:
-	(sdl:free string-render)))))
 
 (defun read-input-list (input-func-list input-dimensions)
   "Read a function description, store processed pfunc-list to *draw-functions*
