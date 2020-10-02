@@ -236,25 +236,28 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 	      (draw-pixel x z (surface state) color)))
 	  (sdl:free color))))))
 
+;; Data-per-pixel has essentially no effect on rendering speed using heatmap
 (defmethod render-funcs ((state heatmap))
+  (declare (optimize (speed 3)))
   (let ((drawns (drawn-list state)))
     (dolist (function drawns)
-      (let ((color (sdl:color)))
-	(dotimes (x (array-dimension (data function) 0))
-	  (dotimes (z (array-dimension (data function) 1))
-	    (if (realp (aref (data function) x z))
-		(let* ((value (/ (- (aref (data function) x z) (min-y state))
-				 (- (max-y state) (min-y state))))
-		       ;; magic number modifies color for highest value:
-		       (rgb (hue-to-rgb (* value 1.8 pi)))
-		       (r (cadr rgb)) ; fuck it
-		       (g (cadddr rgb))
-		       (b (cadr (cddddr rgb))))
-		  
-		  (sdl:set-color-* color :r r :g g :b b))
-		;;if not real:
-		(sdl:set-color color *bad-color*))
-	    (draw-pixel x z (surface state) color)))
+      (let ((color (sdl:color))
+	    (width (the (unsigned-byte 16) (width state)))
+	    (height (the (unsigned-byte 16) (height state))))
+	(dotimes (x width)
+	  (dotimes (z height)
+	    (let* ((value
+		     (3d-dataref function
+				 (/ x 1.0 width)
+				 (/ z 1.0 height)))
+		   (spread-value
+		     (/ (- value (min-y state)) ;; TODO: ZERODIV ZERODIV ZERODIV
+			(y-range state))))
+	      (destructuring-bind (rk r gk g bk b ak a)
+		  (hue-to-rgb (* spread-value 1.8 pi))
+		(declare (ignore rk gk bk ak a))
+		(sdl:set-color-* color :r r :g g :b b)
+		(draw-pixel x z (surface state) color)))))	
 	(sdl:free color)))))
 
 (defmethod compute-data (function (state 2d-state))
