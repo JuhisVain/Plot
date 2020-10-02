@@ -302,7 +302,7 @@ y-scaling is dynamic based on extreme values on X's range."
 			 :pfunc-list pfunc-list
 			 :drawn-list (collect-drawn pfunc-list)
 			 :min-x (or min-x 0) :max-x (or max-x 100)
-			 :min-z (or min-z 0) :max-z (or max-z 100)
+			 :min-z (or min-z min-x) :max-z (or max-z max-x)
 			 :wire-density wire-density
 			 :slack slack
 			 :surface surface
