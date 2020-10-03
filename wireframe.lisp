@@ -134,7 +134,7 @@ Y refers to value times value scaler."
 	      (list (list (min-x state) (max-z state))
 		    (list (max-x state) (max-z state))
 		    (list (max-x state) (min-z state)))))))
-	 
+    
     (destructuring-bind
 	((left-x left-y) ; these and below are actually x and z...
 	 (center-x center-y)
@@ -216,12 +216,12 @@ Y refers to value times value scaler."
 				  (ceiling (max-x state)
 					   x-range-align))
 			       x-range-align)))
-
+	  
 	  (loop for x from x-align-min to x-align-max by x-range-align
 		do (3d-draw-vertical
-		    (* (/ (- x (min-x state))
-			  (x-range state))
-		       1.0) ; coerce float
+		    (coerce (/ (- x (min-x state))
+			       (x-range state))
+			    'SINGLE-FLOAT)
 		    center-y ; why does this work
 		    (min-y state) (max-y state) *grid-color*
 		    'low x)))
@@ -235,13 +235,13 @@ Y refers to value times value scaler."
 				  (ceiling (max-z state)
 					   z-range-align))
 			       z-range-align)))
-
+	  
 	  (loop for z from z-align-min to z-align-max by z-range-align
 		do (3d-draw-vertical
 		    center-x ; ooga booga
-		    (* (/ (- z (min-z state))
-			  (z-range state))
-		       1.0) ; coerce float
+		    (coerce (/ (- z (min-z state))
+			       (z-range state))
+			    'SINGLE-FLOAT)
 		    (min-y state) (max-y state) *grid-color*
 		    'low z)))
 
