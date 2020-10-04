@@ -201,6 +201,52 @@
 	 (incf (yaw state) (* 2 +sf-pi+)))
 	(t (yaw state))))
 
+(defun highest-arg-count (pfunc-list)
+  (apply #'max
+	 (mapcar #'(lambda (pf)
+		     (max (arg-count pf)
+			  (if (typep pf 'master)
+			      (highest-arg-count (subs pf))
+			      0)))
+		 pfunc-list)))
+
+(defun process-functree (function tree &key (do-masters t))
+  "Funcalls FUNCTION on every funcdata in TREE.
+Will ignore plotfunc-function if DO-MASTERS set to nil."
+  (dolist (func tree)
+    (typecase func
+      (drawn (funcall function func))
+      (t (when do-masters
+	   (funcall function (funcdata-function func)))
+	 (process-functree function (subs func)))
+      )))
+
+(defun functree-max (tree)
+  "Returns greatest y-value to draw from tree."
+  (let ((max))
+    (process-functree
+     #'(lambda (f)
+	 (setf max
+	       (if max
+		   (max max (data-max f))
+		   (data-max f))))
+     tree
+     :do-masters nil)
+    max))
+
+(defun functree-min (tree)
+  "Returns smallest y-value to draw from a tree."
+  (let ((min))
+    (process-functree
+     #'(lambda (f)
+	 (setf min
+	       (if min
+		   (min min (data-min f))
+		   (data-min f))))
+     tree
+     :do-masters nil)
+    min))
+
 (defgeneric check-y-extremes (state)
   )
 

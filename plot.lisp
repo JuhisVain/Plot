@@ -1,30 +1,4 @@
-(ql:quickload :lispbuilder-sdl)
 
-(defvar *auto-quit* nil)
-(defvar *draw-labels* t
-  "The default state of whether or not to write names for plotted data.")
-
-;; There's also 'render-2d-dots:
-(defparameter *render-function* 'render-2d-lineplot
-  "Funcallable symbol or function, used to generate funcdata-renders.")
-
-(defvar *bad-color* (sdl:color :r 100 :g 0 :b 0))
-(defvar *grid-color* (sdl:color :r 50 :g 50 :b 50))
-(defvar *grid-origin-color* (sdl:color :r 150 :g 150 :b 150))
-
-(defconstant +sf-pi+ (float pi 1.0)) ;; PI in single float precision
-
-(defvar *transparent* (sdl:color :r 0 :g 0 :b 0 :a 0)) ; alpha 0 is transparent
-
-(defparameter *draw-functions* nil
-  "Storage for funcdatas currently being drawn.")
-
-(load "graphics.lisp")
-(load "colors.lisp")
-(load "funcdata.lisp")
-(load "state.lisp")
-(load "2d.lisp")
-(load "wireframe.lisp")
 
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
@@ -301,6 +275,56 @@ using COLOR for text."
 		       :type :hw)
    :color color))
 
+(defun generate-function-containers (input-func-list input-dimensions)
+  (let ((color-stack (generate-colors
+		      255 0 0
+		      (plottable-count input-func-list)))
+	(resolution-width (car input-dimensions))
+	(resolution-height (cadr input-dimensions)))
+    (labels
+	((funcdata-generator (func-list id-counter &optional master)
+	   (mapcar #'(lambda (func)
+		       (let* ((plist (identify-input-token func))
+			      (main-func (getf plist :function))
+			      (options (getf plist :options))
+			      (subs (getf plist :subs)))
+			 
+			 (let ((processed-func
+				;; NOTE: Could declare color-stack special and
+				;; pop it in (make-funcdata) to get aux colors
+				(multiple-value-bind
+				      (real realpart imagpart)
+				    (if (null subs);aka. master
+					(aux-colors (pop color-stack))
+					;master funcs are not drawn:
+					(values nil nil nil)) 
+
+				  (let ((data-per-pixel
+					 (or (getf options :data-per-pixel) 1))
+					(arg-count
+					 (or (getf options :arg-count)
+					     (get-arg-count main-func))))
+				    (make-funcdata
+				     :function main-func
+				     :resolution-width resolution-width
+				     :resolution-height resolution-height
+				     :label (incf id-counter)
+				     :color-real real
+				     :color-realpart realpart
+				     :color-imagpart imagpart
+				     :master master
+				     :subs subs
+				     :data-per-pixel data-per-pixel
+				     :arg-count arg-count)))))
+			   
+			   (when subs
+			     (setf (subs processed-func)
+				   (funcdata-generator subs 0 processed-func)))
+			   
+			   processed-func)))
+		   func-list)))
+      (funcdata-generator input-func-list 0))))
+
 (defun read-input-list (input-func-list input-dimensions)
   "Read a function description, store processed pfunc-list to *draw-functions*
 and return it."
@@ -309,52 +333,6 @@ and return it."
    (generate-function-containers input-func-list input-dimensions)
    ;(to-plotfunc (to-funcdata input-func-list dataset-width))
    ))
-
-(defun process-functree (function tree &key (do-masters t))
-  "Funcalls FUNCTION on every funcdata in TREE.
-Will ignore plotfunc-function if DO-MASTERS set to nil."
-  (dolist (func tree)
-    (typecase func
-      (drawn (funcall function func))
-      (t (when do-masters
-	   (funcall function (funcdata-function func)))
-	 (process-functree function (subs func)))
-      )))
-
-(defun functree-max (tree)
-  "Returns greatest y-value to draw from tree."
-  (let ((max))
-    (process-functree
-     #'(lambda (f)
-	 (setf max
-	       (if max
-		   (max max (data-max f))
-		   (data-max f))))
-     tree
-     :do-masters nil)
-    max))
-
-(defun functree-min (tree)
-  "Returns smallest y-value to draw from a tree."
-  (let ((min))
-    (process-functree
-     #'(lambda (f)
-	 (setf min
-	       (if min
-		   (min min (data-min f))
-		   (data-min f))))
-     tree
-     :do-masters nil)
-    min))
-
-(defun highest-arg-count (pfunc-list)
-  (apply #'max
-	 (mapcar #'(lambda (pf)
-		     (max (arg-count pf)
-			  (if (typep pf 'master)
-			      (highest-arg-count (subs pf))
-			      0)))
-		 pfunc-list)))
 
 ;; Let's go with elements in func-list as (func key-list) or just func
 ;; key-list is list of functions to be applied to func's result
