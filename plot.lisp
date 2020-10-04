@@ -365,29 +365,6 @@ whose function is eql to FUNCTION."
 			       function)
 			  (list container)))))))
     found))
-       
-(defun member-sub (function plotfunc)
-  "Returns T if FUNCTION is found in funcdata-function slot in any
- of PLOTFUNC's subfunctions at any depth."
-  (declare (function function)
-	   (plotfunc plotfunc))
-  (dolist (sub (plotfunc-subs plotfunc))
-    (when
-	(if (plotfunc-p sub)
-	    (member-sub function sub)
-	    (eq function (funcdata-function sub)))
-      (return-from member-sub t))))
-
-(defun master-funcdata (func &optional (root-level *draw-functions*))
-  "Find root function containers for function FUNC in tree ROOT-LEVEL."
-  (let ((masters nil))
-    (dolist (master root-level)
-      (typecase master
-	(funcdata (when (eq func (funcdata-function master))
-		    (push master masters)))
-	(plotfunc (when (member-sub func master)
-		    (push master masters)))))
-    masters))
 
 ;;; Bindings key args should be in list of form
 ;;  '(increase-button
