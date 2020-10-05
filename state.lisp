@@ -72,6 +72,12 @@
     :accessor pitch)
    ))
 
+(defclass with-value-grid ()
+  ())
+
+(defclass 2d-plot-with-grid (2d-state with-value-grid)
+  ())
+
 (defclass heatmap (3d-state)
   ())
 
@@ -87,6 +93,9 @@
     :initform 1/50
     :initarg :wire-density
     :accessor wire-density)))
+
+(defclass wireframe-with-grid (wireframe with-value-grid)
+  ())
 
 ;;;; Auxiliary attributes:
 
@@ -270,8 +279,10 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
     (decf (slot-value state 'min-y) 0.1)
     (incf (slot-value state 'max-y) 0.1)))
 
-(defmethod check-y-extremes :after ((state 3d-state))
+(defmethod check-y-extremes :after ((state with-value-grid))
   "Align maxima and minima with order of magnitude."
+  ;;;This will force grid to be drawn with the value axis beginning and ending
+  ;; at values flush with the order of magnitude of the lines of the grid.
   (let* ((old-max (max-y state))
 	 (old-min (min-y state))
 	 (alignment (mark-lines (- old-max old-min))))
@@ -284,27 +295,24 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
 
 (defmethod render-state :around (state)
   (let ((before (get-internal-real-time))
-	(result (call-next-method))
+	(result
+	  (progn (sdl:clear-display sdl:*black*)
+		 (call-next-method)))
 	(after (get-internal-real-time)))
     (format t "Rendering time: ~a~%" (- after before))
     result))
 
-(defmethod render-state ((state 2d-state))
-  (sdl:clear-display sdl:*black*)
+(defmethod render-state :before ((state 2d-plot-with-grid))
   (draw-grid (min-y state) (max-y state) (y-range state)
 	     (y-scale state) (screen-y0 state)
 	     (min-x state) (max-x state) (x-range state)
 	     (x-scale state) (screen-x0 state)
-	     (slack-pixels state) (surface state))
+	     (slack-pixels state) (surface state)))
 
-  (render-funcs state))
+(defmethod render-state :before ((state wireframe-with-grid))
+  (render-wireframe-grid state))
 
-(defmethod render-state ((state 3d-state))
-  (sdl:clear-display sdl:*black*)
-  ;; rendering multiple 2 arg functions using heatmap will drawn them
-  ;; sequentially, potentially obscuring earlier renders.
-  ;; Could be handled using when max 3 functions with just adding
-  ;; primary colors together
+(defmethod render-state ((state state))
   (render-funcs state))
 
 (defmethod initialize-instance :after ((state state) &key)
@@ -343,8 +351,8 @@ y-scaling is dynamic based on extreme values on X's range."
 				  (subtypep plot-type state-type))
 			     plot-type
 			     (case state-type
-			       (2d-state '2d-state)
-			       (3d-state 'wireframe)))
+			       (2d-state '2d-plot-with-grid)
+			       (3d-state 'wireframe-with-grid)))
 			 :pfunc-list pfunc-list
 			 :drawn-list (collect-drawn pfunc-list)
 			 :min-x (or min-x 0) :max-x (or max-x 100)

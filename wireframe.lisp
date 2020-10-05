@@ -321,8 +321,6 @@ Y refers to value times value scaler."
 	   (corner-x1 (car x1z0))
 	   (corner-x2 (car x1z1)))
 
-      (render-wireframe-grid state value-scaler)
-
       (do* ; All 'squares' of whole wireframe, with painter's algorithm
        (;; Generate list of float indexes and reverse as required for draw order
 	(wire-list (loop for a from 0.0 to (/ 1 wire-density)
