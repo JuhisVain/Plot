@@ -153,12 +153,12 @@ Y refers to value times value scaler."
 					     (* scaler height)
 					     state)
 				 *grid-color*)
-		 (sdl:draw-string-solid-* (format nil "~a" height)
-					  ;; center might not always be best
-					  (car center)
-					  (- (height state) (cdr center))
-					  :color *grid-color*
-					  :surface (surface state))))
+		 (draw-string (format nil "~a" height)
+			      ;; center might not always be best
+			      (car center)
+			      (cdr center)
+			      state
+			      :color *grid-color*)))
 
       (flet ((3d-draw-vertical (x z value0 value1 color &optional mark mark-value)
 	       (declare ((member low high mid NIL) mark))
