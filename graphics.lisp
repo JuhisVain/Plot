@@ -17,6 +17,12 @@
 				     :surface surface
 				     :color color))))
 
+(defun draw-free-line (x0 y0 x1 y1 color surface)
+  (sdl:draw-line-* x0 (- (sdl:height surface) y0)
+		   x1 (- (sdl:height surface) y1)
+		   :surface surface
+		   :color color))
+
 (defgeneric draw-line (x0 y0 x1 y1 function surface))
 
 (defmethod draw-line (x0 (y0 (eql 'zero-division))
