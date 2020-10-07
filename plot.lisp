@@ -259,20 +259,6 @@ results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
 	  (pfunc-list state))
   (check-y-extremes state))
 
-(defun render-string (string color &key (color-key sdl:*black*))
-  "SDL:RENDER-STRING-SOLID picks it's color key in an unpredictable way.
-Renders STRING onto a new surface with color key enabled and set to COLOR-KEY
-using COLOR for text."
-  (sdl:draw-string-solid-*
-   string 0 0
-   :surface
-   (sdl:create-surface (* (length string)
-			  (sdl:char-width sdl:*default-font*))
-		       (sdl:char-height sdl:*default-font*)
-		       :color-key color-key
-		       :type :hw)
-   :color color))
-
 (defun generate-function-containers (input-func-list input-dimensions)
   (let ((color-stack (generate-colors
 		      255 0 0

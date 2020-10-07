@@ -87,61 +87,50 @@ Result will still need to be inverted before drawing."
 	     (< (label-position state)
 		(/ (length (data function))
 		   (data-per-pixel function))))
-    (let ((string-render
-	   (render-string
-	    (label function)
-	    (color-real function))))
-      (unwind-protect
-	   (progn
-	     (sdl:draw-surface-at-*
-	      string-render
-	      (label-position state)
-	      (+
-	       ;; move label downwards:
-	       (sdl:char-height sdl:*default-font*)
-	       (- (height state)
-		  (round
-		   (realpart
-		    (- (+ (slack-pixels state)
-			  
-			  (handler-case
-			      (let* ((pre-x0 (floor ;index of low bound
-					      (* (data-per-pixel function)
-						 (label-position state))))
-				     (pre-x1 (ceiling ;index of high bound
-					      (* (data-per-pixel function)
-						 (label-position state))))
-				     (x0 (/ ;pixel of low bound
-					  pre-x0
-					  (data-per-pixel function)))
-				     (x1 (/ ;pixel of high bound
-					  pre-x1
-					  (data-per-pixel function)))
-				     (y0 (* (y-scale state) ; pixel value
-					    (aref (data function)
-						  pre-x0)))
-				     (y1 (* (y-scale state)
-					    (aref (data function)
-						  pre-x1)))
-				     (x (label-position state)))
+    (draw-string (label function)
+		 (label-position state)
+		 ;;TODO: Simplify:
+		 (+ (sdl:char-height sdl:*default-font*)
+		    (round
+		     (realpart
+		      (- (+ (slack-pixels state)
+			    (handler-case
+				(let* ((pre-x0 (floor ;index of low bound
+						(* (data-per-pixel function)
+						   (label-position state))))
+				       (pre-x1 (ceiling ;index of high bound
+						(* (data-per-pixel function)
+						   (label-position state))))
+				       (x0 (/ ;pixel of low bound
+					    pre-x0
+					    (data-per-pixel function)))
+				       (x1 (/ ;pixel of high bound
+					    pre-x1
+					    (data-per-pixel function)))
+				       (y0 (* (y-scale state) ; pixel value
+					      (aref (data function)
+						    pre-x0)))
+				       (y1 (* (y-scale state)
+					      (aref (data function)
+						    pre-x1)))
+				       (x (label-position state)))
 
-				(if (= x0 x1) ; comparing floats
-				    y0
-				    ;; y-value of X:
-				    (+ y0
-				       (* (/ (- y1 y0)
-					     (- x1 x0))
-					  (- x x0)))))
-				
-			    (type-error () 0)))
-		       
-		       (screen-y0 state))))))
-	      :surface (surface state))
-	     (incf (label-position state)
+				  (if (= x0 x1) ; comparing floats
+				      y0
+				      ;; y-value of X:
+				      (+ y0
+					 (* (/ (- y1 y0)
+					       (- x1 x0))
+					    (- x x0)))))
+			      
+			      (type-error () 0)))
+			 
+			 (screen-y0 state)))))
+		 (surface state)
+		 :color (color-real function))
+    (incf (label-position state)
 		   (* (sdl:char-width sdl:*default-font*)
-		      (length (label function)))))
-	;; unwind-protect cleanup:
-	(sdl:free string-render)))))
+		      (length (label function))))))
 
 (defun draw-horizontal (y color surface &key (mark nil))
   (let ((translated-y (- (sdl:height surface) y)))
