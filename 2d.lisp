@@ -144,9 +144,10 @@ Result will still need to be inverted before drawing."
 		     :surface surface
 		     :color color)
     (typecase mark
-      (string (sdl:draw-string-solid-* mark 1 (+ translated-y 2)
-				       :surface surface
-				       :color color)))))
+      (string (draw-string mark 1
+			   (+ y 2) ; +2 positions mark under hor grid line
+			   surface
+			   :color color)))))
 
 (defun draw-value (x-coord value y-scale slack screen-y0 surface pfunc)
   (typecase value

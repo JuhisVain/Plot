@@ -166,24 +166,23 @@ Y refers to value times value scaler."
 		     (high-val (3d-crd-scr x z (* scaler value1) state)))
 		 (draw-grid-line high-val low-val color)
 		 (case mark
-		   (high (sdl:draw-string-solid-*
+		   (high (draw-string
 			  (format nil "~a" mark-value)
-			  (car high-val) (- (height state) (cdr high-val))
-			  :color color
-			  :surface (surface state)))
-		   (low (sdl:draw-string-solid-*
-			  (format nil "~a" mark-value)
-			  (car low-val) (- (height state) (cdr low-val))
-			  :color color
-			  :surface (surface state)))
-		   (mid (sdl:draw-string-solid-*
-			  (format nil "~a" mark-value)
-			  (round (+ (car high-val) (car low-val)) 2)
-			  (- (height state) (round (+ (car high-val) (car low-val)) 2))
-			  :color color
-			  :surface (surface state)))))))
-		 
-	
+			  (car high-val) (cdr high-val)
+			  (surface state)
+			  :color color))
+		   (low (draw-string
+			 (format nil "~a" mark-value)
+			 (car low-val) (cdr low-val)
+			 (surface state)
+			 :color color))
+		   (mid (draw-string
+			 (format nil "~a" mark-value)
+			 (round (+ (car high-val) (car low-val)) 2)
+			 (round (+ (car high-val) (car low-val)) 2)
+			 (surface state)
+			 :color color))))))
+
 	;; Draw 3 furthest corner lines:
 	(destructuring-bind
 	    ((crd-left-x crd-left-z)
