@@ -157,7 +157,7 @@ Y refers to value times value scaler."
 			      ;; center might not always be best
 			      (car center)
 			      (cdr center)
-			      state
+			      (surface state)
 			      :color *grid-color*)))
 
       (flet ((3d-draw-vertical (x z value0 value1 color &optional mark mark-value)

@@ -3,7 +3,7 @@
 		    :surface surface
 		    :color color))
 
-(defun draw-string (string x y state
+(defun draw-string (string x y surface
 		    &key
 		      (rotation 0)
 		      (font lispbuilder-sdl:*default-font*)
@@ -11,8 +11,7 @@
   "Renders STRING to internal surface which will be rotated ROTATION degrees
 and blitted to STATE's surface."
   (declare (string string)
-	   (fixnum x y rotation)
-	   (state state))
+	   (fixnum x y rotation))
   (let ((string-render (sdl:rotate-surface
 			rotation
 			:free t
@@ -27,8 +26,8 @@ and blitted to STATE's surface."
 				    :font font :color color))))
     (sdl:draw-surface-at-*
      string-render
-     x (- (height state) y)
-     :surface (surface state))
+     x (- (sdl:height surface) y)
+     :surface surface)
     (sdl:free string-render)))
 
 (defun draw-vertical (x color surface &key (mark nil))
@@ -41,9 +40,7 @@ and blitted to STATE's surface."
 		   :surface surface
 		   :color color)
   (typecase mark
-    (string (sdl:draw-string-solid-* mark (+ x 2) (- (sdl:height surface) 8)
-				     :surface surface
-				     :color color))))
+    (string (draw-string mark (+ x 2) 8 surface :color color))))
 
 (defun draw-free-line (x0 y0 x1 y1 color surface)
   (sdl:draw-line-* x0 (- (sdl:height surface) y0)
