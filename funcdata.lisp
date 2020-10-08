@@ -156,7 +156,7 @@
 			:subs subs
 			:arg-count arg-count))))
 
-(defun 2d-dataref (funcdata index)
+(defun faref (funcdata index)
   (declare (abstract-funcdata funcdata)
 	   ((float 0.0 1.0) index))
   
