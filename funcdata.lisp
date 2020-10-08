@@ -156,18 +156,16 @@
 			:subs subs
 			:arg-count arg-count))))
 
-(defun faref (funcdata index)
-  (declare (abstract-funcdata funcdata)
-	   ((float 0.0 1.0) index))
-  
-  (let* ((array-index (* (array-dimension (data funcdata) 0)
-			 index))
-	 (f-index (floor array-index))
+(defun faref (array index)
+  "Linear interpolating aref for one dimensional arrays."
+  (declare ((simple-array * 1) array)
+	   ((single-float 0.0 1.0) index))
+  (let* ((array-index (* index (array-dimension array 0)))
 	 (c-index (ceiling array-index)))
-    (/
-     (+ (aref (data funcdata) f-index)
-	(aref (data funcdata) c-index))
-     2)))
+    (multiple-value-bind (f-index f-weight)
+	(floor array-index)
+      (+ (* (aref array f-index) (- 1 f-weight))
+	 (* (aref array c-index) f-weight)))))
 
 (defun 2faref (2d-array x y)
   "Like aref for two dimensional array of numbers 2D-ARRAY,
