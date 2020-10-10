@@ -218,18 +218,20 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 	    (height (the (unsigned-byte 16) (height state))))
 	(dotimes (x width)
 	  (dotimes (z height)
-	    (let* ((value
-		     (3d-dataref function
-				 (/ x 1.0 width)
-				 (/ z 1.0 height)))
-		   (spread-value
-		     (/ (- value (min-y state)) ;; TODO: ZERODIV ZERODIV ZERODIV
-			(y-range state))))
-	      (destructuring-bind (rk r gk g bk b ak a)
-		  (hue-to-rgb (* spread-value 1.8 pi))
-		(declare (ignore rk gk bk ak a))
-		(sdl:set-color-* color :r r :g g :b b)
-		(draw-pixel x z (surface state) color)))))	
+	    (let ((value
+		    (3d-dataref function
+				(/ x 1.0 width)
+				(/ z 1.0 height))))
+	      (typecase value
+		(real (destructuring-bind (rk r gk g bk b ak a)
+			  (hue-to-rgb (* (/ (- value (min-y state))
+					    (y-range state))
+					 1.8
+					 pi))
+			(declare (ignore rk gk bk ak a))
+			(sdl:set-color-* color :r r :g g :b b)))
+		(t (sdl:set-color color *bad-color*))))
+	    (draw-pixel x z (surface state) color)))
 	(sdl:free color)))))
 
 (defmethod compute-data (function (state 2d-state))

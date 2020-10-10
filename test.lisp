@@ -191,6 +191,15 @@
    :window-width w
    :from '(-0.1 -0.1) :to '(0.1 0.1)))
 
+(defun test-heatmap-zero-div (&optional (h 500) (w 500))
+  (plot
+   (list #'(lambda (x z)
+	     (/ x (max z 0))))
+   :window-height h
+   :window-width w
+   :plot-type 'heatmap
+   :from '(-0.1 -0.1) :to '(0.1 0.1)))
+
 ;; TODO: performance testing on 3d-plotting
 (defun test-3d ()
   (plot '((+ :arg-count 2)) :from '(0 5) :to '(10 15)))
