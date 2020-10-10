@@ -26,6 +26,24 @@ and value are both at max."
 	  :b (voodoo 1)
 	  :a 255)))
 
+(defun red (color)
+  (multiple-value-bind (r g b)
+      (sdl:color-* color)
+    (declare (ignore g b))
+    r))
+
+(defun green (color)
+  (multiple-value-bind (r g b)
+      (sdl:color-* color)
+    (declare (ignore r b))
+    g))
+
+(defun blue (color)
+  (multiple-value-bind (r g b)
+      (sdl:color-* color)
+    (declare (ignore r g))
+    b))
+
 (defun generate-colors (red green blue count)
   (let ((start-hue (rgb-to-hue red green blue))
 	(hue-step (/ (* 2 pi)
