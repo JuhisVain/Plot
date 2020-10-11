@@ -190,9 +190,11 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 	(dotimes (z height)
 	  (destructuring-bind (r &optional (g 0) (b 0))
 	      (mapcar #'(lambda (value) ;translate values to range 0 - 255
-			  (* (/ (- value (min-y state))
-				(y-range state))
-			     255))
+			  (typecase value
+			    (real (* (/ (- value (min-y state))
+					(y-range state))
+				     255))
+			    (t 0)))
 		      (loop for function in drawns ; values at (x,z)
 			    collecting (3d-dataref function
 						   (/ x 1.0 width)
