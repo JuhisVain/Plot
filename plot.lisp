@@ -262,10 +262,7 @@ results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
   (check-y-extremes state))
 
 (defun generate-function-containers (input-func-list input-dimensions)
-  (let ((color-stack (generate-colors
-		      255 0 0
-		      (plottable-count input-func-list)))
-	(resolution-width (car input-dimensions))
+  (let ((resolution-width (car input-dimensions))
 	(resolution-height (cadr input-dimensions)))
     (labels
 	((funcdata-generator (func-list id-counter &optional master)
@@ -276,15 +273,6 @@ results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
 			      (subs (getf plist :subs)))
 			 
 			 (let ((processed-func
-				;; NOTE: Could declare color-stack special and
-				;; pop it in (make-funcdata) to get aux colors
-				(multiple-value-bind
-				      (real realpart imagpart)
-				    (if (null subs);aka. master
-					(aux-colors (pop color-stack))
-					;master funcs are not drawn:
-					(values nil nil nil)) 
-
 				  (let ((data-per-pixel
 					 (or (getf options :data-per-pixel) 1))
 					(arg-count
@@ -295,13 +283,10 @@ results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
 				     :resolution-width resolution-width
 				     :resolution-height resolution-height
 				     :label (incf id-counter)
-				     :color-real real
-				     :color-realpart realpart
-				     :color-imagpart imagpart
 				     :master master
 				     :subs subs
 				     :data-per-pixel data-per-pixel
-				     :arg-count arg-count)))))
+				     :arg-count arg-count))))
 			   
 			   (when subs
 			     (setf (subs processed-func)

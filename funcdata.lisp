@@ -27,13 +27,13 @@
 (defclass drawn ()
   ((color-real
     :initarg :color-real
-    :reader color-real)
+    :accessor color-real)
    (color-realpart
     :initarg :color-realpart
-    :reader color-realpart)
+    :accessor color-realpart)
    (color-imagpart
     :initarg :color-imagpart
-    :reader color-imagpart)
+    :accessor color-imagpart)
    (data-min
     :initform NIL
     :accessor data-min)

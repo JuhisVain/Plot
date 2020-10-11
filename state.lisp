@@ -330,6 +330,26 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
       (rec-col pfunc-list)
       (reverse drawns))))
 
+(defun generate-pfunc-colors (state)
+  "Adds colors to drawn funcdatas."
+  (macrolet ((set-colors (function color)
+	       `(multiple-value-bind (real realpart imagpart)
+		    (aux-colors ,color)
+		  (setf (color-real ,function) real
+			(color-realpart ,function) realpart
+			(color-imagpart ,function) imagpart))))
+    (let ((drawns (drawn-list state)))
+      (typecase state
+	(heatmap nil)
+	((or 2d-state wireframe)
+	 (loop for func in drawns
+	       for color in (generate-colors 255 0 0 (length drawns))
+	       do (set-colors func color)))
+	(sequential-heatmap
+	 (loop for func in drawns
+	       for color in (generate-colors 255 0 0 3) ;pure red green and blue
+	       do (set-colors func color)))))))
+
 (defun make-state (pfunc-list
 		   min max
 		   wire-density
@@ -378,4 +398,5 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 			(screen-x0 state)
 			(x-scale state))))
 
+    (generate-pfunc-colors state)
     state))
