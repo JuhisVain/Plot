@@ -253,6 +253,16 @@
    :from '(-3 -3) :to '(3 3)
    :window-height h :window-width w))
 
+(defun test-seq-heat (&optional (data-per-pixel 1/10) (h 500) (w 500))
+  (plot
+   (list
+    #'gauss2
+    (list #'gauss2
+	  :data-per-pixel data-per-pixel))
+   :from '(-3 -3) :to '(3 3)
+   :window-height h :window-width w
+   :plot-type 'sequential-heatmap))
+
 (defun test-3d-complex (&optional (h 1000) (w 1000))
   (plot (list #'(lambda (x z)
 		  (sqrt (* x z))))
