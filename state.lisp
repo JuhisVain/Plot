@@ -349,7 +349,11 @@ y-scaling is dynamic based on extreme values on X's range."
 	 (state
 	  (make-instance (if (and plot-type
 				  (subtypep plot-type state-type))
-			     plot-type
+			     (case plot-type
+			       (heatmap (if (> (length pfunc-list) 1)
+					    'sequential-heatmap
+					    'heatmap))
+			       (t plot-type))
 			     (case state-type
 			       (2d-state '2d-plot-with-grid)
 			       (3d-state 'wireframe-with-grid)))
