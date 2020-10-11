@@ -33,15 +33,6 @@
     :initform 0
     :accessor label-position)
 
-   ;;for now to be used with 3d-state, one of:
-   ;; 'heatmap :: for a solitary function
-   ;; 'sequential-heatmap :: somewhat unusable multi-func heatmap
-   ;; TODO: investigate use of RGB colorspaces for 2 and 3 func version of above
-   #|(style 
-    :initarg :style
-    :reader style
-    :initform 'heatmap)|#
-
    (surface
     :initarg :surface
     :accessor surface)))
@@ -78,13 +69,13 @@
 (defclass 2d-plot-with-grid (2d-state with-value-grid)
   ())
 
-(defclass heatmap (3d-state)
+(defclass heatmap (3d-state) ; for use with one func only
   ())
 
-(defclass sequential-heatmap (3d-state)
+(defclass sequential-heatmap (3d-state) ; for 1 to 3 funcs
   ())
 
-(defclass wireframe (3d-state)
+(defclass wireframe (3d-state) ; for 1 to n funcs
   ((margin
     :initform 10
     :initarg :margin
@@ -341,13 +332,10 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
     (let ((drawns (drawn-list state)))
       (typecase state
 	(heatmap nil)
+	(sequential-heatmap nil)
 	((or 2d-state wireframe)
 	 (loop for func in drawns
 	       for color in (generate-colors 255 0 0 (length drawns))
-	       do (set-colors func color)))
-	(sequential-heatmap
-	 (loop for func in drawns
-	       for color in (generate-colors 255 0 0 3) ;pure red green and blue
 	       do (set-colors func color)))))))
 
 (defun make-state (pfunc-list
