@@ -253,12 +253,14 @@
    :from '(-3 -3) :to '(3 3)
    :window-height h :window-width w))
 
-(defun test-seq-heat (&optional (data-per-pixel 1/10) (h 500) (w 500))
+(defun test-seq-heat (&optional (data-per-pixel 1/100) (h 500) (w 500))
   (plot
    (list
     #'gauss2
     (list #'gauss2
-	  :data-per-pixel data-per-pixel))
+	  :data-per-pixel data-per-pixel)
+    (list #'gauss2
+	  :data-per-pixel (/ data-per-pixel 2.5)))
    :from '(-3 -3) :to '(3 3)
    :window-height h :window-width w
    :plot-type 'sequential-heatmap))

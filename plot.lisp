@@ -183,30 +183,23 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 
 (defmethod render-funcs ((state sequential-heatmap))
   (let ((drawns (drawn-list state)))
-    (dolist (function drawns)
-      (multiple-value-bind
-	    (red green blue)
-	  (sdl:color-* (color-real function))
-	(let ((color (sdl:color :a 0)))
-	  (dotimes (x (array-dimension (data function) 0))
-	    (dotimes (z (array-dimension (data function) 1))
-
-	      ;; Handle zero div:
-	      (if (realp (aref (data function) x z))
-		  (let ((value (/ (- (aref (data function) x z) (min-y state))
-				  (- (max-y state) (min-y state)))))
-		    
-		    (sdl:set-color-* color
-				     :r red
-				     :g green
-				     :b blue
-				     :a (* 255 value)))
-		  ;;if not real:
-		  (sdl:set-color color *bad-color*))
-	      
-	      
-	      (draw-pixel x z (surface state) color)))
-	  (sdl:free color))))))
+    (let ((color (sdl:color))
+	  (width (the (unsigned-byte 16) (width state)))
+	  (height (the (unsigned-byte 16) (height state))))
+      (dotimes (x width)
+	(dotimes (z height)
+	  (destructuring-bind (r &optional (g 0) (b 0))
+	      (mapcar #'(lambda (value) ;translate values to range 0 - 255
+			  (* (/ (- value (min-y state))
+				(y-range state))
+			     255))
+		      (loop for function in drawns ; values at (x,z)
+			    collecting (3d-dataref function
+						   (/ x 1.0 width)
+						   (/ z 1.0 height))))
+	    (sdl:set-color-* color :r r :g g :b b)
+	    (draw-pixel x z (surface state) color))))
+      (sdl:free color))))
 
 ;; Data-per-pixel has essentially no effect on rendering speed using heatmap
 (defmethod render-funcs ((state heatmap))
