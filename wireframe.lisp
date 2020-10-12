@@ -337,8 +337,8 @@ Y refers to value times value scaler."
 			    z-wires-full)
 		     (cdr z-wires)))
 	;; how many pixels in screen x-vector of a complete line from max to min
-	(x-xvector-pixels (abs (- corner-x0 corner-x1)))
-	(z-xvector-pixels (abs (- corner-x1 corner-x2)))
+	(x-xvector-pixels (1+ (abs (- corner-x0 corner-x1))))
+	(z-xvector-pixels (1+ (abs (- corner-x1 corner-x2))))
 	;; how many in square:
 	(x-xsv-pix (* wire-density x-xvector-pixels))
 	(z-xsv-pix (* wire-density z-xvector-pixels))
