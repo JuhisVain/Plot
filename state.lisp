@@ -343,6 +343,7 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
 		   wire-density
 		   plot-type
 		   slack
+		   pitch yaw
 		   &key
 		     (surface sdl:*default-display*))
   "Initialize plotting state for functions in FUNC-LIST from MIN-X to MAX-X,
@@ -385,6 +386,11 @@ screen-y0 ~a and x0 ~a, x-scale: ~a~%"
 			(screen-y0 state)
 			(screen-x0 state)
 			(x-scale state))))
+
+    (when pitch
+      (setf (pitch state) (coerce pitch 'single-float)))
+    (when yaw
+      (setf (yaw state) (coerce yaw 'single-float)))
 
     (generate-pfunc-colors state)
     state))

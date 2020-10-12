@@ -447,7 +447,7 @@ Returns T when binding found and STATE changed."
     t))
 
 (defun plot (func-list
-	     &key (from 0) (to 100) wire-density plot-type slack
+	     &key (from 0) (to 100) wire-density plot-type slack pitch yaw
 	       (window-width 500) (window-height 500)
 	       (draw-labels *draw-labels*)
 	       bindings)
@@ -468,7 +468,8 @@ Returns T when binding found and STATE changed."
 	     from to
 	     (or wire-density 1/50)
 	     plot-type
-	     (or slack 1/20)))
+	     (or slack 1/20)
+	     pitch yaw))
 
       (setf binding-hash-table (make-binding-hash-table bindings state))
       ;; produce renders for all drawn funcs:
