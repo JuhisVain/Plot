@@ -63,6 +63,14 @@
    :window-width w
    :from '(-3 -3) :to '(3 3)))
 
+(defun test-yaw (&optional (yaw 0) (h 777) (w 777))
+  (plot
+   (list (list #'gauss2))
+   :window-height h
+   :window-width w
+   :from '(-3 -3) :to '(3 3)
+   :yaw yaw))
+
 (defun test-vertgrid (&optional (h 1000) (w 1000))
   (plot
    (list (list #'(lambda (x y)
