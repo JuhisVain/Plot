@@ -4,6 +4,7 @@
 		    :color color))
 
 (defun format-mark (value)
+  "Formats VALUE as integer if it is an integer, and as float if it isn't."
   (declare (real value))
   (format nil "~[~a~:;~G~]"
 	  (if (integerp value) 0 1)
