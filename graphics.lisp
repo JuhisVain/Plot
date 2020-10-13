@@ -3,6 +3,12 @@
 		    :surface surface
 		    :color color))
 
+(defun format-mark (value)
+  (declare (real value))
+  (format nil "~[~a~:;~G~]"
+	  (if (integerp value) 0 1)
+	  value))
+
 (defun draw-string (string x y surface
 		    &key
 		      (rotation 0)

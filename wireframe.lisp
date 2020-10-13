@@ -153,7 +153,7 @@ Y refers to value times value scaler."
 					     (* scaler height)
 					     state)
 				 *grid-color*)
-		 (draw-string (format nil "~a" height)
+		 (draw-string (format-mark height)
 			      ;; center might not always be best
 			      (car center)
 			      (cdr center)
@@ -221,7 +221,7 @@ Y refers to value times value scaler."
 			    'SINGLE-FLOAT)
 		    center-y ; why does this work
 		    (min-y state) (max-y state) *grid-color*
-		    'low x)))
+		    'low (format-mark x))))
 
 	(let* ((z-range-align (mark-lines (z-range state)))
 	       (z-align-min (+ z-range-align
@@ -240,7 +240,7 @@ Y refers to value times value scaler."
 			       (z-range state))
 			    'SINGLE-FLOAT)
 		    (min-y state) (max-y state) *grid-color*
-		    'low z)))
+		    'low (format-mark z))))
 
 	))))
 

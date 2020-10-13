@@ -15,7 +15,7 @@
 				     slack-pixels))
 			   *grid-color*
 			   surface
-			   :mark (format nil "~a" y)))
+			   :mark (format-mark y)))
 
 ;;; Draw vertical grid:
     (loop for x from (- min-x (rem min-x x-grid-step))
@@ -24,7 +24,7 @@
 				   screen-x0))
 			 *grid-color*
 			 surface
-			 :mark (format nil "~a" x)))
+			 :mark (format-mark x)))
 
 ;;; Draw zeroes
     (draw-horizontal (round (+ (- screen-y0)
