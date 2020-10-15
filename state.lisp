@@ -63,6 +63,12 @@
     :accessor pitch)
    ))
 
+(defclass isometric (3d-state)
+  ((margin
+    :initform 10
+    :initarg :margin
+    :accessor margin)))
+
 (defclass with-value-grid ()
   ())
 
@@ -75,16 +81,15 @@
 (defclass sequential-heatmap (3d-state) ; for 1 to 3 funcs
   ())
 
-(defclass wireframe (3d-state) ; for 1 to n funcs
-  ((margin
-    :initform 10
-    :initarg :margin
-    :accessor margin)
-   (wire-density
+(defclass wireframe (isometric) ; for 1 to n funcs
+  ((wire-density
     :initform 1/50
     :initarg :wire-density
     :accessor wire-density)))
-
+#| ;;Failed experiment
+(defclass shaded (isometric)
+  ())
+|#
 (defclass wireframe-with-grid (wireframe with-value-grid)
   ())
 
@@ -141,7 +146,7 @@
       100
       (/ (height state) (y-range state))))
 
-(defmethod y-scale ((state wireframe))
+(defmethod y-scale ((state isometric))
   (/ (- (height state)
 	(* 2 (margin state)))
      (y-range state)
@@ -164,7 +169,7 @@
       (/ (height state) -2)
       (* (min-y state) (y-scale state))))
 
-(defmethod screen-y0 ((state wireframe))
+(defmethod screen-y0 ((state isometric))
   (coerce
    (+ (/ (height state) 2)
       (* (cos (pitch state))
@@ -175,7 +180,7 @@
 		2)))))
    'SINGLE-FLOAT))
 
-(defmethod render-radius ((state wireframe))
+(defmethod render-radius ((state isometric))
   (coerce
    (/ (- (min (width state)
 	      (height state))

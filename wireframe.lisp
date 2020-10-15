@@ -11,7 +11,7 @@ Y refers to value times value scaler."
 	   ((single-float 0.0 1.0) x z)
 	   ;; DANGER ZONE! Only fun-crd-scr guards this from the ZERODIV symbol:
 	   ((or single-float (complex single-float)) y)
-	   (type wireframe state)
+	   (type isometric state)
 	   (single-float shift))
   (let ((width (width state))
 	(height (height state))
@@ -72,7 +72,7 @@ Y refers to value times value scaler."
 				 (shift (screen-y0 state)))
   (declare ((float 0.0 1.0) x z)
 	   (drawn func)
-	   (wireframe state))
+	   (isometric state))
   (let ((value (3d-dataref func x z)))
     (typecase value
       (symbol '(0 . zero-division)) ; Hack to get a do nothing draw-line method
