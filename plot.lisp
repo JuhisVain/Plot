@@ -358,13 +358,26 @@ whose function is eql to FUNCTION."
 bindings hash table."))
 
 (defmethod state-controls ((state 2d-state))
-  NIL)
-
-(defmethod state-controls ((state 3d-state))
-  (macrolet ((key-action (key &rest actions)
+  (macrolet ((key-action (key actions &optional to-update)
 	       `(cons (button-to-sdlkey ',key)
 		      (make-binding
-		       :action #'(lambda () ,@actions)))))
+		       :action #'(lambda () ,actions)
+		       :functions ,to-update))))
+    (list (key-action left (let ((delta (mark-lines (x-range state))))
+			     (incf (max-x state) delta)
+			     (incf (min-x state) delta))
+		      (pfunc-list state))
+	  (key-action right (let ((delta (mark-lines (x-range state))))
+			      (decf (max-x state) delta)
+			      (decf (min-x state) delta))
+		      (pfunc-list state)))))
+
+(defmethod state-controls ((state 3d-state))
+  (macrolet ((key-action (key actions &optional to-update)
+	       `(cons (button-to-sdlkey ',key)
+		      (make-binding
+		       :action #'(lambda () ,actions)
+		       :functions ,to-update))))
     (list (key-action left (incf (yaw state) (/ +sf-pi+ 36)))
 	  (key-action right (decf (yaw state) (/ +sf-pi+ 36)))
 	  (key-action up (decf (pitch state) (/ +sf-pi+ 36)))
