@@ -19,6 +19,28 @@
 (defparameter *draw-functions* nil
   "Storage for funcdatas currently being drawn.")
 
+(defun complex-max (&rest numbers)
+  "Like max, but works on complex numbers returning greatest component."
+  (declare (ftype (function (&rest number) real)))
+  (apply #'max
+	 (mapcar #'(lambda (num)
+		     (if (complexp num)
+			 (max (imagpart num)
+			      (realpart num))
+			 num))
+		 numbers)))
+
+(defun complex-min (&rest numbers)
+  "Like min, but works on complex numbers returning least component."
+  (declare (ftype (function (&rest number) real)))
+  (apply #'min
+	 (mapcar #'(lambda (num)
+		     (if (complexp num)
+			 (min (imagpart num)
+			      (realpart num))
+			 num))
+		 numbers)))
+
 (load "funcdata.lisp")
 (load "graphics.lisp")
 (load "colors.lisp")

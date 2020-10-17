@@ -156,6 +156,68 @@
 			:subs subs
 			:arg-count arg-count))))
 
+
+(defmethod plotcall ((funcdata abstract-top-funcdata)
+		     index &rest arguments
+		     &aux (lindex (if (listp index)
+				      index
+				      (list index))))
+  (let ((value (handler-case
+		   (apply (funcdata-function funcdata) arguments)
+		 (division-by-zero () 'ZERO-DIVISION)
+		 (type-error () nil))))
+
+    (setf ;;;setfing an applied aref is used as example in the hyperspec!
+     (apply #'aref (data funcdata) lindex)
+     value)
+
+    (call-next-method)))
+
+(defmethod plotcall ((funcdata abstract-sub-funcdata)
+		     index &rest arguments
+		     &aux (lindex (if (listp index)
+				      index
+				      (list index))))
+  (declare (ignore arguments))
+  (let ((value (handler-case
+		   (apply (funcdata-function funcdata)
+			  (list
+			   (apply #'aref (data (master funcdata)) lindex)))
+		 (division-by-zero () 'ZERO-DIVISION)
+		 (type-error () nil))))
+    (setf
+     (apply #'aref (data funcdata) lindex)
+     value)
+    (call-next-method)))
+
+(defmethod plotcall ((funcdata master)
+		     index &rest arguments
+		     &aux (lindex (if (listp index)
+				      index
+				      (list index))))
+  (declare (ignore arguments lindex))
+  (dolist (sub (subs funcdata))
+    (plotcall sub index NIL))) ; arguments ignored
+
+(defmethod plotcall ((funcdata drawn)
+		     index &rest arguments
+		     &aux (lindex (if (listp index)
+				      index
+				      (list index))))
+  (declare (ignore arguments))
+  (let ((value (apply #'aref (data funcdata) lindex)))
+    (when (numberp value)
+      (setf (data-max funcdata)
+	    (if (data-max funcdata)
+		(complex-max (data-max funcdata)
+			     value)
+		(complex-max value)))
+      (setf (data-min funcdata)
+	    (if (data-min funcdata)
+		(complex-min (data-min funcdata)
+			     value)
+		(complex-min value))))))
+
 (defun faref (array index)
   "Linear interpolating aref for one dimensional arrays."
   (declare ((simple-array * 1) array)
