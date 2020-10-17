@@ -133,6 +133,17 @@ funcalling TEST with args (function sum-so-far) returns non-nil."
 	    (draw-pixel x z (surface state) color)))
 	(sdl:free color)))))
 
+(defmethod reset-extremes ((funcdata drawn))
+  (setf (data-min funcdata) NIL
+	(data-max funcdata) NIL))
+
+(defmethod reset-extremes ((funcdata master))
+  (dolist (sub (subs funcdata))
+    (reset-extremes sub)))
+
+(defmethod compute-data :before (function state)
+  (reset-extremes function))
+
 (defmethod compute-data (function (state 2d-state))
   "Populates funcdata FUNCTION's (and FUNCTION's subs) data slot's array with
 results from applying FUNCTION on values of x from MIN-X to MAX-X by X-STEP."
@@ -354,13 +365,7 @@ Returns T when binding found and STATE changed."
     
     (funcall (binding-action binding))
     (dolist (to-update (binding-functions binding))
-      (setf (data-min to-update) NIL ;must be "unset" so extremes set correctly
-	    (data-max to-update) NIL)
       (compute-data to-update state))
-    ;; check-y-extremes will take care of redrawing if extremes change:
-;    (unless (check-y-extremes state)
-      ;; if extremes did not change only redraw what's on the menu:
-;      (render-tree state (binding-functions binding)))
     t))
 
 (defun plot (func-list
