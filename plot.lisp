@@ -1,7 +1,7 @@
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
 one of (1 2 NIL)"
-  (declare (optimize (safety 3)))
+  (declare (optimize (safety 3))) ; Undefined if func not safe
   (handler-case
       (progn
 	(funcall func 13)
