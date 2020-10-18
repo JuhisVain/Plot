@@ -114,7 +114,7 @@ Result will still need to be inverted before drawing."
 		     :color color)
     (typecase mark
       (string (draw-string mark 1
-			   (+ y 2) ; +2 positions mark under hor grid line
+			   y
 			   surface
 			   :color color)))))
 

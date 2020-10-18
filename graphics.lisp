@@ -6,9 +6,9 @@
 (defun format-mark (value)
   "Formats VALUE as integer if it is an integer, and as float if it isn't."
   (declare (real value))
-  (format nil "~[~a~:;~G~]"
-	  (if (integerp value) 0 1)
-	  value))
+  (format nil "~a" (typecase value
+		     (ratio (coerce value 'float))
+		     (t value))))
 
 (defun draw-string (string x y surface
 		    &key
@@ -33,7 +33,8 @@ and blitted to STATE's surface."
 				    :font font :color color))))
     (sdl:draw-surface-at-*
      string-render
-     x (- (sdl:height surface) y)
+     x (- (sdl:height surface)
+	  (+ y (sdl:height string-render)))
      :surface surface)
     (sdl:free string-render)))
 
@@ -47,7 +48,9 @@ and blitted to STATE's surface."
 		   :surface surface
 		   :color color)
   (typecase mark
-    (string (draw-string mark (+ x 2) 8 surface :color color))))
+    (string (draw-string mark x 0 surface
+			 :rotation -90
+			 :color color))))
 
 (defun draw-free-line (x0 y0 x1 y1 color surface)
   (sdl:draw-line-* x0 (- (sdl:height surface) y0)
