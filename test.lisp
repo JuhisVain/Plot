@@ -43,6 +43,19 @@
 	:window-width 1000 :window-height 1000
 	:wire-density 1/20))
 
+(defun ex-avoid-type-error ()
+  (flet ((integer-func (x z)
+	   (declare (optimize safety)
+		    (fixnum x z))
+	   (+ (floor x z)
+	      (floor z x))))
+
+    (plot (list #'(lambda (x z)
+		    (integer-func (round x) (round z))))
+	  :from -7.65 :to 1.123
+	  :window-width 1000 :window-height 1000
+	  :wire-density 1/50)))
+
 ;;The plot will appear to change when state rotated:
 (defun test-non-continuous ()
   (plot
