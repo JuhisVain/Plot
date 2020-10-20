@@ -1,3 +1,5 @@
+(in-package :plot)
+
 (deftype screen-limits (type)
   `(,type ,(coerce -10000 type) ,(coerce 10000 type))) ; that's a lot of pixels
 

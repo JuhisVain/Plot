@@ -1,3 +1,5 @@
+(in-package :plot)
+
 ;;; Y axis should always represent the return values of functions
 ;; X, Z etc. are the inputs.
 

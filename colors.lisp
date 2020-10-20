@@ -1,3 +1,5 @@
+(in-package :plot)
+
 (defun rgb-to-hue (red green blue)
   "Extracts hue from RGB values.
 In hue circle red is at 0 and going clockwise next is green and then blue."

@@ -1,3 +1,5 @@
+(in-package :plot)
+
 (defun draw-pixel (x y surface color)
   (sdl:draw-pixel-* x (- (sdl:height surface) y)
 		    :surface surface

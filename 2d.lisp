@@ -1,3 +1,5 @@
+(in-package :plot)
+
 (defun draw-grid (min-y max-y y-range y-scale screen-y0
 		  min-x max-x x-range x-scale screen-x0
 		  slack-pixels surface)

@@ -1,3 +1,5 @@
+(in-package :plot)
+
 (defclass abstract-funcdata ()
   ((function
     :initarg :func

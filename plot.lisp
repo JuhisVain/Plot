@@ -1,3 +1,5 @@
+(in-package :plot)
+
 (defun get-arg-count (func)
   "Returns count of number arguments that FUNC accepts,
 one of (1 2 NIL)"
