@@ -1,3 +1,5 @@
+(in-package :plot)
+
 (defun gaussian (x height center width)
   (expt (* height
 	   (exp 1.d0)) ; aka. "e"
