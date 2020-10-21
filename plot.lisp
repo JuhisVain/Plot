@@ -373,7 +373,6 @@ Returns T when binding found and STATE changed."
 (defun plot (func-list
 	     &key (from 0) (to 100) wire-density plot-type slack pitch yaw
 	       (window-width 500) (window-height 500)
-	       (draw-labels *draw-labels*)
 	       bindings)
   "
 FUNC-LIST = ({fun|(fun[fun]*)}*)
