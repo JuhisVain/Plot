@@ -358,6 +358,7 @@ y-scaling is dynamic based on extreme values on X's range."
   (let* ((state-type (ecase (highest-arg-count pfunc-list)
 		       (1 '2d-state)
 		       (2 '3d-state)))
+	 (plot-type (find-symbol (symbol-name plot-type) 'plot))
 	 (min-x (if (listp min) (car min) min))
 	 (max-x (if (listp max) (car max) max))
 	 (min-z (if (listp min) (cadr min) nil))
