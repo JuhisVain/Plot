@@ -374,8 +374,7 @@ Returns T when binding found and STATE changed."
 	     &key (from 0) (to 100) wire-density plot-type slack pitch yaw
 	       (window-width 500) (window-height 500)
 	       bindings)
-  "
-FUNC-LIST = ({fun|(fun[fun]*)}*)
+  "FUNC-LIST = ({fun|(fun[fun]*)}*)
 FUN = function|(function[func-options])
 
 Subsequent functions given after an inner function list are post-processing
