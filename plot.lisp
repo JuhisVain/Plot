@@ -401,7 +401,7 @@ WIRE-DENSITY should be a RATIONAL between 0 and 1
 best results between ~ 1/50 and 1/10. Denominator+1 lines will be drawn
 for both dimensions. Only has an effect on wireframe 3d plots.
 
-SLACK adds (slack/2 * value-range) to the plot grid's maximum and minimum.
+SLACK adds (slack/2 * value-range) to a 2d plot grid's maximum and minimum.
 
 PITCH and YAW set initial pitch and yaw for wireframe plots in radians.
 
