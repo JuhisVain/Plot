@@ -1,5 +1,8 @@
-(defsystem plot
-    :depends-on (lispbuilder-sdl)
+(defsystem "plot"
+    :description "A function plotter"
+    :author "Juho Vainio"
+    :license "MIT"
+    :depends-on ("lispbuilder-sdl")
     :serial t
     :components ((:file "package")
 		 (:file "setup")
