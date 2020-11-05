@@ -58,6 +58,14 @@
 	  :window-width 1000 :window-height 1000
 	  :wire-density 1/50)))
 
+;;when state max and min values are of different type and ALMOST the same
+;;there will be some interesting behaviour
+;; now fixed by coercing max-y and max-x to double float.
+(defun test-float-data ()
+  (plot (list #'(lambda (x) (sin (/ pi 3)))
+	      #'(lambda (x) (sqrt (/ 3 4))))
+	:from 0 :to 8))
+
 ;;The plot will appear to change when state rotated:
 (defun test-non-continuous ()
   (plot

@@ -268,9 +268,11 @@ Will ignore plotfunc-function if DO-MASTERS set to nil."
 
 (defmethod check-y-extremes ((state state))
   "Find functree dataset limits."
-  (setf (slot-value state 'max-y) (functree-max (pfunc-list state))
-	(slot-value state 'min-y) (functree-min (pfunc-list state)))
-  
+  (setf (slot-value state 'max-y) (coerce (functree-max (pfunc-list state))
+					  'DOUBLE-FLOAT)
+	(slot-value state 'min-y) (coerce (functree-min (pfunc-list state))
+					  'DOUBLE-FLOAT))
+
   ;; min-y and max-y should not be equal:
   (when (= (slot-value state 'min-y)
 	   (slot-value state 'max-y))
